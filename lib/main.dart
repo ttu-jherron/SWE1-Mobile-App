@@ -243,7 +243,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       );
                       return;
                 }
-                // TODO validate valid phone number
                 if (phoneNumber == '') {
                       showDialog(
                         context: context,
