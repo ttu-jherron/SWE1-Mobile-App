@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/colors.dart';
-import '../../../../core/constants.dart';
+import '../../../../core/visuals/colors.dart';
+import '../../../../core/visuals/constants.dart';
 
 class AppHeaderHero extends StatelessWidget {
   final String titleLine1;

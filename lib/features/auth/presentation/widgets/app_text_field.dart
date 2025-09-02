@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants.dart';
-import '../../../../core/colors.dart';
+import '../../../../core/visuals/constants.dart';
+import '../../../../core/visuals/colors.dart';
 
 class AppTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -25,6 +25,7 @@ class AppTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      cursorColor: Colors.black,
       controller: controller,
       obscureText: obscure,
       validator: validator,

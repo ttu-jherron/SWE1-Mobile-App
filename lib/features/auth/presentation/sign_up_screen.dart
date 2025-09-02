@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/colors.dart';
-import '../../../core/constants.dart';
-import '../../../core/routing.dart';
+import '../../../core/visuals/colors.dart';
+import '../../../core/visuals/constants.dart';
+import '../../../core/visuals/routing.dart';
 import 'widgets/app_text_field.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
