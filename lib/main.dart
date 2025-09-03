@@ -83,7 +83,7 @@ class LandingPage extends StatelessWidget {
             ),
             //Aligns the image
             Align(
-              alignment: const Alignment(0.0, -0.2),
+              alignment: const Alignment(0.0, -0.23),
               child: Container(
                 //Adds a 8px thick yellow boarder
                 padding: const EdgeInsets.all(8),
@@ -97,8 +97,8 @@ class LandingPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(100),
                   child: Image.asset(
                     'assets/images/screwdriverimg.jpg',
-                    width: 150,
-                    height: 150,
+                    width: 125,
+                    height: 125,
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -108,7 +108,7 @@ class LandingPage extends StatelessWidget {
             Align(
               alignment: const Alignment(0.0, 0.9),
               child: Column(
-                mainAxisSize: MainAxisSize.min, // prevents full screen expansion
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   ElevatedButton(
                     onPressed: () => debugPrint("Login pressed!"),
