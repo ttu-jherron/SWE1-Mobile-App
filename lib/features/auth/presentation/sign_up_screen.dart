@@ -5,6 +5,7 @@ import '../../../core/visuals/routing.dart';
 import 'widgets/app_text_field.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
+import 'package:mobile_app/core/backend/profile.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,7 +15,8 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final usernameCtrl = TextEditingController();
+  final firstNameCtrl = TextEditingController();
+  final lastNameCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final confirmCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
@@ -26,7 +28,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
-    usernameCtrl.dispose();
+    firstNameCtrl.dispose();
+    lastNameCtrl.dispose();
     passwordCtrl.dispose();
     confirmCtrl.dispose();
     emailCtrl.dispose();
@@ -79,7 +82,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Username',
+                          'First Name',
                           style: TextStyle(
                             color: AppColors.sandyYellow,
                             fontWeight: FontWeight.bold,
@@ -87,8 +90,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                         AppTextField(
-                          controller: usernameCtrl,
-                          label: 'Username',
+                          controller: firstNameCtrl,
+                          label: 'First Name',
+                          borderColor: AppColors.sandyYellow,
+                        ),
+                        const Text(
+                          'Last Name',
+                          style: TextStyle(
+                            color: AppColors.sandyYellow,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        AppTextField(
+                          controller: lastNameCtrl,
+                          label: 'Last Name',
                           borderColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
@@ -205,7 +221,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         text: 'Sign Up',
                         variant: ButtonVariant.yellowFilled, // yellow pill
                         onPressed: () {
-                          // TODO: validate + register
+                          Profile profile = Profile(userId: 1, firstName: firstNameCtrl.text, lastName: lastNameCtrl.text, email: emailCtrl.text, phoneNumber: "1234567890");
+                          profile.createProfile();
                         },
                       ),
                     ),
