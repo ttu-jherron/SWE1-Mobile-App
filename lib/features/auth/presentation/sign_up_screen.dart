@@ -273,7 +273,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     const SizedBox(height: Spacing.md),
                     Center(
-                      // ... your "Already Have an Account?" section ...
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Already Have an Account?',
+                            style: TextStyle(color: AppColors.sandyYellow),
+                          ),
+                          LinkText(
+                            text: 'Log In',
+                            color: AppColors.sandyYellow,
+                            onTap: () => Navigator.popAndPushNamed(
+                              context,
+                              AppRoutes.login,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

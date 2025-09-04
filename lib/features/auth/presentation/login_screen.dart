@@ -64,6 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
   late final ClerkAuthState _auth;
   late final StreamSubscription _errorSub;
   bool _loading = false;
+  bool _errorShown = false;
 
   @override
   void initState() {
@@ -73,7 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _auth = ClerkAuth.of(context);
       _auth.addListener(_onAuthChanged);
       _errorSub = _auth.errorStream.listen((err) {
-        if (mounted) {
+        if (mounted && !_errorShown) {
+          _errorShown = true;
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text(err.message)));
         }
@@ -95,9 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signIn(String username, String password) async {
-    if (!mounted) return;
+    if (!mounted || _loading) return;
     setState(() {
       _loading = true;
+      _errorShown = false;
     });
 
     try {
@@ -107,7 +110,8 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
     } catch (e) {
-      if (mounted) {
+      if (mounted && !_errorShown) {
+        _errorShown = true;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
@@ -218,10 +222,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: PrimaryButton(
                           text: 'Sign In',
                           variant: ButtonVariant.darkFilled,
-                          isLoading: _loading, // 1. Pass the loading state
-                          onPressed: () { // 2. The onPressed callback is simpler
-                            _signIn(usernameCtrl.text, passwordCtrl.text);
-                          },
+                          isLoading: _loading,
+                          onPressed: _loading
+                              ? null
+                              : () {
+                                  _signIn(usernameCtrl.text, passwordCtrl.text);
+                                },
                         ),
                       ),
                       const SizedBox(height: Spacing.md),

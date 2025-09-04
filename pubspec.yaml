@@ -40,8 +40,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  clerk_auth: ^0.0.12-beta
-  clerk_flutter: ^0.0.12-beta
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

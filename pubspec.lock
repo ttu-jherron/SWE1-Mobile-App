@@ -34,7 +34,7 @@ packages:
     source: hosted
     version: "1.4.0"
   clerk_auth:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: clerk_auth
       sha256: "20b60861ce3708cc69d35c939a4449dbc2cb727a28813f38dd84311e765816ee"
@@ -42,7 +42,7 @@ packages:
     source: hosted
     version: "0.0.12-beta"
   clerk_flutter:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: clerk_flutter
       sha256: "0cf2c25f762c4b899f8fdb110863680909ca33cc5d2f097142a8c52d4b43fc64"
