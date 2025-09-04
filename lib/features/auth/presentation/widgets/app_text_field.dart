@@ -25,6 +25,7 @@ class AppTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      cursorColor: Colors.black,
       controller: controller,
       obscureText: obscure,
       validator: validator,
