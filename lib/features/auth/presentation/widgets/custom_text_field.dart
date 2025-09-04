@@ -34,6 +34,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
       child: TextField(
         controller: widget.controller,
+        cursorColor: Colors.black,
         obscureText: _obscureText,
         enableSuggestions: false,
         autocorrect: false,

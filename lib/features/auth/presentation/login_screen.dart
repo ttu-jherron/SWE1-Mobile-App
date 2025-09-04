@@ -1,11 +1,53 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../core/visuals/colors.dart';
-import '../../../core/visuals/constants.dart';
-import '../../../core/visuals/routing.dart';
+import 'package:mobile_app/features/auth/presentation/widgets/custom_text_field.dart';
+import '../../../core/colors.dart';
+import '../../../core/constants.dart';
+import '../../../core/routing.dart';
 import 'widgets/app_header_hero.dart';
 import 'widgets/app_text_field.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
+import 'package:clerk_auth/clerk_auth.dart' as clerk;
+import 'package:clerk_flutter/clerk_flutter.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = ClerkAuth.of(context);
+    final user = auth.user;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await auth.signOut();
+              Navigator.pushReplacementNamed(context, AppRoutes.login);
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Welcome!'),
+            if (user != null) ...[
+              const SizedBox(height: 8),
+              Text('Username: ${user.username ?? "N/A"}'),
+              Text('Email: ${user.email ?? "N/A"}'),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,16 +61,79 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordCtrl = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
+  late final ClerkAuthState _auth;
+  late final StreamSubscription _errorSub;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _auth = ClerkAuth.of(context);
+      _auth.addListener(_onAuthChanged);
+      _errorSub = _auth.errorStream.listen((err) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(err.message)));
+        }
+      });
+      if (_auth.user != null) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    });
+  }
+
+  void _onAuthChanged() {
+    if (!mounted) return;
+    if (_auth.user != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login Successful')),
+      );
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    }
+  }
+
+  Future<void> _signIn(String username, String password) async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      await _auth.attemptSignIn(
+        strategy: clerk.Strategy.password,
+        identifier: username,
+        password: password,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+  
   @override
   void dispose() {
     usernameCtrl.dispose();
     passwordCtrl.dispose();
+    if(mounted){
+      _auth.removeListener(_onAuthChanged);
+    }
+    _errorSub.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Yellow background like the mock
     return Scaffold(
       backgroundColor: AppColors.sandyYellow,
       body: SafeArea(
@@ -41,8 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 subtitle: "don’t buy. borrow.",
                 image: const AssetImage('assets/images/hammerTime.png'),
               ),
-              const SizedBox(height: 24), // to clear the overlapping avatar
-
+              const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
                 child: Form(
@@ -57,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Username',
+                                'Email/Username',
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w600,
@@ -66,11 +170,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: Spacing.xs),
                               SizedBox(
-                                height: 40, // or your desired height
+                                height: 40,
                                 child: AppTextField(
                                   controller: usernameCtrl,
-                                  label: 'Username',
-                                  hint: 'Username',
+                                  label: 'Email/Username',
+                                  hint: 'Email/Username',
                                   borderColor: Colors.black,
                                 ),
                               ),
@@ -95,26 +199,28 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: Spacing.xs),
                               SizedBox(
-                                height: 40, // or your desired height
+                                height: 40,
                                 child: AppTextField(
                                   controller: passwordCtrl,
                                   label: 'Password',
                                   hint: '************',
                                   obscure: true,
                                   borderColor: Colors.black,
+                                ),
                               ),
-                            )],
+                            ],
                           ),
                         ),
                       ),
                       const SizedBox(height: Spacing.xxl + 16),
-
+                      // --- CHANGE IS HERE ---
                       Center(
                         child: PrimaryButton(
-                          text: 'Sign Up',
-                          variant: ButtonVariant.darkFilled, // dark pill
-                          onPressed: () {
-                            Navigator.pushNamed(context, AppRoutes.signUp);
+                          text: 'Sign In',
+                          variant: ButtonVariant.darkFilled,
+                          isLoading: _loading, // 1. Pass the loading state
+                          onPressed: () { // 2. The onPressed callback is simpler
+                            _signIn(usernameCtrl.text, passwordCtrl.text);
                           },
                         ),
                       ),

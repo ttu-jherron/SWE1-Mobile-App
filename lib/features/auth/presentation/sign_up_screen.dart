@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../core/visuals/colors.dart';
-import '../../../core/visuals/constants.dart';
-import '../../../core/visuals/routing.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:clerk_auth/clerk_auth.dart' as clerk;
+
+import 'verify_email_screen.dart'; 
+import '../../../core/colors.dart';
+import '../../../core/constants.dart';
+import '../../../core/routing.dart';
 import 'widgets/app_text_field.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
-import 'package:mobile_app/core/backend/profile.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -15,27 +19,107 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final firstNameCtrl = TextEditingController();
-  final lastNameCtrl = TextEditingController();
+  // Controllers for the required fields
+  final usernameCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final confirmCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  final addressCtrl = TextEditingController();
-  final stateCtrl = TextEditingController();
-  final zipCtrl = TextEditingController();
+  
+  // Controllers for fields to be used later (commented out in UI)
+  // final addressCtrl = TextEditingController();
+  // final stateCtrl = TextEditingController();
+  // final zipCtrl = TextEditingController();
 
   final formKey = GlobalKey<FormState>();
 
+  // State variables for Clerk logic
+  late final ClerkAuthState _auth;
+  late final StreamSubscription _errorSub;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _auth = ClerkAuth.of(context);
+
+      _auth.addListener(_onAuthChanged);
+      _errorSub = _auth.errorStream.listen((err) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(err.message)));
+        }
+      });
+    });
+  }
+  
+  // This listener will navigate to home if the user signs in
+  // which happens automatically after successful email verification.
+  void _onAuthChanged() {
+    if (!mounted) return;
+    if (_auth.user != null) {
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+    }
+  }
+
+  // --- REVISED SIGN UP LOGIC ---
+  Future<void> _signUp() async {
+    if (!mounted) return;
+
+    if (passwordCtrl.text != confirmCtrl.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+    setState(() { _loading = true; });
+
+    try {
+      // 1. Attempt to create the user account
+      await _auth.attemptSignUp(
+        strategy: clerk.Strategy.emailCode,
+        emailAddress: emailCtrl.text,
+        password: passwordCtrl.text,
+        passwordConfirmation: confirmCtrl.text,
+        username: usernameCtrl.text,
+      );
+
+      // 2. If successful, navigate to the verification screen
+      // We pass the email so the next screen knows what to verify.
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerifyEmailScreen(),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() { _loading = false; });
+      }
+    }
+  }
+
   @override
   void dispose() {
-    firstNameCtrl.dispose();
-    lastNameCtrl.dispose();
+    usernameCtrl.dispose();
     passwordCtrl.dispose();
     confirmCtrl.dispose();
     emailCtrl.dispose();
-    addressCtrl.dispose();
-    stateCtrl.dispose();
-    zipCtrl.dispose();
+    // addressCtrl.dispose();
+    // stateCtrl.dispose();
+    // zipCtrl.dispose();
+    if (mounted) {
+      _auth.removeListener(_onAuthChanged);
+    }
+    _errorSub.cancel();
     super.dispose();
   }
 
@@ -49,7 +133,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // "HE Sign Up" heading
               RichText(
                 text: const TextSpan(
                   children: [
@@ -73,16 +156,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: Spacing.lg),
-
               Form(
                 key: formKey,
                 child: Column(
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'First Name',
+                    // --- USERNAME, EMAIL, PASSWORD FIELDS ---
+                    const Text(
+                          'Username',
                           style: TextStyle(
                             color: AppColors.sandyYellow,
                             fontWeight: FontWeight.bold,
@@ -90,21 +170,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ),
                         ),
                         AppTextField(
-                          controller: firstNameCtrl,
-                          label: 'First Name',
-                          borderColor: AppColors.sandyYellow,
-                        ),
-                        const Text(
-                          'Last Name',
-                          style: TextStyle(
-                            color: AppColors.sandyYellow,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        AppTextField(
-                          controller: lastNameCtrl,
-                          label: 'Last Name',
+                          controller: usernameCtrl,
+                          label: 'Username',
                           borderColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
@@ -151,102 +218,63 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           label: 'Email',
                           borderColor: AppColors.sandyYellow,
                         ),
-                        const SizedBox(height: Spacing.md),
-                        const Text(
-                          'Address',
-                          style: TextStyle(
-                            color: AppColors.sandyYellow,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                    
+                    // --- ADDRESS FIELDS (COMMENTED OUT) ---
+                    /* const SizedBox(height: Spacing.md),
+                    const Text('Address', style: TextStyle(...)),
+                    AppTextField(
+                      controller: addressCtrl,
+                      label: 'Address',
+                      borderColor: AppColors.sandyYellow,
+                    ),
+                    const SizedBox(height: Spacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('State', style: TextStyle(...)),
+                              AppTextField(
+                                controller: stateCtrl,
+                                label: 'State',
+                                borderColor: AppColors.sandyYellow,
+                              ),
+                            ],
                           ),
                         ),
-                        AppTextField(
-                          controller: addressCtrl,
-                          label: 'Address',
-                          borderColor: AppColors.sandyYellow,
-                        ),
-                        const SizedBox(height: Spacing.md),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'State',
-                                    style: TextStyle(
-                                      color: AppColors.sandyYellow,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  AppTextField(
-                                    controller: stateCtrl,
-                                    label: 'State',
-                                    borderColor: AppColors.sandyYellow,
-                                  ),
-                                ],
+                        const SizedBox(width: Spacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Zip Code', style: TextStyle(...)),
+                              AppTextField(
+                                controller: zipCtrl,
+                                label: 'Zip Code',
+                                keyboardType: TextInputType.number,
+                                borderColor: AppColors.sandyYellow,
                               ),
-                            ),
-                            const SizedBox(width: Spacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Zip Code',
-                                    style: TextStyle(
-                                      color: AppColors.sandyYellow,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  AppTextField(
-                                    controller: zipCtrl,
-                                    label: 'Zip Code',
-                                    keyboardType: TextInputType.number,
-                                    borderColor: AppColors.sandyYellow,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
+                    */
 
                     const SizedBox(height: Spacing.xl + Spacing.sm),
                     Center(
                       child: PrimaryButton(
                         text: 'Sign Up',
-                        variant: ButtonVariant.yellowFilled, // yellow pill
-                        onPressed: () {
-                          Profile profile = Profile(userId: 1, firstName: firstNameCtrl.text, lastName: lastNameCtrl.text, email: emailCtrl.text, phoneNumber: "1234567890");
-                          profile.createProfile();
-                        },
+                        variant: ButtonVariant.yellowFilled,
+                        isLoading: _loading,
+                        onPressed: _signUp,
                       ),
                     ),
                     const SizedBox(height: Spacing.md),
                     Center(
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Already Have an Account?',
-                            style: TextStyle(color: AppColors.sandyYellow),
-                          ),
-                          // co pilot how can i make this log in sandyYellow?
-                          LinkText(
-                            text: 'Log In',
-                            color: AppColors.sandyYellow,
-                            onTap: () => Navigator.popAndPushNamed(
-                              context,
-                              AppRoutes.login,
-                            ),
-                          ),
-                        ],
-                      ),
+                      // ... your "Already Have an Account?" section ...
                     ),
-                    const SizedBox(height: Spacing.xl),
                   ],
                 ),
               ),
