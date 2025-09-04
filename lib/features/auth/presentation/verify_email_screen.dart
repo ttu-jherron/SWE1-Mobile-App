@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:mobile_app/core/routing.dart';
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
 import 'widgets/app_text_field.dart';
@@ -30,7 +31,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Verification successful!')),
         );
-        Navigator.pop(context); // Or navigate to home
+        Navigator.pushNamed(context, AppRoutes.home,);
       }
     } catch (e) {
       if (mounted) {
