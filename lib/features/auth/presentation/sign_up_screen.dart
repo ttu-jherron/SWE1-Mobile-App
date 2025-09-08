@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
@@ -66,6 +67,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
   // --- REVISED SIGN UP LOGIC ---
   Future<void> _signUp() async {
     if (!mounted) return;
+    if (_loading) return;
+
+    // Local validation
+    if (usernameCtrl.text.isEmpty ||
+        emailCtrl.text.isEmpty ||
+        passwordCtrl.text.isEmpty ||
+        confirmCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields.')),
+      );
+      return;
+    }
 
     if (passwordCtrl.text != confirmCtrl.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,11 +86,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
       return;
     }
+
     setState(() { _loading = true; });
 
     try {
-      // 1. Attempt to create the user account
-      await _auth.attemptSignUp(
+      final client = await _auth.attemptSignUp(
         strategy: clerk.Strategy.emailCode,
         emailAddress: emailCtrl.text,
         password: passwordCtrl.text,
@@ -85,9 +98,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
         username: usernameCtrl.text,
       );
 
-      // 2. If successful, navigate to the verification screen
-      // We pass the email so the next screen knows what to verify.
-      if (mounted) {
+      // Debug print for status and missing fields
+      if (kDebugMode) {
+        debugPrint('SignUp status: ${client.signUp?.status}');
+        debugPrint('SignUp missing fields: ${client.signUp?.missingFields}');
+        debugPrint('SignUp unverified fields: ${client.signUp?.unverifiedFields}');
+      }
+
+      // Only navigate if signUp status is missingRequirements and only code is missing
+      final signUp = client.signUp;
+      final needsVerification = signUp != null &&
+        signUp.status == clerk.Status.missingRequirements &&
+        signUp.missingFields.isEmpty &&
+        signUp.unverifiedFields.contains(clerk.Field.emailAddress);
+
+      if (mounted && needsVerification) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -116,9 +141,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // addressCtrl.dispose();
     // stateCtrl.dispose();
     // zipCtrl.dispose();
-    if (mounted) {
-      _auth.removeListener(_onAuthChanged);
-    }
+    // Might be causing issues, if so wrap with if (mounted)
+    _auth.removeListener(_onAuthChanged);
     _errorSub.cancel();
     super.dispose();
   }
