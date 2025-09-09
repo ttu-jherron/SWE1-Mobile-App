@@ -23,6 +23,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final _auth = ClerkAuth.of(context);
     setState(() { _loading = true; });
     try {
+      // Continue with the sign-up process by verifying the code
+      // This completes the existing sign-up attempt rather than creating a new one
       await _auth.attemptSignUp(
         strategy: clerk.Strategy.emailCode,
         code: codeCtrl.text,
