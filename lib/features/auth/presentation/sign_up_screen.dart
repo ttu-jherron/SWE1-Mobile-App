@@ -25,7 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordCtrl = TextEditingController();
   final confirmCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  int authChanged_Count = 0;
+  int authChangedCount = 0;
   
   // Controllers for fields to be used later (commented out in UI)
   // final addressCtrl = TextEditingController();
@@ -38,6 +38,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late final ClerkAuthState _auth;
   late final StreamSubscription _errorSub;
   bool _loading = false;
+  bool _hasShownError = false; // Track if we've already shown an error
+  DateTime? _lastErrorTime; // Track when we last showed an error
 
   @override
   void initState() {
@@ -56,8 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _auth.addListener(_onAuthChanged);
       _errorSub = _auth.errorStream.listen((err) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(err.message)));
+          _showErrorSnackbar(err.message);
         }
       });
     });
@@ -67,54 +68,108 @@ class _SignUpScreenState extends State<SignUpScreen> {
   // which happens automatically after successful sign up
   // This might be it, only do actions onAuthChanged
   void _onAuthChanged() {
-    authChanged_Count++;
-    if (kDebugMode){ debugPrint(authChanged_Count.toString());}
+    authChangedCount++;
+    if (kDebugMode){ debugPrint(authChangedCount.toString());}
     if (!mounted) return;
+    
     if (_auth.user != null) {
+      // Reset loading state before navigation
+      setState(() { _loading = false; });
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
-      authChanged_Count = 0;
+      authChangedCount = 0;
     }
-    else if (authChanged_Count < 2){
+    else if (authChangedCount < 2){
       if (kDebugMode) {
         debugPrint("AUTH LISTENER DEBUG SIGN UP FAILED");
       }
     }
-    authChanged_Count = 0;
+    authChangedCount = 0;
+  }
+
+  // Helper method to show error snackbar with duplicate prevention
+  void _showErrorSnackbar(String message) {
+    final now = DateTime.now();
+    final callId = now.millisecondsSinceEpoch; // Unique identifier for this call
+    if(mounted) _loading = true;
+    
+    if (kDebugMode) {
+      debugPrint('=== _showErrorSnackbar called [ID: $callId] ===');
+      debugPrint('Message: $message');
+      debugPrint('_hasShownError: $_hasShownError');
+      debugPrint('_lastErrorTime: $_lastErrorTime');
+      if (_lastErrorTime != null) {
+        debugPrint('Time difference: ${now.difference(_lastErrorTime!).inSeconds} seconds');
+      }
+      debugPrint('Stack trace: ${StackTrace.current}');
+    }
+    
+    // Prevent duplicate snackbars within 6 seconds
+    if (_hasShownError && _lastErrorTime != null && 
+        now.difference(_lastErrorTime!).inSeconds < 6) {
+      if (kDebugMode) {
+        debugPrint('BLOCKED duplicate snackbar [ID: $callId]');
+      }
+      return;
+    }
+    
+    _hasShownError = true;
+    _lastErrorTime = now;
+    
+    if (kDebugMode) {
+      debugPrint('SHOWING snackbar [ID: $callId]: $message');
+    }
+    
+    // Clear any existing snackbars first to prevent stacking
+    ScaffoldMessenger.of(context).clearSnackBars();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+    
+    // If we're currently in a loading state, keep it active for the duration of the snackbar
+    if (_loading) {
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) setState(() { _loading = false; });
+      });
+    }
   }
 
   // --- REVISED SIGN UP LOGIC ---
   Future<void> _signUp() async {
-    if (!mounted) return;
-    if (_loading) return;
+    // Prevent multiple simultaneous requests
+    if (!mounted || _loading) return;
+    
+    // Reset error tracking for new attempt
+    _hasShownError = false;
+    _lastErrorTime = null;
+    
+    // Set loading state immediately to prevent spam clicking
+    setState(() { _loading = true; });
+
     try {
       await _auth.refreshClient();
     } catch (e) {
       // If refreshClient doesn't exist, continue anyway
       debugPrint('refreshClient not available: $e');
     }
-    // Local validation
+
+    // Local validation - if validation fails, reset loading and return
     if (usernameCtrl.text.isEmpty ||
         emailCtrl.text.isEmpty ||
         passwordCtrl.text.isEmpty ||
         confirmCtrl.text.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please fill in all fields.')),
-          );
+          _showErrorSnackbar('Please fill in all fields.');
         }
       return;
     }
 
     if (passwordCtrl.text != confirmCtrl.text) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Passwords do not match')),
-        );
+        _showErrorSnackbar('Passwords do not match');
       }
       return;
     }
-
-    setState(() { _loading = true; });
 
     try {
       // Clear any previous sign-up state before attempting new sign-up
@@ -130,78 +185,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
         debugPrint('Attempting sign-up for: ${emailCtrl.text}');
       }
       
-      var client = await _auth.attemptSignUp(
+      await _auth.attemptSignUp(
         strategy: clerk.Strategy.password,
         emailAddress: emailCtrl.text,
         password: passwordCtrl.text,
         passwordConfirmation: confirmCtrl.text,
         username: usernameCtrl.text,
       );
-      return;
-
-      // Debug print for status and missing fields
-      if (kDebugMode) {
-        debugPrint('SignUp status: ${client.signUp?.status}');
-        debugPrint('SignUp missing fields: ${client.signUp?.missingFields}');
-        debugPrint('SignUp unverified fields: ${client.signUp?.unverifiedFields}');
-        debugPrint('SignIn status: ${client.signIn?.status}');
-      }
-
-      final signUp = client.signUp;
-      final signIn = client.signIn;
       
-      if (signUp == null) {
-        // No sign-up object returned, something went wrong
-        if (mounted && signIn == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sign-up failed. Please try again.')),
-          );
-        }
-        return;
-      }
-
-      // Handle different sign-up statuses
-      switch (signUp.status) {
-        case clerk.Status.missingRequirements:
-            // Handle other missing requirements
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Missing requirements: ${signUp.missingFields}')),
-              );
-            }
-          break;
-          
-        case clerk.Status.complete:
-          // Sign-up completed successfully, user is signed in
-          if (mounted) {
-            //TODO Might not need here
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Sign-up completed successfully!')),
-            );
-            if (mounted) {
-              setState(() { _loading = false; });
-            }
-            return;
-          }
-          break;
-          
-        case clerk.Status.abandoned:
-          // Sign-up was abandoned
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Sign-up was abandoned. Please try again.')),
-            );
-          }
-          break;
-          
-        default:
-          // Unknown status
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Unexpected status: ${signUp.status}')),
-            );
-          }
-      }
+      // Don't reset loading here - let the auth state change handle it
+      // This prevents spam clicking during the authentication process
     } catch (e) {
       if (mounted) {
         // Clear any partial sign-up state that might have been created
@@ -212,15 +205,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
         } catch (clearError) {
           debugPrint('Error clearing state after failed sign-up: $clearError');
         }
-        if (authChanged_Count < 1) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        if (authChangedCount < 1) {
+          _showErrorSnackbar('Error: ${e.toString()}');
+          authChangedCount++;
+        } else {
+          // If we already showed an error, just reset loading
+          setState(() { _loading = false; });
         }
       }
     } finally {
-      if (mounted) {
-        setState(() { _loading = false; });
-      }
+      // Fallback: If loading is still true after 6 seconds, reset it
+      // This prevents permanent loading in case something goes wrong
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted && _loading) {
+          setState(() { _loading = false; });
+        }
+      });
     }
   }
 
