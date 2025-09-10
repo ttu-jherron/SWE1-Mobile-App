@@ -1,3 +1,9 @@
+/////////////////////////////////////////////
+// DEPRECATED FILE
+// exists in case email code bug gets fixed
+/////////////////////////////////////////////
+
+
 import 'package:flutter/material.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:clerk_flutter/clerk_flutter.dart';
