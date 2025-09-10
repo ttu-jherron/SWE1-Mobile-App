@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       Center(
                         child: PrimaryButton(
-                          text: 'Sign Up',
+                          text: 'Login',
                           variant: ButtonVariant.darkFilled, // dark pill
                           onPressed: () {
                             Navigator.pushNamed(context, AppRoutes.signUp);
