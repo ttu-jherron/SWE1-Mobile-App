@@ -25,6 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordCtrl = TextEditingController();
   final confirmCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
+  int authChanged_Count = 0;
   
   // Controllers for fields to be used later (commented out in UI)
   // final addressCtrl = TextEditingController();
@@ -63,12 +64,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
   
   // This listener will navigate to home if the user signs in
-  // which happens automatically after successful email verification.
+  // which happens automatically after successful sign up
+  // This might be it, only do actions onAuthChanged
   void _onAuthChanged() {
+    authChanged_Count++;
+    if (kDebugMode){ debugPrint(authChanged_Count.toString());}
     if (!mounted) return;
     if (_auth.user != null) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+      authChanged_Count = 0;
     }
+    else if (authChanged_Count < 2){
+      if (kDebugMode) {
+        debugPrint("AUTH LISTENER DEBUG SIGN UP FAILED");
+      }
+    }
+    authChanged_Count = 0;
   }
 
   // --- REVISED SIGN UP LOGIC ---
@@ -86,16 +97,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
         emailCtrl.text.isEmpty ||
         passwordCtrl.text.isEmpty ||
         confirmCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields.')),
-      );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please fill in all fields.')),
+          );
+        }
       return;
     }
 
     if (passwordCtrl.text != confirmCtrl.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Passwords do not match')),
+        );
+      }
       return;
     }
 
@@ -116,25 +131,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
       
       var client = await _auth.attemptSignUp(
-        strategy: clerk.Strategy.emailCode,
+        strategy: clerk.Strategy.password,
         emailAddress: emailCtrl.text,
         password: passwordCtrl.text,
         passwordConfirmation: confirmCtrl.text,
         username: usernameCtrl.text,
       );
+      return;
 
       // Debug print for status and missing fields
       if (kDebugMode) {
         debugPrint('SignUp status: ${client.signUp?.status}');
         debugPrint('SignUp missing fields: ${client.signUp?.missingFields}');
         debugPrint('SignUp unverified fields: ${client.signUp?.unverifiedFields}');
+        debugPrint('SignIn status: ${client.signIn?.status}');
       }
 
       final signUp = client.signUp;
+      final signIn = client.signIn;
       
       if (signUp == null) {
         // No sign-up object returned, something went wrong
-        if (mounted) {
+        if (mounted && signIn == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Sign-up failed. Please try again.')),
           );
@@ -145,34 +163,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
       // Handle different sign-up statuses
       switch (signUp.status) {
         case clerk.Status.missingRequirements:
-          // Only navigate to verification if email verification is specifically needed
-          if (signUp.missingFields.isEmpty &&
-              signUp.unverifiedFields.contains(clerk.Field.emailAddress)) {
-            if (mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VerifyEmailScreen(),
-                ),
-              );
-            }
-          } else {
             // Handle other missing requirements
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Missing requirements: ${signUp.missingFields}')),
               );
             }
-          }
           break;
           
         case clerk.Status.complete:
           // Sign-up completed successfully, user is signed in
           if (mounted) {
+            //TODO Might not need here
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Sign-up completed successfully!')),
             );
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+            if (mounted) {
+              setState(() { _loading = false; });
+            }
+            return;
           }
           break;
           
@@ -203,9 +212,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         } catch (clearError) {
           debugPrint('Error clearing state after failed sign-up: $clearError');
         }
-        
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        if (authChanged_Count < 1) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+        }
       }
     } finally {
       if (mounted) {
