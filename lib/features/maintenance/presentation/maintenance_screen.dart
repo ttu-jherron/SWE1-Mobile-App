@@ -19,18 +19,22 @@ class MaintenanceScreen extends StatelessWidget {
           horizontal: Spacing.xl,
           vertical: Spacing.lg,
         ),
-        child: Column(
-          children: [
-            Text("Maintenance",
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.w800,
-              ),
-              textAlign: TextAlign.center,
+        child: 
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Text("Maintenance",
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: Spacing.lg),
+              ],
             ),
-            const SizedBox(height: Spacing.lg),
-          ],
-        )
+          )
       )
     );
   }

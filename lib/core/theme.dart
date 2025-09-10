@@ -18,6 +18,7 @@ ThemeData buildTheme() {
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'Inter',
     colorScheme: colorScheme,
     scaffoldBackgroundColor: colorScheme.onSurface,
     textTheme: const TextTheme(
