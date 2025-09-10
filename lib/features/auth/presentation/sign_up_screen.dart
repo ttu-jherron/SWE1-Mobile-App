@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 
-import 'verify_email_screen.dart'; 
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
@@ -25,7 +24,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordCtrl = TextEditingController();
   final confirmCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  int authChangedCount = 0;
   
   // Controllers for fields to be used later (commented out in UI)
   // final addressCtrl = TextEditingController();
@@ -40,6 +38,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _loading = false;
   bool _hasShownError = false; // Track if we've already shown an error
   DateTime? _lastErrorTime; // Track when we last showed an error
+  bool _authSuccess = false; // Track if auth was successful to prevent multiple navigations
+  
+  static const int snackBarDuration = 5;
 
   @override
   void initState() {
@@ -50,11 +51,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       // Clear any previous sign-up state to avoid conflicts
       try {
-        _auth.signOut(); // This should clear any existing auth state
+        _auth.signOut();
       } catch (e) {
         // Ignore errors if no state to clear
       }
-
       _auth.addListener(_onAuthChanged);
       _errorSub = _auth.errorStream.listen((err) {
         if (mounted) {
@@ -64,36 +64,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
   }
   
-  // This listener will navigate to home if the user signs in
-  // which happens automatically after successful sign up
-  // This might be it, only do actions onAuthChanged
+  // This listener will navigate to home after successful signup
   void _onAuthChanged() {
-    authChangedCount++;
-    if (kDebugMode){ debugPrint(authChangedCount.toString());}
-    if (!mounted) return;
+    if (kDebugMode) {
+      debugPrint('_onAuthChanged called - mounted: $mounted, _authSuccess: $_authSuccess, user: ${_auth.user?.id}');
+    }
+    
+    if (!mounted || _authSuccess) return; // Prevent multiple navigations
     
     if (_auth.user != null) {
+      if (kDebugMode) {
+        debugPrint('User authenticated, navigating to home...');
+      }
+      _authSuccess = true; // Mark as successful to prevent multiple calls
       // Reset loading state before navigation
       setState(() { _loading = false; });
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
-      authChangedCount = 0;
     }
-    else if (authChangedCount < 2){
-      if (kDebugMode) {
-        debugPrint("AUTH LISTENER DEBUG SIGN UP FAILED");
-      }
-    }
-    authChangedCount = 0;
   }
 
   // Helper method to show error snackbar with duplicate prevention
   void _showErrorSnackbar(String message) {
     final now = DateTime.now();
-    final callId = now.millisecondsSinceEpoch; // Unique identifier for this call
+    final devcallId = now.millisecondsSinceEpoch; // Unique identifier for this call
     if(mounted) _loading = true;
     
     if (kDebugMode) {
-      debugPrint('=== _showErrorSnackbar called [ID: $callId] ===');
+      debugPrint('=== _showErrorSnackbar called [ID: $devcallId] ===');
       debugPrint('Message: $message');
       debugPrint('_hasShownError: $_hasShownError');
       debugPrint('_lastErrorTime: $_lastErrorTime');
@@ -107,7 +104,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (_hasShownError && _lastErrorTime != null && 
         now.difference(_lastErrorTime!).inSeconds < 6) {
       if (kDebugMode) {
-        debugPrint('BLOCKED duplicate snackbar [ID: $callId]');
+        debugPrint('BLOCKED duplicate snackbar [ID: $devcallId]');
       }
       return;
     }
@@ -116,7 +113,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _lastErrorTime = now;
     
     if (kDebugMode) {
-      debugPrint('SHOWING snackbar [ID: $callId]: $message');
+      debugPrint('SHOWING snackbar [ID: $devcallId]: $message');
     }
     
     // Clear any existing snackbars first to prevent stacking
@@ -128,7 +125,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     
     // If we're currently in a loading state, keep it active for the duration of the snackbar
     if (_loading) {
-      Future.delayed(const Duration(seconds: 5), () {
+      Future.delayed(const Duration(seconds: snackBarDuration), () {
         if (mounted) setState(() { _loading = false; });
       });
     }
@@ -137,7 +134,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   // --- REVISED SIGN UP LOGIC ---
   Future<void> _signUp() async {
     // Prevent multiple simultaneous requests
-    if (!mounted || _loading) return;
+    if (!mounted || _loading || _authSuccess) return;
     
     // Reset error tracking for new attempt
     _hasShownError = false;
@@ -153,7 +150,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       debugPrint('refreshClient not available: $e');
     }
 
-    // Local validation - if validation fails, reset loading and return
+    // Simple Local validation
     if (usernameCtrl.text.isEmpty ||
         emailCtrl.text.isEmpty ||
         passwordCtrl.text.isEmpty ||
@@ -193,8 +190,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
         username: usernameCtrl.text,
       );
       
-      // Don't reset loading here - let the auth state change handle it
-      // This prevents spam clicking during the authentication process
+      // If we reach here, sign-up was successful
+      if (kDebugMode) {
+        debugPrint('Sign-up successful, waiting for auth state change...');
+      }
     } catch (e) {
       if (mounted) {
         // Clear any partial sign-up state that might have been created
@@ -205,18 +204,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
         } catch (clearError) {
           debugPrint('Error clearing state after failed sign-up: $clearError');
         }
-        if (authChangedCount < 1) {
-          _showErrorSnackbar('Error: ${e.toString()}');
-          authChangedCount++;
-        } else {
-          // If we already showed an error, just reset loading
-          setState(() { _loading = false; });
-        }
+        _showErrorSnackbar('Error: ${e.toString()}');
       }
     } finally {
-      // Fallback: If loading is still true after 6 seconds, reset it
+      // Fallback: If loading is still true, reset it
       // This prevents permanent loading in case something goes wrong
-      Future.delayed(const Duration(seconds: 5), () {
+      Future.delayed(const Duration(seconds: snackBarDuration + 1), () {
         if (mounted && _loading) {
           setState(() { _loading = false; });
         }
