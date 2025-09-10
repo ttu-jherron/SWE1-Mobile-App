@@ -10,7 +10,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppLayout(
-      currentIndex: 2, // Profile tab
+      currentIndex: 3, // Profile tab
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: Spacing.xl,

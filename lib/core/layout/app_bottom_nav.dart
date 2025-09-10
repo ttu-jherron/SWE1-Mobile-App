@@ -37,6 +37,11 @@ class AppBottomNav extends StatelessWidget {
               label: 'My Assets',
             ),
             NavigationDestination(
+              icon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
+              selectedIcon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
+              label: 'Maintenance',
+            ),
+            NavigationDestination(
               icon: CircleAvatar(
                 radius: 12,
                 backgroundImage: AssetImage('assets/images/bob.jpg'),
