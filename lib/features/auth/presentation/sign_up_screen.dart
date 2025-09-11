@@ -281,6 +281,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           controller: usernameCtrl,
                           label: 'Username',
                           borderColor: AppColors.sandyYellow,
+                          isRequired: true,
                         ),
                         const SizedBox(height: Spacing.md),
                         const Text(
@@ -295,6 +296,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           controller: passwordCtrl,
                           label: 'Password',
                           obscure: true,
+                          isRequired: true,
                           borderColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
@@ -310,6 +312,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           controller: confirmCtrl,
                           label: 'Confirm Password',
                           obscure: true,
+                          isRequired: true,
                           borderColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
@@ -324,6 +327,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         AppTextField(
                           controller: emailCtrl,
                           label: 'Email',
+                          isRequired: true,
                           borderColor: AppColors.sandyYellow,
                         ),
                     
