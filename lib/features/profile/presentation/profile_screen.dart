@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:clerk_auth/clerk_auth.dart' as clerk;
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = ClerkAuth.of(context).user;
+    final clerkDataHandler = ClerkDataHandler(user: user);
+    final userData = clerkDataHandler.fetchProfile();
+
+    final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
+    final String fullName = nameFromData.isEmpty ? "No Name data" : nameFromData;
+
     return AppLayout(
       currentIndex: 2, // Profile tab
       body: SingleChildScrollView(
@@ -29,7 +38,7 @@ class ProfileScreen extends StatelessWidget {
 
             // title
             Text(
-              'Master Builder 1000',
+              userData['username'],
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.w800,
@@ -48,16 +57,17 @@ class ProfileScreen extends StatelessWidget {
                       CrossAxisAlignment.start, // label/value alignment
                   children: [
                     // fields (static)
-                    _FieldBlock(label: 'Full Name', value: 'Bob DaBuilder'),
+                    _FieldBlock(label: 'Full Name', value: fullName),
                     const SizedBox(height: Spacing.lg),
                     _FieldBlock(
                       label: 'Phone Number',
-                      value: '(123) - 456 - 7890',
+                      value: '(123)456-7890',
+                      //value: userData['phoneNumber'],
                     ),
                     const SizedBox(height: Spacing.lg),
                     _FieldBlock(
                       label: 'Email',
-                      value: 'bobdabuilder@gmail.com',
+                      value: userData['email'],
                       underline: true,
                     ),
                     const SizedBox(height: Spacing.lg),

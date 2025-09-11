@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/core/colors.dart';
 import '../../../../core/constants.dart';
 
 class AppTextField extends StatefulWidget {
@@ -10,7 +11,7 @@ class AppTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final Color borderColor;
   final bool isRequired;
-  final Color labelColor; // New parameter
+  final Color labelColor;
 
   const AppTextField({
     super.key,
@@ -22,7 +23,7 @@ class AppTextField extends StatefulWidget {
     this.keyboardType,
     this.borderColor = Colors.black,
     this.isRequired = false,
-    this.labelColor = Colors.black54, // Default color
+    this.labelColor = AppColors.darkText, // Default color
   });
 
   @override
@@ -98,7 +99,7 @@ class _AppTextFieldState extends State<AppTextField> {
             ? IconButton(
                 icon: Icon(
                   _obscureText ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey,
+                  color: Colors.black,
                 ),
                 onPressed: () {
                   setState(() {

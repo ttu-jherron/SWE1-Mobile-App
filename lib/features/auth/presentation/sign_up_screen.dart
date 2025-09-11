@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
+import 'package:mobile_app/app.dart';
 
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
@@ -281,6 +282,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           controller: usernameCtrl,
                           label: 'Username',
                           borderColor: AppColors.sandyYellow,
+                          labelColor: AppColors.sandyYellow,
                           isRequired: true,
                         ),
                         const SizedBox(height: Spacing.md),
@@ -298,6 +300,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           obscure: true,
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
+                          labelColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
                         const Text(
@@ -314,6 +317,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           obscure: true,
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
+                          labelColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
                         const Text(
@@ -329,6 +333,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           label: 'Email',
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
+                          labelColor: AppColors.sandyYellow,
                         ),
                     
                     // --- ADDRESS FIELDS (COMMENTED OUT) ---
