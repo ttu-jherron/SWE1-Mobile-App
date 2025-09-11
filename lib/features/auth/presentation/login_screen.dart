@@ -177,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 40,
                                 child: AppTextField(
                                   controller: usernameCtrl,
-                                  label: 'Email/Username',
+                                  label: '',
                                   hint: 'Email/Username',
                                   labelColor: Colors.black,
                                   borderColor: Colors.black,
@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 40,
                                 child: AppTextField(
                                   controller: passwordCtrl,
-                                  label: 'Password',
+                                  label: '',
                                   hint: '************',
                                   labelColor: Colors.black,
                                   isRequired: true,
