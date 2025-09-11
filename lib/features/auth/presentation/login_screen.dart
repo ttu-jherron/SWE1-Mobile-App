@@ -148,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 titleLine1: 'Hippo',
                 titleLine2: 'Exchange',
                 subtitle: "don’t buy. borrow.",
-                image: const AssetImage('assets/images/hammerTime.png'),
+                image: const AssetImage('assets/images/tools.jpg'),
               ),
               const SizedBox(height: 24),
               Padding(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/../../core/colors.dart';
 
 class LinkText extends StatelessWidget {
   final String text;
@@ -21,7 +22,7 @@ class LinkText extends StatelessWidget {
         style: TextStyle(
           color: color,
           decoration: TextDecoration.underline,
-          decorationColor: color,
+          decorationColor: AppColors.ebonyClay,
           fontWeight: FontWeight.w600,
         ),
       ),

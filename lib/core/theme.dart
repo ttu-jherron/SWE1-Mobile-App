@@ -12,8 +12,6 @@ ThemeData buildTheme() {
     onSecondary: Colors.black,
     error: const Color(0xFFB00020),
     onError: Colors.white,
-    background: AppColors.ebonyClay,
-    onBackground: Colors.white,
     surface: AppColors.ebonyClay,
     onSurface: Colors.white,
   );
@@ -21,7 +19,7 @@ ThemeData buildTheme() {
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
-    scaffoldBackgroundColor: colorScheme.background,
+    scaffoldBackgroundColor: colorScheme.onSurface,
     textTheme: const TextTheme(
       // We’ll style hero text manually on the header
       titleLarge: TextStyle(fontWeight: FontWeight.w700),
@@ -51,8 +49,8 @@ ThemeData buildTheme() {
         padding: const EdgeInsets.symmetric(
           horizontal: Spacing.xl, vertical: Spacing.sm),
         shape: const StadiumBorder(),
-        backgroundColor: colorScheme.background, // dark pill (login screen)
-        foregroundColor: colorScheme.onBackground,
+        backgroundColor: colorScheme.surface, // dark pill (login screen)
+        foregroundColor: colorScheme.onSurface,
         textStyle: const TextStyle(
           fontWeight: FontWeight.w800, fontSize: TypographyScale.button),
       ),
