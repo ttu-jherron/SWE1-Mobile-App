@@ -53,7 +53,7 @@ class AppRoutes {
     assets: (_) => const _AssetsScaffold(),
 
     // new screens:
-    profile: (_) => const ProfileScreen(),
+    profile: (_) => ProfileScreen(),
     profileEdit: (_) => const EditProfileScreen(),
 
     AppRoutes.maintenanceDetail: (ctx) {
