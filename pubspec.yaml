@@ -30,9 +30,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  #clerk_auth: ^0.0.12-beta
+  #clerk dependencies
   clerk_flutter: ^0.0.12-beta
   clerk_auth: ^0.0.12-beta
+  #used for caching profile image from clerk
+  cached_network_image: ^3.3.1
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // Import the package
 import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
@@ -28,11 +29,20 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // avatar
             const SizedBox(height: Spacing.lg),
-            const CircleAvatar(
+            CircleAvatar(
               radius: 64,
-              backgroundImage: AssetImage('assets/images/bob.jpg'),
+              backgroundColor: Colors.grey.shade200,
+              child: ClipOval(
+                child: CachedNetworkImage(
+                  imageUrl: userData['imageUrl'] ?? '',
+                  placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                  errorWidget: (context, url, error) => const Icon(Icons.person, size: 64, color: Colors.grey),
+                  fit: BoxFit.cover,
+                  width: 128,
+                  height: 128,
+                ),
+              ),
             ),
             const SizedBox(height: Spacing.lg),
 
