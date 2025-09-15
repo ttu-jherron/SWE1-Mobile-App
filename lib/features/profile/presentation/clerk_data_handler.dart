@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
-import 'package:mobile_app/core/routing.dart';
 
 class ClerkDataHandler {
   final clerk.User? user;
