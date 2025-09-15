@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/assets/data/asset.dart';
+import 'package:mobile_app/features/assets/data/asset_repository.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/layout/app_layout.dart';
-import '../data/asset_repository.dart';
-import '../data/asset.dart';
 
 class MaintenanceDetailScreen extends StatelessWidget {
   /// If navigating with data already loaded, pass it here.

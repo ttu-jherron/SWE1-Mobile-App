@@ -5,11 +5,7 @@ import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 
-<<<<<<< HEAD
-import '../features/assets/presentation/asset_detail_screen.dart';
-=======
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
->>>>>>> dev
 
 import 'layout/app_layout.dart';
 
@@ -71,11 +67,6 @@ class AppRoutes {
   static const profileEdit = '/profile/edit';
 
   static const maintenanceDetail = '/maintenance/detail';
-<<<<<<< HEAD
-  
-=======
-
->>>>>>> dev
   static final routes = <String, WidgetBuilder>{
     login: (_) => const LoginScreen(),
     signUp: (_) => const SignUpScreen(),
@@ -88,23 +79,11 @@ class AppRoutes {
     profile: (_) => ProfileScreen(),
     profileEdit: (_) => const EditProfileScreen(),
 
-<<<<<<< HEAD
-    maintenanceDetail: (ctx) {
-      final args = ModalRoute.of(ctx)?.settings.arguments;
-      if (args is String) {
-        // Pass an ID to load specific data later
-        return AssetDetailScreen(assetId: args);
-      }
-      // Fallback burner data id during dev
-      return const AssetDetailScreen(assetId: 'asset_001');
-    }
-=======
     AppRoutes.maintenanceDetail: (ctx) {
       final args = ModalRoute.of(ctx)?.settings.arguments;
       // Use MaintenanceDetailScreen only
       if (args is String) return MaintenanceDetailScreen(assetId: args);
       return const MaintenanceDetailScreen(assetId: 'asset_001');
     },
->>>>>>> dev
   };
 }

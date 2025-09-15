@@ -8,14 +8,6 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Hippo Exchange',
-      theme: buildTheme(),
-      initialRoute: AppRoutes.profile, //login
-      routes: AppRoutes.routes,
-=======
     return ClerkAuth(
       config: ClerkAuthConfig(
         publishableKey: 'pk_test_aW4taHVza3ktMjMuY2xlcmsuYWNjb3VudHMuZGV2JA',
@@ -27,7 +19,6 @@ class App extends StatelessWidget {
         initialRoute: AppRoutes.login,
         routes: AppRoutes.routes,
       ),
->>>>>>> dev
     );
   }
 }
