@@ -16,7 +16,7 @@ class ProfileScreen extends StatelessWidget {
     final userData = clerkDataHandler.fetchProfile();
 
     final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
-    final String fullName = nameFromData.isEmpty ? "No Name data" : nameFromData;
+    final String fullName = nameFromData.isEmpty ? "No access to backend" : nameFromData;
 
     return AppLayout(
       currentIndex: 2, // Profile tab
@@ -61,7 +61,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: Spacing.lg),
                     _FieldBlock(
                       label: 'Phone Number',
-                      value: '(123)456-7890',
+                      value: 'No access to backend',
                       //value: userData['phoneNumber'],
                     ),
                     const SizedBox(height: Spacing.lg),
