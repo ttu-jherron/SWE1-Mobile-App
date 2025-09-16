@@ -16,8 +16,10 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Get user profile image from ClerkDataHandler
-    final userData = ClerkDataHandler.fromContext(context).fetchProfile();
+    final clerkDataHandler = ClerkDataHandler.fromContext(context);
+    final userData = clerkDataHandler.fetchProfile();
     final String? profileImageUrl = userData['imageUrl'];
+    clerkDataHandler.refreshUserData(context);
 
     return Container(
       decoration: const BoxDecoration(color: AppColors.ebonyClay),

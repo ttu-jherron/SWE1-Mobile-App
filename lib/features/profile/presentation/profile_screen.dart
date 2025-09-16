@@ -1,76 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Import the package
 import 'package:mobile_app/app.dart';
+import 'package:mobile_app/core/colors.dart';
 import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  @override
-  ProfileScreenState createState() => ProfileScreenState();
-}
-
-class ProfileScreenState extends State<ProfileScreen> with RouteAware {
-  @override
-  void initState() {
-    super.initState();
-    // Schedule a post-frame callback to fetch data after the first build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchUserData();
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Subscribe to route changes
-    final route = ModalRoute.of(context);
-    if (route is PageRoute) {
-      routeObserver.subscribe(this, route);
-    }
-  }
-
-  @override
-  void dispose() {
-    // Unsubscribe from route changes
-    routeObserver.unsubscribe(this);
-    super.dispose();
-  }
-
-  @override
-  void didPopNext() {
-    // Called when coming back to this page
-    _fetchUserData();
-  }
-
-  void _fetchUserData() async {
-    try {
-      final handler = ClerkDataHandler.fromContext(context);
-      await handler.refreshUserData(context);
-      // Add a small delay to ensure network operations complete
-      await Future.delayed(const Duration(milliseconds: 300));
-      // Force UI rebuild with fresh data
-      if (mounted) {
-        setState(() {});
-        debugPrint('Profile screen refreshed with latest user data');
-      }
-    } catch (e) {
-      debugPrint('Error refreshing user data: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Always get a fresh reference to the user object
     final user = ClerkAuth.of(context).user;
-    
-    // Create data handler and force fetch the latest profile data
     final clerkDataHandler = ClerkDataHandler(user: user);
-    final userData = clerkDataHandler.fetchProfile(forceRefresh: true);
+    clerkDataHandler.refreshUserData(context);
+    final userData = clerkDataHandler.fetchProfile();
+    final String? profileImageUrl = userData['imageUrl'];
 
     final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
     final String fullName = nameFromData.isEmpty ? "No access to backend" : nameFromData;
@@ -90,14 +38,7 @@ class ProfileScreenState extends State<ProfileScreen> with RouteAware {
               radius: 64,
               backgroundColor: Colors.grey.shade200,
               child: ClipOval(
-                child: CachedNetworkImage(
-                  imageUrl: userData['imageUrl'] ?? '',
-                  placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                  errorWidget: (context, url, error) => const Icon(Icons.person, size: 64, color: Colors.grey),
-                  fit: BoxFit.cover,
-                  width: 128,
-                  height: 128,
-                ),
+                child: _buildProfileAvatar(profileImageUrl)
               ),
             ),
             const SizedBox(height: Spacing.lg),
@@ -123,21 +64,21 @@ class ProfileScreenState extends State<ProfileScreen> with RouteAware {
                       CrossAxisAlignment.start, // label/value alignment
                   children: [
                     // fields (static)
-                    FieldBlock(label: 'Full Name', value: fullName),
+                    _FieldBlock(label: 'Full Name', value: fullName),
                     const SizedBox(height: Spacing.lg),
-                    FieldBlock(
+                    _FieldBlock(
                       label: 'Phone Number',
                       value: 'No access to backend',
                       //value: userData['phoneNumber'],
                     ),
                     const SizedBox(height: Spacing.lg),
-                    FieldBlock(
+                    _FieldBlock(
                       label: 'Email',
                       value: userData['email'],
                       underline: true,
                     ),
                     const SizedBox(height: Spacing.lg),
-                    FieldBlock(label: 'Password', value: '***************'),
+                    _FieldBlock(label: 'Password', value: '***************'),
 
                     const SizedBox(height: Spacing.xl),
                   ],
@@ -153,7 +94,7 @@ class ProfileScreenState extends State<ProfileScreen> with RouteAware {
                     Navigator.pushNamed(context, AppRoutes.profileEdit),
                 style: ButtonStyle(
                   alignment: Alignment.center,
-                  padding: WidgetStateProperty.all(
+                  padding: MaterialStateProperty.all(
                     const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
@@ -165,14 +106,40 @@ class ProfileScreenState extends State<ProfileScreen> with RouteAware {
       ),
     );
   }
+  Widget _buildProfileAvatar(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      // Fallback to the static asset if no URL is available
+      return const CircleAvatar(
+        radius: 12,
+        backgroundImage: AssetImage('assets/images/tools.jpg'),
+      );
+    }
+
+    // Use CachedNetworkImage with the user's profile image
+    return CircleAvatar(
+      radius: 64,
+      backgroundColor: Colors.grey.shade200,
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          width: 128,
+          height: 128,
+          errorWidget: (context, url, error) => const CircleAvatar(
+            radius: 32,
+            backgroundImage: AssetImage('assets/images/tools.jpg'),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class FieldBlock extends StatelessWidget {
+class _FieldBlock extends StatelessWidget {
   final String label;
   final String value;
   final bool underline;
-  const FieldBlock({
-    super.key, 
+  const _FieldBlock({
     required this.label,
     required this.value,
     this.underline = false,
