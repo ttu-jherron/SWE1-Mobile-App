@@ -1,20 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Import the package
+import 'package:mobile_app/app.dart';
 import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
-import 'package:clerk_auth/clerk_auth.dart' as clerk;
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  ProfileScreenState createState() => ProfileScreenState();
+}
+
+class ProfileScreenState extends State<ProfileScreen> with RouteAware {
+  @override
+  void initState() {
+    super.initState();
+    // Schedule a post-frame callback to fetch data after the first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchUserData();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to route changes
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    // Unsubscribe from route changes
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Called when coming back to this page
+    _fetchUserData();
+  }
+
+  void _fetchUserData() async {
+    try {
+      final handler = ClerkDataHandler.fromContext(context);
+      await handler.refreshUserData(context);
+      // Add a small delay to ensure network operations complete
+      await Future.delayed(const Duration(milliseconds: 300));
+      // Force UI rebuild with fresh data
+      if (mounted) {
+        setState(() {});
+        debugPrint('Profile screen refreshed with latest user data');
+      }
+    } catch (e) {
+      debugPrint('Error refreshing user data: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Always get a fresh reference to the user object
     final user = ClerkAuth.of(context).user;
+    
+    // Create data handler and force fetch the latest profile data
     final clerkDataHandler = ClerkDataHandler(user: user);
-    final userData = clerkDataHandler.fetchProfile();
+    final userData = clerkDataHandler.fetchProfile(forceRefresh: true);
 
     final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
     final String fullName = nameFromData.isEmpty ? "No access to backend" : nameFromData;
@@ -67,21 +124,21 @@ class ProfileScreen extends StatelessWidget {
                       CrossAxisAlignment.start, // label/value alignment
                   children: [
                     // fields (static)
-                    _FieldBlock(label: 'Full Name', value: fullName),
+                    FieldBlock(label: 'Full Name', value: fullName),
                     const SizedBox(height: Spacing.lg),
-                    _FieldBlock(
+                    FieldBlock(
                       label: 'Phone Number',
                       value: 'No access to backend',
                       //value: userData['phoneNumber'],
                     ),
                     const SizedBox(height: Spacing.lg),
-                    _FieldBlock(
+                    FieldBlock(
                       label: 'Email',
                       value: userData['email'],
                       underline: true,
                     ),
                     const SizedBox(height: Spacing.lg),
-                    _FieldBlock(label: 'Password', value: '***************'),
+                    FieldBlock(label: 'Password', value: '***************'),
 
                     const SizedBox(height: Spacing.xl),
                   ],
@@ -97,7 +154,7 @@ class ProfileScreen extends StatelessWidget {
                     Navigator.pushNamed(context, AppRoutes.profileEdit),
                 style: ButtonStyle(
                   alignment: Alignment.center,
-                  padding: MaterialStateProperty.all(
+                  padding: WidgetStateProperty.all(
                     const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
@@ -111,11 +168,12 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _FieldBlock extends StatelessWidget {
+class FieldBlock extends StatelessWidget {
   final String label;
   final String value;
   final bool underline;
-  const _FieldBlock({
+  const FieldBlock({
+    super.key, 
     required this.label,
     required this.value,
     this.underline = false,

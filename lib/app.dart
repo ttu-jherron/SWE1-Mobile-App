@@ -3,6 +3,8 @@ import 'package:clerk_flutter/clerk_flutter.dart';
 import 'core/theme.dart';
 import 'core/routing.dart';
 
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
 class App extends StatelessWidget {
   const App({super.key});
 
@@ -18,6 +20,7 @@ class App extends StatelessWidget {
         theme: buildTheme(),
         initialRoute: AppRoutes.login,
         routes: AppRoutes.routes,
+        navigatorObservers: [routeObserver],
       ),
     );
   }

@@ -15,12 +15,12 @@ class ClerkDataHandler {
   }
 
   // Method to fetch profile data
-  Map<String, dynamic> fetchProfile() {
+  Map<String, dynamic> fetchProfile({bool forceRefresh = false}) {
     if (user == null) {
       return {};
     }
     
-    // Extract user data
+    // Extract user data - always gets the latest from the user object
     return {
       'id': user!.id,
       'email': user!.email,
@@ -29,5 +29,18 @@ class ClerkDataHandler {
       'lastName': user!.lastName,
       'imageUrl': user!.imageUrl,
     };
+  }
+  
+  // Helper method to refresh user data asynchronously (can be called from _fetchUserData)
+  Future<void> refreshUserData(BuildContext context) async {
+    try {
+      final clerkAuth = ClerkAuth.of(context);
+      await clerkAuth.refreshClient();
+      await clerkAuth.refreshEnvironment();
+      // This is the best we can do with the current Clerk SDK
+      debugPrint('ClerkDataHandler: Refreshed client and environment');
+    } catch (e) {
+      debugPrint('ClerkDataHandler: Error refreshing user data: $e');
+    }
   }
 }
