@@ -4,6 +4,8 @@ import 'package:mobile_app/features/assets/data/asset_repository.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/layout/app_layout.dart';
+import '../../assets/data/asset_repository.dart';
+import '../../assets/data/asset.dart';
 
 class MaintenanceDetailScreen extends StatelessWidget {
   /// If navigating with data already loaded, pass it here.
@@ -51,12 +53,12 @@ class MaintenanceDetailScreen extends StatelessWidget {
             const SizedBox(height: Spacing.xl),
 
             _Label('Asset Name'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             _Value(a.name),
             const SizedBox(height: Spacing.lg),
 
             _Label('Completion Date'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             _Value(
               _formatDate(a.completionDate) +
                   '  •  ${daysLeft.abs()} days ${daysLeft >= 0 ? "left" : "ago"}',
@@ -64,12 +66,12 @@ class MaintenanceDetailScreen extends StatelessWidget {
             const SizedBox(height: Spacing.lg),
 
             _Label('Short Description'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             _Value(a.shortDescription),
             const SizedBox(height: Spacing.lg),
 
             _Label('Notes'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             Text(
               a.notes,
               style: const TextStyle(height: 1.35, color: Colors.black87),
@@ -110,6 +112,7 @@ class MaintenanceDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
