@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../colors.dart';
-import '../constants.dart';
 
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;

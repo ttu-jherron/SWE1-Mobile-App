@@ -3,7 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart'; // Import the p
 import 'package:mobile_app/app.dart';
 import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
-import '../../../core/colors.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
