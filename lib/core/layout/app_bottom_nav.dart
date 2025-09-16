@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../colors.dart';
 import '../constants.dart';
 
@@ -14,6 +16,10 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get user profile image from ClerkDataHandler
+    final userData = ClerkDataHandler.fromContext(context).fetchProfile();
+    final String? profileImageUrl = userData['imageUrl'];
+
     return Container(
       decoration: const BoxDecoration(color: AppColors.ebonyClay),
       child: SafeArea(
@@ -25,29 +31,53 @@ class AppBottomNav extends StatelessWidget {
           selectedIndex: currentIndex,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: onTap,
-          destinations: const [
-            NavigationDestination(
+          destinations: [
+            const NavigationDestination(
               icon: Icon(Icons.home_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.home, color: AppColors.sandyYellow),
               label: 'Home',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.handyman_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.handyman, color: AppColors.sandyYellow),
               label: 'My Assets',
             ),
+            // Profile tab with dynamic image
             NavigationDestination(
-              icon: CircleAvatar(
-                radius: 12,
-                backgroundImage: AssetImage('assets/images/bob.jpg'),
-              ),
-              selectedIcon: CircleAvatar(
-                radius: 12,
-                backgroundImage: AssetImage('assets/images/bob.jpg'),
-              ),
+              icon: _buildProfileAvatar(profileImageUrl),
+              selectedIcon: _buildProfileAvatar(profileImageUrl),
               label: 'Profile',
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build the profile avatar
+  Widget _buildProfileAvatar(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      // Fallback to the static asset if no URL is available
+      return const CircleAvatar(
+        radius: 12,
+        backgroundImage: AssetImage('assets/images/bob.jpg'),
+      );
+    }
+
+    // Use CachedNetworkImage with the user's profile image
+    return CircleAvatar(
+      radius: 12,
+      backgroundColor: Colors.grey.shade200,
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          width: 24,
+          height: 24,
+          errorWidget: (context, url, error) => const CircleAvatar(
+            radius: 12,
+            backgroundImage: AssetImage('assets/images/bob.jpg'),
+          ),
         ),
       ),
     );
