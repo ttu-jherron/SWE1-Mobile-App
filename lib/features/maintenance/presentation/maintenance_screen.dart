@@ -3,8 +3,11 @@ import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 //import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
+import 'package:intl/intl.dart';
 
 enum FilterType { all, overdue, upcoming, history }
+DateTime now = DateTime.now();
+DateTime date = DateTime(now.year, now.month, now.day);
 
 class Task {
   final String title;
@@ -63,6 +66,8 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     }
   }
 
+  //TODO: function for making the date
+
   @override
   Widget build(BuildContext context) {
     final filteredTasks = getFilteredTasks();
@@ -72,6 +77,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -93,14 +99,15 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
               ],
             ),
             // FILTER BUTTONS
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center ,
+              alignment: WrapAlignment.spaceBetween,
               children: [
                 _buildFilterButton("All", FilterType.all),
                 SizedBox(
                   height: 50,
                   child: const VerticalDivider(
-                    width: 0, // The space allocated for the divider
+                    width: 35, // The space allocated for the divider
                     thickness: 2, // The actual thickness of the line
                     indent: 10, // Space from the top of the parent to the divider's start
                     endIndent: 10, // Space from the bottom of the parent to the divider's end
@@ -110,7 +117,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 SizedBox(
                   height: 50,
                   child: const VerticalDivider(
-                    width: 6, // The space allocated for the divider
+                    width: 35, // The space allocated for the divider
                     thickness: 2, // The actual thickness of the line
                     indent: 10, // Space from the top of the parent to the divider's start
                     endIndent: 10, // Space from the bottom of the parent to the divider's end
@@ -120,7 +127,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 SizedBox(
                   height: 50,
                   child: const VerticalDivider(
-                    width: 6, // The space allocated for the divider
+                    width: 35, // The space allocated for the divider
                     thickness: 2, // The actual thickness of the line
                     indent: 10, // Space from the top of the parent to the divider's start
                     endIndent: 10, // Space from the bottom of the parent to the divider's end
@@ -133,73 +140,90 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
             const SizedBox(height: 20),
         
             // LIST OF TASKS
-            Expanded(
-              child: ListView.builder(
+            Expanded( //everything will dissapear if this is removed
+              child: ListView.builder(//makes it scroll
                 itemCount: filteredTasks.length,
                 itemBuilder: (context, index) {
                   final task = filteredTasks[index];
                   return ListTile(
-                    title: Text(
-                      task.title,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.black87,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w100,
-                        overflow: TextOverflow.ellipsis,
+                    contentPadding: EdgeInsets.zero,
+                    //Due Date
+                    title: 
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                      Flexible(
+                        child: Text(  
+                          DateFormat('MMM dd, yyyy').format(task.date),
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: Colors.black87,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          textAlign: TextAlign.start,
+                          ),
                       ),
-                      textAlign: TextAlign.start,
-                      ),
+                        const SizedBox(width: Spacing.xs),
+                        if (task.isOverdue)
+                          const Text("! Late", style: TextStyle(color: Colors.red)),
+                        if (task.isHistory) ...[
+                          const SizedBox(width: 5), // optional spacing
+                          Icon(Icons.check, color: Colors.lightGreenAccent, size: 16),
+                          const SizedBox(width: 3),
+                          const Text("Completed", style: TextStyle(color: Colors.lightGreenAccent)),
+                        ],
+                      ],
+                    ),
                     subtitle: 
                     Row(
                       children: [
-                        Text(
-                          task.title,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: Colors.black87,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w100,
-                            overflow: TextOverflow.ellipsis,
+                        Expanded(
+                          child: RichText(
+                            text:
+                            TextSpan(
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: Colors.black87,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w100,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            children: [
+                              TextSpan(text: task.title),
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle, 
+                                child: //circle icon
+                                SizedBox(
+                                  width: 22,
+                                  child: Center(
+                                    child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, )
+                                    ),
+                              ),
+                              ),
+                                //maintenance short description
+                              TextSpan(text: task.description,), 
+                            ]
+                              //textAlign: TextAlign.start,
+                              ),
+                              softWrap: true,
                           ),
-                          textAlign: TextAlign.start,
-                          ),
-                        SizedBox(
-                          child:
-                          SizedBox(
-                            width: 22,
-                            child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-                          ),),
-                        Text(
-                          task.description,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: Colors.black87,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w100,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          textAlign: TextAlign.start,
-                          ),
+                        ),
+
+                        // Flexible(
+                        //   child: Text(
+                        //     task.description,
+                        //     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        //       color: Colors.black87,
+                        //       fontSize: 17,
+                        //       fontWeight: FontWeight.w100,
+                        //     ),
+                        //     maxLines: 2,
+                        //     overflow: TextOverflow.ellipsis,
+                        //     textAlign: TextAlign.start,
+                        //     ),
+                        // ),
                       ],
                     ),
-                      trailing: 
-                      // task.isOverdue
-                      //   ? const Text("! Late", style: TextStyle(color: Colors.red))
-                      //   : null,
-                  
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (task.isOverdue)
-                            const Text("! Late", style: TextStyle(color: Colors.red)),
-                          if (task.isHistory) ...[
-                            const SizedBox(width: 5), // optional spacing
-                            Icon(Icons.check, color: Colors.lightGreenAccent, size: 16),
-                            const SizedBox(width: 3),
-                            const Text("Completed", style: TextStyle(color: Colors.lightGreenAccent)),
-                          ],
-                        ],
-                      ),
-                        
                   );
                 },
               ),
@@ -212,22 +236,33 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
 
   Widget _buildFilterButton(String text, FilterType type) {
     return TextButton(
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero, // removes all default padding
+        minimumSize: Size(0, 0),  // prevents extra space
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap, // tighter tap area
+      ),
       onPressed: () {
-        setState(() => selectedFilter = type);
+        setState(() => 
+        selectedFilter = type,
+        );
       },
       child: Text(
         text,
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
           color: Colors.black87,
-          fontSize: 17,
-          decoration: TextDecoration.underline,
+          fontSize: TypographyScale.button,
           fontWeight: FontWeight.w600,
-          ),
-          textAlign: TextAlign.center,
+          decoration: TextDecoration.underline,
+          decorationColor: Colors.black87, // explicitly set underline color
+          decorationThickness: 1.0,
         ),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 }
+
+
 //     return Scaffold(
 //       appBar: AppBar(title: Text("Maintenance"),
 //       Text("Maintenance",
