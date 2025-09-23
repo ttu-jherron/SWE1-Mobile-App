@@ -4,10 +4,10 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
-
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
-
 import 'layout/app_layout.dart';
+
+import '../features/home/presentation/home_screen.dart' as home_feature;
 
 // Optional placeholder screens until you build them
 class _HomeScaffold extends StatelessWidget {
@@ -44,8 +44,8 @@ class _AssetsScaffold extends StatelessWidget {
           onPressed: () {
             Navigator.pushNamed(
               context,
-              AppRoutes.maintenanceDetail, // 👈 defined in your routes
-              arguments: 'asset_001',      // 👈 burner ID for now
+              AppRoutes.maintenanceDetail, //  defined in routes
+              arguments: 'asset_001', //  burner ID for now
             );
           },
           child: const Text('Open Maintenance Page'),
@@ -54,7 +54,6 @@ class _AssetsScaffold extends StatelessWidget {
     );
   }
 }
-
 
 class AppRoutes {
   static const login = '/';
@@ -72,9 +71,11 @@ class AppRoutes {
     signUp: (_) => const SignUpScreen(),
 
     // stubs:
-    home: (_) => const _HomeScaffold(), // see below
+    home: (_) => const home_feature.HomeScreen(),
+    //home: (_) => const _HomeScaffold(), // see below
     assets: (_) => const _AssetsScaffold(),
 
+    assets: (_) => const _AssetsScaffold(),
     // new screens:
     profile: (_) => ProfileScreen(),
     profileEdit: (_) => const EditProfileScreen(),
