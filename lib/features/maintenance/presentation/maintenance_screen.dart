@@ -66,11 +66,17 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     }
   }
 
+  List<Task> get sortedTasksAsc {
+    List<Task> filteredTasks = getFilteredTasks();
+    final tasksCopy = List<Task>.from(filteredTasks);
+    tasksCopy.sort((a, b) => a.date.compareTo(b.date));
+    return tasksCopy;
+  }
+
   //TODO: function for making the date
 
   @override
   Widget build(BuildContext context) {
-    final filteredTasks = getFilteredTasks();
 
     return AppLayout(
       currentIndex: 2, // Maintenance tab
@@ -93,7 +99,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 const SizedBox(width: Spacing.md),
                 //addMaintenance button
                 IconButton(
-                  onPressed: () {}, // TODO: add maintenance action
+                  onPressed: () {}, // TODO: add maintenance routing page
                   icon: const Icon(Icons.add_circle,color: AppColors.ebonyClay,size: 28,),
                   ),
               ],
@@ -142,9 +148,9 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
             // LIST OF TASKS
             Expanded( //everything will dissapear if this is removed
               child: ListView.builder(//makes it scroll
-                itemCount: filteredTasks.length,
+                itemCount: sortedTasksAsc.length,
                 itemBuilder: (context, index) {
-                  final task = filteredTasks[index];
+                  final task = sortedTasksAsc[index];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     //Due Date
@@ -164,19 +170,17 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                           textAlign: TextAlign.start,
                           ),
                       ),
-                        const SizedBox(width: Spacing.xs),
-                        if (task.isOverdue)
-                          const Text("! Late", style: TextStyle(color: Colors.red)),
-                        if (task.isHistory) ...[
-                          const SizedBox(width: 5), // optional spacing
-                          Icon(Icons.check, color: Colors.lightGreenAccent, size: 16),
-                          const SizedBox(width: 3),
-                          const Text("Completed", style: TextStyle(color: Colors.lightGreenAccent)),
-                        ],
+                      const SizedBox(width: Spacing.xs),
+                      if (task.isOverdue)
+                        const Text("! Late", style: TextStyle(color: Colors.red)),
+                      if (task.isHistory) ...[
+                        const SizedBox(width: 5), // optional spacing
+                        Icon(Icons.check, color: Colors.green, size: 16),
+                        const SizedBox(width: 3),
+                        const Text("Completed", style: TextStyle(color: Colors.green)),
                       ],
-                    ),
-                    subtitle: 
-                    Row(
+                    ],),
+                    subtitle: Row(
                       children: [
                         Expanded(
                           child: RichText(
@@ -188,40 +192,25 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                                 fontWeight: FontWeight.w100,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            children: [
-                              TextSpan(text: task.title),
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle, 
-                                child: //circle icon
-                                SizedBox(
-                                  width: 22,
-                                  child: Center(
-                                    child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, )
+                              children: [
+                                TextSpan(text: task.title),
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle, 
+                                  child: //circle icon
+                                  SizedBox(
+                                    width: 22,
+                                    child: Center(
+                                      child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5)
                                     ),
-                              ),
-                              ),
+                                  ),
+                                ),
                                 //maintenance short description
-                              TextSpan(text: task.description,), 
-                            ]
-                              //textAlign: TextAlign.start,
-                              ),
-                              softWrap: true,
+                                TextSpan(text: task.description), 
+                              ]
+                            ),
+                            softWrap: true,
                           ),
                         ),
-
-                        // Flexible(
-                        //   child: Text(
-                        //     task.description,
-                        //     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        //       color: Colors.black87,
-                        //       fontSize: 17,
-                        //       fontWeight: FontWeight.w100,
-                        //     ),
-                        //     maxLines: 2,
-                        //     overflow: TextOverflow.ellipsis,
-                        //     textAlign: TextAlign.start,
-                        //     ),
-                        // ),
                       ],
                     ),
                   );
@@ -235,6 +224,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   }
 
   Widget _buildFilterButton(String text, FilterType type) {
+    double underlineThickness =  1;
     return TextButton(
       style: TextButton.styleFrom(
         padding: EdgeInsets.zero, // removes all default padding
@@ -242,8 +232,9 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap, // tighter tap area
       ),
       onPressed: () {
-        setState(() => 
-        selectedFilter = type,
+        setState((){  
+          selectedFilter = type;
+          underlineThickness = 0.0;}
         );
       },
       child: Text(
@@ -253,763 +244,11 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           fontSize: TypographyScale.button,
           fontWeight: FontWeight.w600,
           decoration: TextDecoration.underline,
-          decorationColor: Colors.black87, // explicitly set underline color
-          decorationThickness: 1.0,
+          decorationColor: Colors.black87,
+          decorationThickness: underlineThickness,
         ),
         textAlign: TextAlign.center,
       ),
     );
   }
 }
-
-
-//     return Scaffold(
-//       appBar: AppBar(title: Text("Maintenance"),
-//       Text("Maintenance",
-//         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//         color: Colors.black87,
-//         fontWeight: FontWeight.w800,
-//         ),
-//         textAlign: TextAlign.center,
-//       ),
-//       //padding
-//       const SizedBox(width: Spacing.md),
-//       //addMaintenance button
-//       Icon(Icons.add_circle, color: AppColors.ebonyClay, size: 28)
-//       ],),
-//       body:
-//           Padding(
-//             padding: const EdgeInsets.all(37.0),
-//             child: Column(
-//               children: [
-//                 Row(
-//                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     TextButton(
-//                       onPressed: () => setState(() => selectedFilter = FilterType.all),
-//                       child: Text("All"),
-//                     ),
-//                     SizedBox(
-//                       height: 50,
-//                       child: const VerticalDivider(
-//                         width: 35, // The space allocated for the divider
-//                         thickness: 2, // The actual thickness of the line
-//                         indent: 10, // Space from the top of the parent to the divider's start
-//                         endIndent: 10, // Space from the bottom of the parent to the divider's end
-//                         color: Colors.grey, // Color of the divider line
-//                       ),
-//                     ),
-//                     TextButton(
-//                       onPressed: () => setState(() => selectedFilter = FilterType.overdue),
-//                       child: Text("Overdue"),
-//                     ),
-//                     SizedBox(
-//                       height: 50,
-//                       child: const VerticalDivider(
-//                         width: 35, // The space allocated for the divider
-//                         thickness: 2, // The actual thickness of the line
-//                         indent: 10, // Space from the top of the parent to the divider's start
-//                         endIndent: 10, // Space from the bottom of the parent to the divider's end
-//                         color: Colors.grey, // Color of the divider line
-//                       ),
-//                     ),
-//                     TextButton(
-//                       onPressed: () => setState(() => selectedFilter = FilterType.upcoming),
-//                       child: Text("Upcoming"),
-//                     ),
-                    
-//                     TextButton(
-//                       onPressed: () => setState(() => selectedFilter = FilterType.history),
-//                       child: Text("History"),
-//                     ),
-//                   ],
-//                 ),
-
-
-
-//                 // //PAGE NAV BAR
-//                 // IntrinsicHeight(
-//                 //   child:
-                  
-//                 //     Row(
-//                 //       crossAxisAlignment: CrossAxisAlignment.center,
-//                 //       children: [
-//                 //         Text("All",
-//                 //           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-//                 //           color: Colors.black87,
-//                 //           fontSize: 17,
-//                 //           decoration: TextDecoration.underline,
-//                 //           fontWeight: FontWeight.w600,
-//                 //           ),
-//                 //           textAlign: TextAlign.center,
-//                 //         ),
-                              
-//                 //         SizedBox(
-//                 //           height: 50,
-//                 //           child: const VerticalDivider(
-//                 //             width: 35, // The space allocated for the divider
-//                 //             thickness: 2, // The actual thickness of the line
-//                 //             indent: 10, // Space from the top of the parent to the divider's start
-//                 //             endIndent: 10, // Space from the bottom of the parent to the divider's end
-//                 //             color: Colors.grey, // Color of the divider line
-//                 //           ),
-//                 //         ),
-                              
-//                 //         TextButton(
-//                 //           onPressed: () {
-//                 //             setState(() {
-//                 //               bool isOverdue = true;
-//                 //             });
-//                 //           },
-//                 //           child: Text("Overdue",
-//                 //             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-//                 //             color: Colors.black87,
-//                 //             fontSize: 17,
-//                 //             fontWeight: FontWeight.w600,
-//                 //             ),
-//                 //             textAlign: TextAlign.center,
-//                 //           ),
-//                 //         ),
-                              
-//                 //         SizedBox(
-//                 //           height:50,
-//                 //           child: const VerticalDivider(
-//                 //             width: 35, // The space allocated for the divider
-//                 //             thickness: 2, // The actual thickness of the line
-//                 //             indent: 10, // Space   from the top of the parent to the divider's start
-//                 //             endIndent: 10, // Space from the bottom of the parent to the divider's end
-//                 //             color: Colors.grey, // Color of the divider line
-//                 //           ),
-//                 //         ),
-                              
-//                 //         Text("Upcoming",
-//                 //           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-//                 //           color: Colors.black87,
-//                 //           fontSize: 17,
-//                 //           fontWeight: FontWeight.w600,
-//                 //           ),
-//                 //           textAlign: TextAlign.center,
-//                 //         ),
-                              
-//                 //         SizedBox(
-//                 //           height: 50,
-//                 //           child: const VerticalDivider(
-//                 //             width: 35, // The space allocated for the divider
-//                 //             thickness: 2, // The actual thickness of the line
-//                 //             indent: 10, // Space from the top of the parent to the divider's start
-//                 //             endIndent: 10, // Space from the bottom of the parent to the divider's end
-//                 //             color: Colors.grey, // Color of the divider line
-//                 //           ),
-//                 //         ),
-                              
-//                 //         Text("History",
-//                 //           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-//                 //             color: Colors.black87,
-//                 //             fontSize: 17,
-//                 //             fontWeight: FontWeight.w600,
-//                 //           ),
-//                 //           textAlign: TextAlign.center,
-//                 //         ),
-//                 //       ],
-//                 //     ),
-//                 // ),
-                
-//                 const SizedBox(height: Spacing.md),
-            
-//                 Expanded(
-//                   child: ListView(
-//                     children:[
-//                       //START OF CONTENT              
-//                       Column(
-//                         children:[
-//                           //DAY ONE
-//                           Row( //CALANDER DATE + FLAG 
-//                             children: [
-//                               Text("Aug. 12, 2025",
-//                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                     color: Colors.black87,
-//                                     fontSize: 17,
-//                                     fontWeight: FontWeight.w800,
-//                                     ),
-//                                     textAlign: TextAlign.left,
-//                                   ),
-                                
-//                                 //padding
-//                                 const SizedBox(width: Spacing.xs),
-                      
-//                                 //FLAG - Optional
-//                                 //TODO : Give option to show or not
-//                                 Visibility(
-//                                   visible: isOverdue || isAll,
-//                                   child:
-//                                     Text("! Late",
-//                                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Theme.of(context).colorScheme.error,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w800,
-//                                           ),
-//                                           textAlign: TextAlign.left,
-//                                         ),
-//                                 ) 
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pittsburgh Fiberglass Hammer"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Re-fasten hammer head"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-                      
-//                           SizedBox(height: Spacing.lg),
-                      
-//                           //DAY TWO
-//                           Row( //CALANDER DATE
-//                             children: [
-//                               Text("Oct. 01, 2025",
-//                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                     color: Colors.black87,
-//                                     fontSize: 17,
-//                                     fontWeight: FontWeight.w800,
-//                                     ),
-//                                     textAlign: TextAlign.left,
-//                                   ),
-                                
-//                                 //right padding
-//                                 const SizedBox(width: Spacing.xs),
-                      
-//                                 //FLAG - Optional
-//                                 //TODO : Give option to show or not
-//                                 Visibility(
-//                                   visible: false,
-//                                   child: 
-//                                     Text("! Late",
-//                                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Theme.of(context).colorScheme.error,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w600,
-//                                           ),
-//                                           textAlign: TextAlign.left,
-//                                         ),
-//                                   )
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Predator 350W Power Station"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Recharge Station"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-                      
-                      
-//                           SizedBox(height: Spacing.lg),
-                      
-//                           //DAY THREE
-//                           Row( //CALANDER DATE
-//                             children: [
-//                               Text("Oct. 09, 2025",
-//                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                     color: Colors.black87,
-//                                     fontSize: 17,
-//                                     fontWeight: FontWeight.w600,
-//                                     ),
-//                                     textAlign: TextAlign.left,
-//                                   ),
-                                
-//                                 //padding
-//                                 const SizedBox(width: Spacing.xs),
-                      
-//                                 //FLAG - Optional
-//                                 //TODO : Give option to show or not
-//                                 Visibility(
-//                                   visible: false,
-//                                   child: 
-//                                     Text("! Late",
-//                                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Theme.of(context).colorScheme.error,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w600,
-//                                           ),
-//                                           textAlign: TextAlign.left,
-//                                         ),
-//                                   )
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pygmy Goat"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Vet Check Up"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pygmy Goat"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Buy big family size feed for the elderly goats ONLY"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pygmy Goat"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Trim Hooves"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-                      
-//                           SizedBox(height: Spacing.lg),
-                      
-//                           //duplicate information
-//                           Row( //CALANDER DATE
-//                             children: [
-//                               Text("Aug. 12, 2025",
-//                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                     color: Colors.black87,
-//                                     fontSize: 17,
-//                                     fontWeight: FontWeight.w800,
-//                                     ),
-//                                     textAlign: TextAlign.left,
-//                                   ),
-                                
-//                                 //padding
-//                                 const SizedBox(width: Spacing.xs),
-                      
-//                                 //FLAG - Optional
-//                                 //TODO : Give option to show or not
-//                                 Visibility(
-//                                   visible: true,
-//                                   child:
-//                                     Text("! Late",
-//                                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Theme.of(context).colorScheme.error,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w800,
-//                                           ),
-//                                           textAlign: TextAlign.left,
-//                                         ),
-//                                 ) 
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pittsburgh Fiberglass Hammer"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Re-fasten hammer head"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-                      
-//                           SizedBox(height: Spacing.lg),
-                      
-//                           //DAY TWO
-//                           Row( //CALANDER DATE
-//                             children: [
-//                               Text("Oct. 01, 2025",
-//                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                     color: Colors.black87,
-//                                     fontSize: 17,
-//                                     fontWeight: FontWeight.w800,
-//                                     ),
-//                                     textAlign: TextAlign.left,
-//                                   ),
-                                
-//                                 //padding
-//                                 const SizedBox(width: Spacing.xs),
-                      
-//                                 //FLAG - Optional
-//                                 //TODO : Give option to show or not
-//                                 Visibility(
-//                                   visible: false,
-//                                   child: 
-//                                     Text("! Late",
-//                                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Theme.of(context).colorScheme.error,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w600,
-//                                           ),
-//                                           textAlign: TextAlign.left,
-//                                         ),
-//                                   )
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Predator 350W Power Station"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Recharge Station"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-                      
-                      
-//                           SizedBox(height: Spacing.lg),
-                      
-//                           //DAY THREE
-//                           Row( //CALANDER DATE
-//                             children: [
-//                               Text("Oct. 09, 2025",
-//                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                     color: Colors.black87,
-//                                     fontSize: 17,
-//                                     fontWeight: FontWeight.w600,
-//                                     ),
-//                                     textAlign: TextAlign.left,
-//                                   ),
-                                
-//                                 //padding
-//                                 const SizedBox(width: Spacing.xs),
-                      
-                                
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pygmy Goat"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Vet Check Up"), 
-//                                         ] 
-//                                       ),
-//                                       //FLAG - Optional
-//                                       //TODO : Give option to show or not
-//                                       // Visibility(
-//                                       //   visible: false,
-//                                       //   child: 
-//                                       //     Text("! Late",
-//                                       //           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                       //           color: Theme.of(context).colorScheme.error,
-//                                       //           fontSize: 17,
-//                                       //           fontWeight: FontWeight.w600,
-//                                       //           ),
-//                                       //           textAlign: TextAlign.left,
-//                                       //         ),
-//                                       //   )
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pygmy Goat"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Buy big family size feed for the elderly goats ONLY"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-                                    
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pygmy Goat"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Trim Hooves"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-//                           Row( //DETAILS of the maintence task
-//                             children: [
-//                               SizedBox(
-//                                 width: 324,
-//                                 child:
-//                                   RichText(
-//                                     text:
-//                                       //asset name
-//                                       TextSpan(
-//                                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-//                                           color: Colors.black87,
-//                                           fontSize: 17,
-//                                           fontWeight: FontWeight.w100,
-//                                           overflow: TextOverflow.ellipsis,
-//                                         ),
-//                                         children: [
-//                                           const TextSpan( text: "Pygmy Goat"),
-                      
-//                                           WidgetSpan(
-//                                             alignment: PlaceholderAlignment.middle, 
-//                                             child:
-//                                             SizedBox(
-//                                               width: 22,
-//                                               child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5, ),
-//                                             ),
-//                                           ),
-//                                           //maintenance short description
-//                                           const TextSpan( text: "Trim Hooves"), 
-//                                         ] 
-//                                       ),
-//                                   ),
-//                               ),
-//                             ],
-//                           ),
-//                         ]
-//                       )
-//                   ],    
-//                           ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//     );
-//   }
-// }
