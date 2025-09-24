@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+void main() {
+  runApp(const AddAssetPage());
+}
+
 // Defines the custom colors used across the app
 const Color primaryDark = Color(0xFF2A323F);
 const Color primaryYellow = Colors.yellow;
@@ -100,7 +104,9 @@ class AddAssetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
@@ -140,54 +146,83 @@ class AddAssetPage extends StatelessWidget {
               color: lightGreyBackground,
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 60.0),
+                  padding: const EdgeInsets.symmetric(vertical: 5),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Asset photo placeholder
-                      const SizedBox(height: 24),
                       Card(
-                        color: cardColor,
-                        child: SizedBox(
-                          height: 175,
-                          width: double.infinity,
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 50,
+                          color: const Color(0xFFD9D9D9),
+                          child: SizedBox(
+                            height: 175,
+                            width: double.infinity,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image,
+                                size: 50,
+                                color: Color(0xFF2A323F),
+                              ),
+                            ),
+                          ),
+                        ),
+                      SizedBox(height: 15),
+                      const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 60.0),
+                          child: Text(
+                            'Add Asset',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
                               color: primaryDark,
+                            ),
+                          ),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildTextField(
+                          'Brand Name:', 'e.g., Apple', FontWeight.w500, cardColor, primaryDark),
+                      const SizedBox(height: 16),
+                      _buildTextField('Asset Name:', 'e.g., iPhone 13 Pro', FontWeight.w500,cardColor, primaryDark),
+                      const SizedBox(height: 16),
+                      _buildConditionDropdown(cardColor, primaryDark),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 60.0),
+                          child: Text(
+                            "Bought From:",
+                            style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: primaryDark,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _buildTextField('Store:', 'e.g., Store', FontWeight.w300, cardColor, primaryDark),
+                      const SizedBox(height: 6),
+                      _buildTextField('Address/Link:', 'e.g., 123 Main St / www.apple.com', FontWeight.w300, cardColor, primaryDark),
+                      const SizedBox(height: 6),
+                      _buildTextField('Phone Number:','e.g., +1 (123) 456-7890', FontWeight.w300, cardColor, primaryDark, keyboardType: TextInputType.phone),
+                      const SizedBox(height: 16),
+                     _buildTextField('Price:', 'e.g., \$15.99', FontWeight.w500,cardColor, primaryDark, keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 60.0, vertical:10.0),
+                        child: ElevatedButton(
+                          onPressed: () => debugPrint("Save Asset pressed!"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2A323F),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            "Save",
+                            style: TextStyle(
+                              fontSize: 14,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Add Asset',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: primaryDark,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                          'Brand Name', 'e.g., Apple', cardColor, primaryDark),
-                      const SizedBox(height: 16),
-                      _buildTextField('Asset Name', 'e.g., iPhone 13 Pro',
-                          cardColor, primaryDark),
-                      const SizedBox(height: 16),
-                      _buildConditionDropdown(cardColor, primaryDark),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                          'Bought From', 'e.g., Store', cardColor, primaryDark),
-                      const SizedBox(height: 16),
-                      _buildTextField('Address/Link',
-                          'e.g., 123 Main St / www.apple.com', cardColor, primaryDark),
-                      const SizedBox(height: 16),
-                      _buildTextField('Phone Number',
-                          'e.g., +1 (123) 456-7890', cardColor, primaryDark,
-                          keyboardType: TextInputType.phone),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -219,37 +254,44 @@ class AddAssetPage extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildTextField(
-      String label, String hintText, Color cardColor, Color textColor,
+      String label, String hintText, FontWeight fontWeight, Color cardColor, Color textColor,
       {TextInputType keyboardType = TextInputType.text}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: textColor,
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 60.0),
+            child: Text(
+              label,
+              style: TextStyle(
+              fontSize: 16,
+              fontWeight: fontWeight,
+              color: textColor,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[400]!),
-          ),
-          child: TextField(
-            keyboardType: keyboardType,
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: const TextStyle(color: Colors.grey),
-              border: InputBorder.none,
+        SizedBox(height: 4),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 60.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[400]!),
+            ),
+            child: TextField(
+              keyboardType: keyboardType,
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: const TextStyle(color: Colors.grey),
+                border: InputBorder.none,
+              ),
             ),
           ),
         ),
@@ -261,44 +303,50 @@ class AddAssetPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Condition',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: textColor,
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 60.0),
+          child: Text(
+            'Condition',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[400]!),
-          ),
-          child: DropdownButtonFormField<String>(
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
+        const SizedBox(height: 2),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 60.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[400]!),
             ),
-            icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-            items: <String>[
-              'New',
-              'Used - Like New',
-              'Used - Good',
-              'Used - Fair',
-              'For Parts'
-            ].map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              // Handle value change
-            },
-            hint: const Text('Select Condition'),
+            child: DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+              items: <String>[
+                'New',
+                'Used - Like New',
+                'Used - Good',
+                'Used - Fair',
+                'For Parts'
+              ].map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                // Handle value change
+              },
+              hint: const Text('Select Condition'),
+            ),
           ),
         ),
       ],
