@@ -3,24 +3,30 @@ import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 
 class ClerkDataHandler {
-  final clerk.User? user;
+  final ClerkAuthState auth;
   
-  // Constructor that takes user object
-  const ClerkDataHandler({required this.user});
+  // Constructor that takes auth state
+  const ClerkDataHandler({required this.auth});
+
+  // Static variable to track last refresh time (shared across all instances)
+  static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(0);
   
-  // Static method to create from context
+  // How often to allow refreshes (1 minute)
+  static const Duration _refreshThreshold = Duration(minutes: 1);
+
+  clerk.User? get user => auth.user;
+  
   static ClerkDataHandler fromContext(BuildContext context) {
     final auth = ClerkAuth.of(context);
-    return ClerkDataHandler(user: auth.user);
+    return ClerkDataHandler(auth: auth);
   }
 
-  // Method to fetch profile data
-  Map<String, dynamic> fetchProfile({bool forceRefresh = false}) {
+  Map<String, dynamic> fetchProfile() {
     if (user == null) {
       return {};
     }
+    refreshUserData();
     
-    // Extract user data - always gets the latest from the user object
     return {
       'id': user!.id,
       'email': user!.email,
@@ -31,16 +37,39 @@ class ClerkDataHandler {
     };
   }
   
-  // Helper method to refresh user data asynchronously (can be called from _fetchUserData)
-  Future<void> refreshUserData(BuildContext context) async {
+  Future<void> refreshUserData() async {
+    final now = DateTime.now();
+    
+    // Avoid multiple refresh calls
+    if (now.difference(_lastRefreshAttemptTime) < _refreshThreshold) {
+      return;
+    }
+    
     try {
-      final clerkAuth = ClerkAuth.of(context);
-      await clerkAuth.refreshClient();
-      await clerkAuth.refreshEnvironment();
-      // This is the best we can do with the current Clerk SDK
+      // Update the last refresh time before making the API call
+      _lastRefreshAttemptTime = now;
+      
+      await auth.refreshClient();
+      await auth.refreshEnvironment();
+      
       debugPrint('ClerkDataHandler: Refreshed client and environment');
     } catch (e) {
       debugPrint('ClerkDataHandler: Error refreshing user data: $e');
+    }
+  }
+  
+  // Force refresh method that bypasses the time check (for manual refreshes)
+  Future<void> forceRefreshUserData() async {
+    try {
+      // Update the last refresh time
+      _lastRefreshAttemptTime = DateTime.now();
+      
+      await auth.refreshClient();
+      await auth.refreshEnvironment();
+      
+      debugPrint('ClerkDataHandler: Force refreshed client and environment');
+    } catch (e) {
+      debugPrint('ClerkDataHandler: Error force refreshing user data: $e');
     }
   }
 }

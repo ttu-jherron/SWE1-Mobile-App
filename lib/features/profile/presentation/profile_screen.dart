@@ -14,9 +14,9 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = ClerkAuth.of(context).user;
-    final clerkDataHandler = ClerkDataHandler(user: user);
-    clerkDataHandler.refreshUserData(context);
+    final auth = ClerkAuth.of(context);
+    final clerkDataHandler = ClerkDataHandler(auth: auth);
+    // TODO dont let this be a band-aid fix, this is probably too many clerk requests
     final userData = clerkDataHandler.fetchProfile();
     final String? profileImageUrl = userData['imageUrl'];
 
