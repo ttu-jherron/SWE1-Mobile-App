@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+void main() {
+  runApp(const EditAssetPage());
+}
+
 // Defines the custom colors used across the app
 const Color primaryDark = Color(0xFF2A323F);
 const Color primaryYellow = Colors.yellow;
@@ -100,7 +104,9 @@ class EditAssetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
@@ -140,27 +146,24 @@ class EditAssetPage extends StatelessWidget {
               color: lightGreyBackground,
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 60.0),
+                  padding: const EdgeInsets.symmetric(vertical: 5),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Asset photo placeholder
-                      const SizedBox(height: 24),
                       Card(
-                        color: cardColor,
-                        child: SizedBox(
-                          height: 175,
-                          width: double.infinity,
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 50,
-                              color: primaryDark,
+                          color: const Color(0xFFD9D9D9),
+                          child: SizedBox(
+                            height: 175,
+                            width: double.infinity,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image,
+                                size: 50,
+                                color: Color(0xFF2A323F),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
                       // Asset Name and Favorite button
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10.0),
@@ -180,7 +183,6 @@ class EditAssetPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
                       _buildTextField(
                           'Condition', 'e.g., Healthy', cardColor, primaryDark,
                           initialValue: 'Healthy'),
@@ -204,7 +206,7 @@ class EditAssetPage extends StatelessWidget {
                       const SizedBox(height: 16),
                       // Planned Maintenance section
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 60.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -243,7 +245,7 @@ class EditAssetPage extends StatelessWidget {
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 60.0),
                           child: Row(
                             children: const [
                               MaintenanceCard(),
@@ -255,7 +257,7 @@ class EditAssetPage extends StatelessWidget {
                       // Save Asset button
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 0.0, vertical: 20.0),
+                            horizontal: 60.0, vertical: 10.0),
                         child: ElevatedButton(
                           onPressed: () => debugPrint("Save Asset pressed!"),
                           style: ElevatedButton.styleFrom(
@@ -307,6 +309,7 @@ class EditAssetPage extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -316,29 +319,34 @@ class EditAssetPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: textColor,
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 60.0),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[400]!),
-          ),
-          child: TextField(
-            controller: TextEditingController(text: initialValue),
-            keyboardType: keyboardType,
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: const TextStyle(color: Colors.grey),
-              border: InputBorder.none,
+          Padding(
+          padding: EdgeInsets.symmetric(horizontal: 60.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[400]!),
+            ),
+            child: TextField(
+              controller: TextEditingController(text: initialValue),
+              keyboardType: keyboardType,
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: const TextStyle(color: Colors.grey),
+                border: InputBorder.none,
+              ),
             ),
           ),
         ),
@@ -376,3 +384,4 @@ class EditAssetPage extends StatelessWidget {
     );
   }
 }
+
