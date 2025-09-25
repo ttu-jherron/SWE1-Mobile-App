@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // Import the package
+import 'package:mobile_app/app.dart';
+import 'package:mobile_app/core/colors.dart';
+import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
-import '../../../core/colors.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+
   @override
   Widget build(BuildContext context) {
+    final auth = ClerkAuth.of(context);
+    final clerkDataHandler = ClerkDataHandler(auth: auth);
+    // TODO dont let this be a band-aid fix, this is probably too many clerk requests
+    final userData = clerkDataHandler.fetchProfile();
+    final String? profileImageUrl = userData['imageUrl'];
+
+    final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
+    final String fullName = nameFromData.isEmpty ? "No access to backend" : nameFromData;
+
     return AppLayout(
       currentIndex: 3, // Profile tab
       body: SingleChildScrollView(
@@ -19,17 +33,19 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // avatar
             const SizedBox(height: Spacing.lg),
-            const CircleAvatar(
+            CircleAvatar(
               radius: 64,
-              backgroundImage: AssetImage('assets/images/bob.jpg'),
+              backgroundColor: Colors.grey.shade200,
+              child: ClipOval(
+                child: _buildProfileAvatar(profileImageUrl)
+              ),
             ),
             const SizedBox(height: Spacing.lg),
 
             // title
             Text(
-              'Master Builder 1000',
+              userData['username'],
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.w800,
@@ -48,16 +64,17 @@ class ProfileScreen extends StatelessWidget {
                       CrossAxisAlignment.start, // label/value alignment
                   children: [
                     // fields (static)
-                    _FieldBlock(label: 'Full Name', value: 'Bob DaBuilder'),
+                    _FieldBlock(label: 'Full Name', value: fullName),
                     const SizedBox(height: Spacing.lg),
                     _FieldBlock(
                       label: 'Phone Number',
-                      value: '(123) - 456 - 7890',
+                      value: 'No access to backend',
+                      //value: userData['phoneNumber'],
                     ),
                     const SizedBox(height: Spacing.lg),
                     _FieldBlock(
                       label: 'Email',
-                      value: 'bobdabuilder@gmail.com',
+                      value: userData['email'],
                       underline: true,
                     ),
                     const SizedBox(height: Spacing.lg),
@@ -85,6 +102,33 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  Widget _buildProfileAvatar(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      // Fallback to the static asset if no URL is available
+      return const CircleAvatar(
+        radius: 12,
+        backgroundImage: AssetImage('assets/images/tools.jpg'),
+      );
+    }
+
+    // Use CachedNetworkImage with the user's profile image
+    return CircleAvatar(
+      radius: 64,
+      backgroundColor: Colors.grey.shade200,
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          width: 128,
+          height: 128,
+          errorWidget: (context, url, error) => const CircleAvatar(
+            radius: 32,
+            backgroundImage: AssetImage('assets/images/tools.jpg'),
+          ),
         ),
       ),
     );
