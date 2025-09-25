@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 
-//Runs the Program
-void main() {
-  runApp(const LandingPage());
-}
-
 //Contains the code for the landing page
 class LandingPage extends StatelessWidget {
   const LandingPage({Key? key}) : super(key: key);
