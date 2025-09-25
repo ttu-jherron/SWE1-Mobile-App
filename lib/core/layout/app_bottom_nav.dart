@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile_app/core/data/clerk_data_handler.dart';
+import 'package:mobile_app/core/data/data_handler.dart';
 import '../colors.dart';
 
 class AppBottomNav extends StatelessWidget {
@@ -15,9 +15,9 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get user profile image from ClerkDataHandler
-    final clerkDataHandler = ClerkDataHandler.fromContext(context);
-    final userData = clerkDataHandler.fetchProfile();
+    // Get user profile image from DataHandler
+    final dataHandler = DataHandler.fromContext(context);
+    final userData = dataHandler.fetchProfile();
     final String? profileImageUrl = userData['imageUrl'];
 
     return Container(

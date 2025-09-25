@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Import the package
 import 'package:mobile_app/app.dart';
 import 'package:mobile_app/core/colors.dart';
-import 'package:mobile_app/core/data/clerk_data_handler.dart';
+import 'package:mobile_app/core/data/data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
@@ -15,9 +15,9 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = ClerkAuth.of(context);
-    final clerkDataHandler = ClerkDataHandler(auth: auth);
+    final dataHandler = DataHandler(auth: auth);
     // TODO dont let this be a band-aid fix, this is probably too many clerk requests
-    final userData = clerkDataHandler.fetchProfile();
+    final userData = dataHandler.fetchProfile();
     final String? profileImageUrl = userData['imageUrl'];
 
     final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();

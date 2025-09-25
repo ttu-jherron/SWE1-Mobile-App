@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 
-class ClerkDataHandler {
+class DataHandler {
   final ClerkAuthState auth;
   
   // Constructor that takes auth state
-  const ClerkDataHandler({required this.auth});
+  const DataHandler({required this.auth});
 
   // Static variable to track last refresh time (shared across all instances)
   static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(0);
@@ -16,9 +16,9 @@ class ClerkDataHandler {
 
   clerk.User? get user => auth.user;
   
-  static ClerkDataHandler fromContext(BuildContext context) {
+  static DataHandler fromContext(BuildContext context) {
     final auth = ClerkAuth.of(context);
-    return ClerkDataHandler(auth: auth);
+    return DataHandler(auth: auth);
   }
 
   Map<String, dynamic> fetchProfile() {
@@ -52,9 +52,9 @@ class ClerkDataHandler {
       await auth.refreshClient();
       await auth.refreshEnvironment();
       
-      debugPrint('ClerkDataHandler: Refreshed client and environment');
+      debugPrint('DataHandler: Refreshed client and environment');
     } catch (e) {
-      debugPrint('ClerkDataHandler: Error refreshing user data: $e');
+      debugPrint('DataHandler: Error refreshing user data: $e');
     }
   }
   
@@ -67,9 +67,9 @@ class ClerkDataHandler {
       await auth.refreshClient();
       await auth.refreshEnvironment();
       
-      debugPrint('ClerkDataHandler: Force refreshed client and environment');
+      debugPrint('DataHandler: Force refreshed client and environment');
     } catch (e) {
-      debugPrint('ClerkDataHandler: Error force refreshing user data: $e');
+      debugPrint('DataHandler: Error force refreshing user data: $e');
     }
   }
 }
