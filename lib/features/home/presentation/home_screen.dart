@@ -95,7 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Navigate to detail
                     Navigator.pushNamed(
                       context,
-                      AppRoutes.maintenanceDetail,
+                      AppRoutes.maintenance,
+                      //AppRoutes.maintenanceDetail,
                       arguments: favorites.first.idForDetail, // demo id
                     );
                   },
@@ -119,7 +120,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.pushNamed(
                       context,
-                      AppRoutes.maintenanceDetail,
+                      AppRoutes.maintenance,
+                      //AppRoutes.maintenanceDetail,
                       arguments: favorites[i].idForDetail,
                     );
                   },
