@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Import the package
 import 'package:mobile_app/app.dart';
 import 'package:mobile_app/core/colors.dart';
-import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
+import 'package:mobile_app/core/data/clerk_data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';

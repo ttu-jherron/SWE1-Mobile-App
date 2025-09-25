@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
+import 'package:mobile_app/core/data/clerk_data_handler.dart';
 import '../colors.dart';
 
 class AppBottomNav extends StatelessWidget {
