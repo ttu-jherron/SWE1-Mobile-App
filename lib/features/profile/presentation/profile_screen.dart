@@ -15,13 +15,25 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = ClerkAuth.of(context);
+    
+    // Play loading circle when signing out
+    if (auth.user == null) {
+      return AppLayout(
+        currentIndex: 3,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
     final clerkDataHandler = ClerkDataHandler(auth: auth);
     // TODO dont let this be a band-aid fix, this is probably too many clerk requests
     final userData = clerkDataHandler.fetchProfile();
     final String? profileImageUrl = userData['imageUrl'];
 
     final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
-    final String fullName = nameFromData.isEmpty ? "No access to backend" : nameFromData;
+    final String fullName = nameFromData.isEmpty ? "ERROR: No full name available" : nameFromData;
+
+    final String username = userData['username'] ?? 'ERROR: No username available';
+    final String email = userData['email'] ?? 'ERROR: No email available';
 
     return AppLayout(
       currentIndex: 3, // Profile tab
@@ -45,46 +57,55 @@ class ProfileScreen extends StatelessWidget {
 
             // title
             Text(
-              userData['username'],
+              username,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: Colors.black87,
                 fontWeight: FontWeight.w800,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: Spacing.lg),
+            //const SizedBox(height: Spacing.lg),
 
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
                   maxWidth: 260,
-                ), // keeps things narrow
+                ),
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start, // label/value alignment
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // DEMO_FLAG INCOMPLETE FEATURE
+                    /*
                     // fields (static)
-                    _FieldBlock(label: 'Full Name', value: fullName),
+                    FieldBlock(
+                      label: 'Full Name',
+                      value: fullName
+                    ),
                     const SizedBox(height: Spacing.lg),
-                    _FieldBlock(
+                    FieldBlock(
                       label: 'Phone Number',
                       value: 'No access to backend',
                       //value: userData['phoneNumber'],
                     ),
+                    */
                     const SizedBox(height: Spacing.lg),
-                    _FieldBlock(
+                    FieldBlock(
                       label: 'Email',
-                      value: userData['email'],
+                      value: email,
                       underline: true,
                     ),
+                    /*
                     const SizedBox(height: Spacing.lg),
-                    _FieldBlock(label: 'Password', value: '***************'),
+                    FieldBlock(label: 'Password', value: '***************'),
 
                     const SizedBox(height: Spacing.xl),
+                    */
                   ],
                 ),
               ),
             ),
+            // DEMO_FLAG INCOMPLETE FEATURE
+            /*
             // Edit Profile button (dark pill)
             SizedBox(
               width: 160,
@@ -99,6 +120,27 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 child: const Center(child: Text('Edit Profile')),
+              ),
+            ),
+            */
+            // Sign Out button (dark pill)
+            // DEMO_FLAG NEW FEATURE
+            SizedBox(height: 32),
+            SizedBox(
+              width: 120,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () async {
+                await auth.signOut();
+                Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+                },
+                style: ButtonStyle(
+                  alignment: Alignment.center,
+                  padding: MaterialStateProperty.all(
+                    const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+                child: const Center(child: Text('Sign Out')),
               ),
             ),
           ],
@@ -135,11 +177,13 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _FieldBlock extends StatelessWidget {
+class FieldBlock extends StatelessWidget {
   final String label;
   final String value;
   final bool underline;
-  const _FieldBlock({
+  
+  const FieldBlock({
+    super.key, // Add super.key parameter
     required this.label,
     required this.value,
     this.underline = false,
