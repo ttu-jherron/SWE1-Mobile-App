@@ -43,7 +43,7 @@ class _AssetsScaffold extends StatelessWidget {
           onPressed: () {
             Navigator.pushNamed(
               context,
-              AppRoutes.maintenanceDetail, // 👈 defined in your routes
+              AppRoutes.maintenance, // 👈 defined in your routes
               arguments: 'asset_001',      // 👈 burner ID for now
             );
           },
