@@ -37,7 +37,7 @@ class AppBottomNav extends StatelessWidget {
               selectedIcon: Icon(Icons.home, color: AppColors.sandyYellow),
               label: 'Home',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.handyman_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.handyman, color: AppColors.sandyYellow),
               label: 'My Assets',

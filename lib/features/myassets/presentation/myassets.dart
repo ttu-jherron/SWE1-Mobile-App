@@ -2,235 +2,189 @@ import 'package:flutter/material.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/routing.dart';
-// import '../widgets/add_favorite.dart';
 import '../widgets/asset_card.dart';
-// import '../../../core/layout/app_layout.dart';
-// import 'package:intl/intl.dart';
 
-//Contains the code for the landing page
-class MyAssetsPage extends StatelessWidget {
+class MyAssetsPage extends StatefulWidget {
   const MyAssetsPage({Key? key}) : super(key: key);
 
   @override
-  State<MyAssetsPage> createState() => MyAssetsPageState();
+  State<MyAssetsPage> createState() => _MyAssetsPageState();
 }
 
+class _MyAssetsPageState extends State<MyAssetsPage> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      //Removes the debug banner
-      debugShowCheckedModeBanner: false,
-      title: 'Testing',
-      home: Scaffold(
-        body: Column(
-          children: [
-            // Top section (15%)
-            Container(
-              height: MediaQuery.of(context).size.height * 0.15,
-              color: AppColors.ebonyClay,
-              padding: const EdgeInsets.all(10),
-              alignment: Alignment.topLeft,
-              child: const Text(
-                "HE",
-                style: TextStyle(
-                  color: AppColors.sandyYellow,
-                  fontSize: 60,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Container(
-              height: MediaQuery.of(context).size.height * 0.1,
-              color: AppColors.nearWhite,
-              padding: EdgeInsets.fromLTRB(30, 10, 4, 10),
-              alignment: Alignment.topLeft,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      "My Assets",
-                      style: TextStyle(
-                        color: AppColors.ebonyClay,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    //add button
-                    IconButton(
-                      onPressed: () {
-                        debugPrint("Add asset was pressed");
-                      },
-                      icon: const Icon(
-                        Icons.add_circle_outline_sharp,
-                        color: AppColors.ebonyClay,
-                        size: 22,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-            // Middle scrollable section
-            Expanded(
-              child: Container(
-                color: AppColors.nearWhite,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    children: [
-                      Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap (
-                            children: [
-                              AssetCard(),
-                              AssetCard(),
-                              AssetCard(),
-                              AssetCard(),
-                              AssetCard(),
-                              AssetCard(),
-                              AssetCard(),
-                              AssetCard(),
-                            ]
-                          ),
-                        ]
-                      ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    return Scaffold(
+      body: Column(
+        children: [
+          // Top section (15%)
+          // Container(
+          //   height: MediaQuery.of(context).size.height * 0.15,
+          //   color: AppColors.ebonyClay,
+          //   padding: const EdgeInsets.all(10),
+          //   alignment: Alignment.topLeft,
+          //   child: const Text(
+          //     "HE",
+          //     style: TextStyle(
+          //       color: AppColors.sandyYellow,
+          //       fontSize: 60,
+          //       fontWeight: FontWeight.bold,
+          //     ),
+          //   ),
+          // ),
 
-            // Bottom bar (15%)
-            Align(
-              alignment: const Alignment(0.0, 1),
-              child: Container(
-                //Sets the height of the blue to 15% of the screen
-                height: MediaQuery.of(context).size.height * 0.15,
-                width:MediaQuery.of(context).size.width,
-                decoration: const BoxDecoration(
-                  color: AppColors.ebonyClay,
+          // Header row
+          Container(
+            height: MediaQuery.of(context).size.height * 0.1,
+            color: AppColors.nearWhite,
+            padding: const EdgeInsets.fromLTRB(30, 10, 4, 10),
+            alignment: Alignment.topLeft,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  "My Assets",
+                  style: TextStyle(
+                    color: AppColors.ebonyClay,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                child: Align(
+                IconButton(
+                  onPressed: () {
+                    debugPrint("Add asset was pressed");
+                  },
+                  icon: const Icon(
+                    Icons.add_circle_outline_sharp,
+                    color: AppColors.ebonyClay,
+                    size: 22,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+
+          // Scrollable section
+          Expanded(
+            child: Container(
+              color: AppColors.nearWhite,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Padding(
-                //Adds a margin of 15
-                padding: EdgeInsets.all(8),
-                child: Wrap(
+                  padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                  child: Wrap(
                     children: [
-                      //Login button
-                      TextButton(
-                        onPressed: () {
-                          //Message confirming button was pressed
-                          debugPrint("Home button pressed");
+                      AssetCard(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.maintenanceDetail,
+                            arguments: 'asset_001',
+                          );
                         },
-                        style: TextButton.styleFrom(
-                          backgroundColor: AppColors.ebonyClay,
-                          foregroundColor: AppColors.nearWhite,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Column (
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.home_outlined,
-                              color: AppColors.sandyYellow,
-                              size: 24.0,
-                              semanticLabel: 'Image of a house',
-                            ),
-                            Text(
-                              "Home",
-                              style: TextStyle(
-                                fontSize: 17,
-                              ),
-                            ),
-                          ]
-                        )
                       ),
-                      //Adds a 8px gap between buttons
-                      SizedBox(width: Spacing.sm),
-                      //Sign up button
-                      TextButton(
-                          onPressed: () {
-                            //Message confirming button was pressed
-                            debugPrint("My assets button pressed");
-                          },
-                          style: TextButton.styleFrom(
-                            backgroundColor: AppColors.ebonyClay,
-                            foregroundColor: AppColors.nearWhite,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Column (
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.agriculture_outlined,
-                                color: AppColors.sandyYellow,
-                                size: 24.0,
-                                semanticLabel: 'Image of a tractor',
-                              ),
-                              Text(
-                                "My Assets",
-                                style: TextStyle(
-                                  fontSize: 17,
-                                ),
-                              ),
-                           ]
-                          )
-                        ),
-                        SizedBox(width: Spacing.sm),
-                        TextButton(
-                          onPressed: () {
-                          //Message confirming button was pressed
-                          debugPrint("Profile button pressed");
+                      AssetCard(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.maintenanceDetail,
+                            arguments: 'asset_002',
+                          );
                         },
-                        style: TextButton.styleFrom(
-                          backgroundColor: AppColors.ebonyClay,
-                          foregroundColor: AppColors.nearWhite,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Column (
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.account_circle_outlined,
-                              color: AppColors.sandyYellow,
-                              size: 24.0,
-                              semanticLabel: 'Image of profile',
-                            ),
-                            Text(
-                              "Profile",
-                              style: TextStyle(
-                                fontSize: 17,
-                              ),
-                            ),
-                          ]
-                        )
+                      ),
+                      AssetCard(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.maintenanceDetail,
+                            arguments: 'asset_003',
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
               ),
-              ),
             ),
-          ],
-        ),
+          ),
+
+          // // Bottom bar
+          // Container(
+          //   height: MediaQuery.of(context).size.height * 0.15,
+          //   width: MediaQuery.of(context).size.width,
+          //   color: AppColors.ebonyClay,
+          //   padding: const EdgeInsets.all(8),
+          //   child: Wrap(
+          //     children: [
+          //       // Home
+          //       TextButton(
+          //         onPressed: () {
+          //           Navigator.pushNamed(context, AppRoutes.home);
+          //         },
+          //         style: TextButton.styleFrom(
+          //           backgroundColor: AppColors.ebonyClay,
+          //           foregroundColor: AppColors.nearWhite,
+          //         ),
+          //         child: Column(
+          //           mainAxisSize: MainAxisSize.min,
+          //           children: const [
+          //             Icon(Icons.home_outlined,
+          //                 color: AppColors.sandyYellow, size: 24),
+          //             Text("Home", style: TextStyle(fontSize: 17)),
+          //           ],
+          //         ),
+          //       ),
+          //       const SizedBox(width: Spacing.sm),
+
+          //       // My Assets
+          //       TextButton(
+          //         onPressed: () {
+          //           Navigator.pushNamed(context, AppRoutes.myAssets);
+          //         },
+          //         style: TextButton.styleFrom(
+          //           backgroundColor: AppColors.ebonyClay,
+          //           foregroundColor: AppColors.nearWhite,
+          //         ),
+          //         child: Column(
+          //           mainAxisSize: MainAxisSize.min,
+          //           children: const [
+          //             Icon(Icons.agriculture_outlined,
+          //                 color: AppColors.sandyYellow, size: 24),
+          //             Text("My Assets", style: TextStyle(fontSize: 17)),
+          //           ],
+          //         ),
+          //       ),
+          //       const SizedBox(width: Spacing.sm),
+
+          //       // Profile
+          //       TextButton(
+          //         onPressed: () {
+          //           Navigator.pushNamed(context, AppRoutes.profile);
+          //         },
+          //         style: TextButton.styleFrom(
+          //           backgroundColor: AppColors.ebonyClay,
+          //           foregroundColor: AppColors.nearWhite,
+          //         ),
+          //         child: Column(
+          //           mainAxisSize: MainAxisSize.min,
+          //           children: const [
+          //             Icon(Icons.account_circle_outlined,
+          //                 color: AppColors.sandyYellow, size: 24),
+          //             Text("Profile", style: TextStyle(fontSize: 17)),
+          //           ],
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
+        ],
       ),
     );
   }
 }
+
 
 // class AssetCard extends StatefulWidget {
 //   final VoidCallback? onTap; // 👈 allows you to pass a function when tapped

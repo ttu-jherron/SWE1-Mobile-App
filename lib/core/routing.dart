@@ -67,20 +67,7 @@ class _MyAssetsScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppLayout(
       currentIndex: 2,
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pushNamed(
-              context,
-              AppRoutes.myAssets, // 👈 defined in your routes
-              arguments: 'asset_002',      // 👈 burner ID for now
-            // AppRoutes.maintenanceDetail, //  defined in routes
-            //   arguments: 'asset_001',
-            );
-          },
-          child: const Text('Open My Assets Page'),
-        ),
-      ),
+      body: const MyAssetsPage(), // 👈 Your page here
     );
   }
 }
