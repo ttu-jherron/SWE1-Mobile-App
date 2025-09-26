@@ -6,6 +6,7 @@ import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/maintenance/presentation/maintenance_screen.dart';
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
+import '../features/myassets/presentation/myassets.dart';
 
 import 'layout/app_layout.dart';
 
@@ -59,12 +60,38 @@ class _AssetsScaffold extends StatelessWidget {
   }
 }
 
+class _MyAssetsScaffold extends StatelessWidget {
+  const _MyAssetsScaffold();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppLayout(
+      currentIndex: 2,
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.myAssets, // 👈 defined in your routes
+              arguments: 'asset_002',      // 👈 burner ID for now
+            // AppRoutes.maintenanceDetail, //  defined in routes
+            //   arguments: 'asset_001',
+            );
+          },
+          child: const Text('Open My Assets Page'),
+        ),
+      ),
+    );
+  }
+}
+
 class AppRoutes {
   static const login = '/';
   static const signUp = '/signup';
   static const home = '/home';
 
   static const assets = '/assets';
+  static const myAssets = '/myassets';
 
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
@@ -81,7 +108,7 @@ class AppRoutes {
     //home: (_) => const _HomeScaffold(), // see below
     assets: (_) => const _AssetsScaffold(),
 
-    assets: (_) => const _AssetsScaffold(),
+    myAssets: (_) => const _MyAssetsScaffold(),
     // new screens:
     profile: (_) => ProfileScreen(),
     profileEdit: (_) => const EditProfileScreen(),

@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
-//import '../../../core/routing.dart';
+import '../../../core/routing.dart';
+// import '../widgets/add_favorite.dart';
+import '../widgets/asset_card.dart';
 // import '../../../core/layout/app_layout.dart';
 // import 'package:intl/intl.dart';
 
 //Contains the code for the landing page
-class LandingPage extends StatelessWidget {
-  const LandingPage({Key? key}) : super(key: key);
+class MyAssetsPage extends StatelessWidget {
+  const MyAssetsPage({Key? key}) : super(key: key);
+
+  @override
+  State<MyAssetsPage> createState() => MyAssetsPageState();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +154,7 @@ class LandingPage extends StatelessWidget {
                         )
                       ),
                       //Adds a 8px gap between buttons
-                      SizedBox(width: 10),
+                      SizedBox(width: Spacing.sm),
                       //Sign up button
                       TextButton(
                           onPressed: () {
@@ -181,7 +187,7 @@ class LandingPage extends StatelessWidget {
                            ]
                           )
                         ),
-                        SizedBox(width: 10),
+                        SizedBox(width: Spacing.sm),
                         TextButton(
                           onPressed: () {
                           //Message confirming button was pressed
@@ -226,115 +232,115 @@ class LandingPage extends StatelessWidget {
   }
 }
 
-class AssetCard extends StatefulWidget {
-  final VoidCallback? onTap; // 👈 allows you to pass a function when tapped
+// class AssetCard extends StatefulWidget {
+//   final VoidCallback? onTap; // 👈 allows you to pass a function when tapped
 
-  const AssetCard({Key? key, this.onTap}) : super(key: key);
+//   const AssetCard({Key? key, this.onTap}) : super(key: key);
 
-  @override
-  State<AssetCard> createState() => _AssetCardState();
-}
+//   @override
+//   State<AssetCard> createState() => _AssetCardState();
+// }
 
-class _AssetCardState extends State<AssetCard> {
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minWidth: 140,
-        maxWidth: 140,
-        minHeight: 60,
-      ),
-      child: Card(
-        elevation: 0,
-        color: AppColors.nearWhite,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(4), // ripple follows shape
-          onTap: widget.onTap ?? () {
-            debugPrint("AssetCard tapped");
-          },
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(4, 10, 4, 10), // tighter padding
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image placeholder with its own Card aesthetic
-                Card(
-                  margin: EdgeInsets.zero,
-                  color: AppColors.nearWhite,
-                  child: const SizedBox(
-                    height: 75,
-                    width: double.infinity,
-                    child: Center(
-                      child: Icon(
-                        Icons.image,
-                        size: 40,
-                        semanticLabel: 'Image of missing image',
-                        color: AppColors.ebonyClay,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Row with text + favorite
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
-                      "Predator",
-                      style: TextStyle(
-                        color: AppColors.ebonyClay,
-                        fontSize: 14,
-                        height: 1.0,
-                      ),
-                    ),
-                    AddFavorite(),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Description
-                Text(
-                  "350 Power Station",
-                  style: TextStyle(
-                    color: AppColors.ebonyClay,
-                    fontSize: 14,
-                    height: 1.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// class _AssetCardState extends State<AssetCard> {
+//   @override
+//   Widget build(BuildContext context) {
+//     return ConstrainedBox(
+//       constraints: const BoxConstraints(
+//         minWidth: 140,
+//         maxWidth: 140,
+//         minHeight: 60,
+//       ),
+//       child: Card(
+//         elevation: 0,
+//         color: AppColors.nearWhite,
+//         child: InkWell(
+//           borderRadius: BorderRadius.circular(4), // ripple follows shape
+//           onTap: widget.onTap ?? () {
+//             debugPrint("AssetCard tapped");
+//           },
+//           child: Padding(
+//             padding: EdgeInsets.fromLTRB(4, 10, 4, 10), // tighter padding
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 // Image placeholder with its own Card aesthetic
+//                 Card(
+//                   margin: EdgeInsets.zero,
+//                   color: AppColors.nearWhite,
+//                   child: const SizedBox(
+//                     height: 75,
+//                     width: double.infinity,
+//                     child: Center(
+//                       child: Icon(
+//                         Icons.image,
+//                         size: 40,
+//                         semanticLabel: 'Image of missing image',
+//                         color: AppColors.ebonyClay,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//                 SizedBox(width: Spacing.xs),
+//                 // Row with text + favorite
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                   children: const [
+//                     Text(
+//                       "Predator",
+//                       style: TextStyle(
+//                         color: AppColors.ebonyClay,
+//                         fontSize: 14,
+//                         height: 1.0,
+//                       ),
+//                     ),
+//                     AddFavorite(),
+//                   ],
+//                 ),
+//                 SizedBox(width: Spacing.xs),
+//                 // Description
+//                 Text(
+//                   "350 Power Station",
+//                   style: TextStyle(
+//                     color: AppColors.ebonyClay,
+//                     fontSize: 14,
+//                     height: 1.0,
+//                     fontWeight: FontWeight.bold,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 
-class AddFavorite extends StatefulWidget {
-  const AddFavorite({Key? key}) : super(key: key);
+// class AddFavorite extends StatefulWidget {
+//   const AddFavorite({Key? key}) : super(key: key);
 
-  @override
-  State<AddFavorite> createState() => _AddFavoriteState();
-}
+//   @override
+//   State<AddFavorite> createState() => _AddFavoriteState();
+// }
 
-class _AddFavoriteState extends State<AddFavorite> {
-  bool _isClicked = false;
+// class _AddFavoriteState extends State<AddFavorite> {
+//   bool _isClicked = false;
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent, // still tappable
-      onTap: () {
-        setState(() {
-          _isClicked = !_isClicked;
-        });
-      },
-      child: Icon(
-        _isClicked ? Icons.favorite : Icons.favorite_border,
-        color: _isClicked ? Colors.red : AppColors.ebonyClay,
-        size: 14, // exact match to your text size
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return GestureDetector(
+//       behavior: HitTestBehavior.translucent, // still tappable
+//       onTap: () {
+//         setState(() {
+//           _isClicked = !_isClicked;
+//         });
+//       },
+//       child: Icon(
+//         _isClicked ? Icons.favorite : Icons.favorite_border,
+//         color: _isClicked ? Colors.red : AppColors.ebonyClay,
+//         size: 14, // exact match to your text size
+//       ),
+//     );
+//   }
+// }
