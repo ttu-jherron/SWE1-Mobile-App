@@ -12,6 +12,9 @@ import 'widgets/app_text_field.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
 
+
+// TODO flash text fields red when info is wrong or not there
+// TODO little checkmarks tracking the password requirements
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
