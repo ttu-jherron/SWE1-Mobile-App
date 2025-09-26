@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants.dart';
+import '../../../core/colors.dart';
+//import '../../../core/routing.dart';
+// import '../../../core/layout/app_layout.dart';
+// import 'package:intl/intl.dart';
 
 //Contains the code for the landing page
 class LandingPage extends StatelessWidget {
@@ -16,13 +21,13 @@ class LandingPage extends StatelessWidget {
             // Top section (15%)
             Container(
               height: MediaQuery.of(context).size.height * 0.15,
-              color: const Color(0xFF2A323F),
+              color: AppColors.ebonyClay,
               padding: const EdgeInsets.all(10),
               alignment: Alignment.topLeft,
               child: const Text(
                 "HE",
                 style: TextStyle(
-                  color: Colors.yellow,
+                  color: AppColors.sandyYellow,
                   fontSize: 60,
                   fontWeight: FontWeight.bold,
                 ),
@@ -30,7 +35,7 @@ class LandingPage extends StatelessWidget {
             ),
             Container(
               height: MediaQuery.of(context).size.height * 0.1,
-              color: const Color(0xFFF5F5F5),
+              color: AppColors.nearWhite,
               padding: EdgeInsets.fromLTRB(30, 10, 4, 10),
               alignment: Alignment.topLeft,
               child: Row(
@@ -39,7 +44,7 @@ class LandingPage extends StatelessWidget {
                     Text(
                       "My Assets",
                       style: TextStyle(
-                        color: Color(0xFF2A323F),
+                        color: AppColors.ebonyClay,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -51,7 +56,7 @@ class LandingPage extends StatelessWidget {
                       },
                       icon: const Icon(
                         Icons.add_circle_outline_sharp,
-                        color: Color(0xFF2A323F),
+                        color: AppColors.ebonyClay,
                         size: 22,
                       ),
                       padding: EdgeInsets.zero,
@@ -63,7 +68,7 @@ class LandingPage extends StatelessWidget {
             // Middle scrollable section
             Expanded(
               child: Container(
-                color: const Color(0xFFF5F5F5),
+                color: AppColors.nearWhite,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(vertical: 5),
                   child: Column(
@@ -102,7 +107,7 @@ class LandingPage extends StatelessWidget {
                 height: MediaQuery.of(context).size.height * 0.15,
                 width:MediaQuery.of(context).size.width,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF2A323F),
+                  color: AppColors.ebonyClay,
                 ),
                 child: Align(
                 child: Padding(
@@ -117,8 +122,8 @@ class LandingPage extends StatelessWidget {
                           debugPrint("Home button pressed");
                         },
                         style: TextButton.styleFrom(
-                          backgroundColor: Color(0xFF2A323F),
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.ebonyClay,
+                          foregroundColor: AppColors.nearWhite,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -129,7 +134,7 @@ class LandingPage extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.home_outlined,
-                              color: Colors.yellow,
+                              color: AppColors.sandyYellow,
                               size: 24.0,
                               semanticLabel: 'Image of a house',
                             ),
@@ -151,8 +156,8 @@ class LandingPage extends StatelessWidget {
                             debugPrint("My assets button pressed");
                           },
                           style: TextButton.styleFrom(
-                            backgroundColor: Color(0xFF2A323F),
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.ebonyClay,
+                            foregroundColor: AppColors.nearWhite,
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -163,7 +168,7 @@ class LandingPage extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.agriculture_outlined,
-                                color: Colors.yellow,
+                                color: AppColors.sandyYellow,
                                 size: 24.0,
                                 semanticLabel: 'Image of a tractor',
                               ),
@@ -183,8 +188,8 @@ class LandingPage extends StatelessWidget {
                           debugPrint("Profile button pressed");
                         },
                         style: TextButton.styleFrom(
-                          backgroundColor: Color(0xFF2A323F),
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.ebonyClay,
+                          foregroundColor: AppColors.nearWhite,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -195,7 +200,7 @@ class LandingPage extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.account_circle_outlined,
-                              color: Colors.yellow,
+                              color: AppColors.sandyYellow,
                               size: 24.0,
                               semanticLabel: 'Image of profile',
                             ),
@@ -241,7 +246,7 @@ class _AssetCardState extends State<AssetCard> {
       ),
       child: Card(
         elevation: 0,
-        color: const Color(0xFFF5F5F5),
+        color: AppColors.nearWhite,
         child: InkWell(
           borderRadius: BorderRadius.circular(4), // ripple follows shape
           onTap: widget.onTap ?? () {
@@ -255,7 +260,7 @@ class _AssetCardState extends State<AssetCard> {
                 // Image placeholder with its own Card aesthetic
                 Card(
                   margin: EdgeInsets.zero,
-                  color: const Color(0xFFD9D9D9),
+                  color: AppColors.nearWhite,
                   child: const SizedBox(
                     height: 75,
                     width: double.infinity,
@@ -264,7 +269,7 @@ class _AssetCardState extends State<AssetCard> {
                         Icons.image,
                         size: 40,
                         semanticLabel: 'Image of missing image',
-                        color: Color(0xFF2A323F),
+                        color: AppColors.ebonyClay,
                       ),
                     ),
                   ),
@@ -277,7 +282,7 @@ class _AssetCardState extends State<AssetCard> {
                     Text(
                       "Predator",
                       style: TextStyle(
-                        color: Color(0xFF2A323F),
+                        color: AppColors.ebonyClay,
                         fontSize: 14,
                         height: 1.0,
                       ),
@@ -290,7 +295,7 @@ class _AssetCardState extends State<AssetCard> {
                 Text(
                   "350 Power Station",
                   style: TextStyle(
-                    color: Color(0xFF2A323F),
+                    color: AppColors.ebonyClay,
                     fontSize: 14,
                     height: 1.0,
                     fontWeight: FontWeight.bold,
@@ -327,7 +332,7 @@ class _AddFavoriteState extends State<AddFavorite> {
       },
       child: Icon(
         _isClicked ? Icons.favorite : Icons.favorite_border,
-        color: _isClicked ? Colors.red : const Color(0xFF2A323F),
+        color: _isClicked ? Colors.red : AppColors.ebonyClay,
         size: 14, // exact match to your text size
       ),
     );
