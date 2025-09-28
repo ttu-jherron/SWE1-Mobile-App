@@ -66,7 +66,7 @@ class _MyAssetsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppLayout(
-      currentIndex: 2,
+      currentIndex: 1,
       body: const MyAssetsPage(), // 👈 Your page here
     );
   }

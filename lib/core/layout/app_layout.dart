@@ -6,7 +6,8 @@ import 'app_bottom_nav.dart';
 
 class AppLayout extends StatelessWidget {
   final Widget body;
-  /// Which tab is active? 0 = Home, 1 = My Assets, 2 = Profile
+
+  /// Which tab is active? 0 = Home, 1 = My Assets, 2 = Maintenance, 3 = Profile
   final int currentIndex;
   final bool useYellowBackground;
 
@@ -21,16 +22,32 @@ class AppLayout extends StatelessWidget {
     if (i == currentIndex) return;
     switch (i) {
       case 0:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.home,
+          (_) => false,
+        );
         break;
       case 1:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.myAssets, (_) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.myAssets,
+          (_) => false,
+        );
         break;
       case 2:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.maintenance, (_) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.maintenance,
+          (_) => false,
+        );
         break;
       case 3:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profile, (_) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.profile,
+          (_) => false,
+        );
         break;
     }
   }

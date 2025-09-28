@@ -78,8 +78,12 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                     children: [
                       AssetCard(
                         onTap: () {
-                          Navigator.pushNamed(
-                            context,
+                          // Navigator.pushNamed(
+                          //   context,
+                          //   AppRoutes.maintenanceDetail,
+                          //   arguments: 'asset_001',
+                          // );
+                          Navigator.of(context, rootNavigator: true).pushNamed(
                             AppRoutes.maintenanceDetail,
                             arguments: 'asset_001',
                           );
@@ -87,8 +91,12 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                       ),
                       AssetCard(
                         onTap: () {
-                          Navigator.pushNamed(
-                            context,
+                          // Navigator.pushNamed(
+                          //   context,
+                          //   AppRoutes.maintenanceDetail,
+                          //   arguments: 'asset_002',
+                          // );
+                          Navigator.of(context, rootNavigator: true).pushNamed(
                             AppRoutes.maintenanceDetail,
                             arguments: 'asset_002',
                           );
@@ -96,8 +104,12 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                       ),
                       AssetCard(
                         onTap: () {
-                          Navigator.pushNamed(
-                            context,
+                          // Navigator.pushNamed(
+                          //   context,
+                          //   AppRoutes.maintenanceDetail,
+                          //   arguments: 'asset_003',
+                          // );
+                          Navigator.of(context, rootNavigator: true).pushNamed(
                             AppRoutes.maintenanceDetail,
                             arguments: 'asset_003',
                           );
