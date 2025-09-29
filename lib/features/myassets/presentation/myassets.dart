@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-// import '../../../core/constants.dart';
+import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 // import '../../../core/routing.dart';
 import '../widgets/asset_card.dart';
@@ -21,9 +21,9 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
         children: [
           // Header row
           Container(
-            height: MediaQuery.of(context).size.height * 0.1,
+            height: MediaQuery.of(context).size.height * 0.13,
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(30, 10, 4, 10),
+            padding: const EdgeInsets.fromLTRB(30, 30, 4, 10),
             alignment: Alignment.topLeft,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -32,7 +32,7 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                   "My Assets",
                   style: TextStyle(
                     color: AppColors.ebonyClay,
-                    fontSize: 22,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -41,9 +41,9 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                     debugPrint("Add asset was pressed");
                   },
                   icon: const Icon(
-                    Icons.add_circle_outline_sharp,
+                    Icons.add_circle,
                     color: AppColors.ebonyClay,
-                    size: 22,
+                    size: 28,
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -63,6 +63,46 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                   child: Wrap(
                     children: [
                       AssetCard(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AppLayout(
+                                currentIndex: 1,
+                                body: ViewAssetPage(
+                                  strAssetId: 'asset_001',
+                                  strName: 'Pygmy Goat',
+                                  strCondition: 'Healthy',
+                                  strLocation: 'Farm',
+                                  strBoughtFrom: 'Barn',
+                                  strPrice: '\$1,234.56',
+                                ),
+                              ),
+                            ),
+                          );
+                          },
+                        ),
+                        AssetCard(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AppLayout(
+                                currentIndex: 1,
+                                body: ViewAssetPage(
+                                  strAssetId: 'asset_001',
+                                  strName: 'Pygmy Goat',
+                                  strCondition: 'Healthy',
+                                  strLocation: 'Farm',
+                                  strBoughtFrom: 'Barn',
+                                  strPrice: '\$1,234.56',
+                                ),
+                              ),
+                            ),
+                          );
+                          },
+                        ),
+                        AssetCard(
                         onTap: () {
                           Navigator.push(
                             context,

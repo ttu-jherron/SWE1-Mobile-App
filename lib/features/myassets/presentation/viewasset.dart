@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
-import '../../../core/routing.dart';
 import '../widgets/add_favorite.dart';
 import '../widgets/add_maintenance.dart';
 
@@ -290,17 +289,6 @@ class ViewAssetPage extends StatelessWidget {
                     color: const Color(0xFFF5F5F5),
                   ),
                 ),
-                // AppLayout(
-                //   currentIndex: 1, // bottom nav "My Assets"
-                //   body: ViewAssetPage(
-                //     strAssetId: 'asset_001',
-                //     strName: 'Pygmy Goat',
-                //     strCondition: 'Healthy',
-                //     strLocation: 'Farm',
-                //     strBoughtFrom: 'Barn',
-                //     strPrice: '\$1,234.56',
-                //   ),
-                // ),
                 ]
               ),
             ),
