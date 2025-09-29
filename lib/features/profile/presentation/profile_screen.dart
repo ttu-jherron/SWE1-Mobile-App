@@ -15,6 +15,25 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = ClerkAuth.of(context);
+    
+    // Play loading circle when signing out
+    if (auth.user == null) {
+      return AppLayout(
+        currentIndex: 3,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    
+    final clerkDataHandler = ClerkDataHandler(auth: auth);
+    // TODO dont let this be a band-aid fix, this is probably too many clerk requests
+    final userData = clerkDataHandler.fetchProfile();
+    final String? profileImageUrl = userData['imageUrl'];
+
+    final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
+    final String fullName = nameFromData.isEmpty ? "ERROR: No full name available" : nameFromData;
+
+    final String username = userData['username'] ?? 'ERROR: No username available';
+    final String email = userData['email'] ?? 'ERROR: No email available';
     final dataHandler = DataHandler(auth: auth);
 
     return AppLayout(
@@ -138,11 +157,13 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _FieldBlock extends StatelessWidget {
+class FieldBlock extends StatelessWidget {
   final String label;
   final String value;
   final bool underline;
-  const _FieldBlock({
+  
+  const FieldBlock({
+    super.key, // Add super.key parameter
     required this.label,
     required this.value,
     this.underline = false,

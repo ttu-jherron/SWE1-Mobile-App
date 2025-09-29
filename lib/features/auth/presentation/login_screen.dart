@@ -11,43 +11,6 @@ import 'widgets/link_text.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:clerk_flutter/clerk_flutter.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = ClerkAuth.of(context);
-    final user = auth.user;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await auth.signOut();
-              Navigator.pushReplacementNamed(context, AppRoutes.login);
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Welcome!'),
-            if (user != null) ...[
-              const SizedBox(height: 8),
-              Text('Username: ${user.username ?? "N/A"}'),
-              Text('Email: ${user.email ?? "N/A"}'),
-            ]
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -181,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hint: 'Email/Username',
                                   labelColor: Colors.black,
                                   borderColor: Colors.black,
+                                  isRequired: true,
                                 ),
                               ),
                             ],

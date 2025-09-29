@@ -27,6 +27,9 @@ class AppLayout extends StatelessWidget {
         Navigator.pushNamedAndRemoveUntil(context, AppRoutes.assets, (_) => false);
         break;
       case 2:
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.maintenance, (_) => false);
+        break;
+      case 3:
         Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profile, (_) => false);
         break;
     }

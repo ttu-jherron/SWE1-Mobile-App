@@ -37,6 +37,14 @@ class AppBottomNav extends StatelessWidget {
               selectedIcon: Icon(Icons.handyman, color: AppColors.sandyYellow),
               label: 'My Assets',
             ),
+            NavigationDestination(
+              icon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
+              selectedIcon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
+              label: 'Maintenance',
+            ),
+            NavigationDestination(
+              icon: _buildProfileAvatar(profileImageUrl),
+              selectedIcon: _buildProfileAvatar(profileImageUrl),
             // Profile tab with dynamic image
             const NavigationDestination(
               icon: _ProfileAvatar(),
