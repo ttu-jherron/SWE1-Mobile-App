@@ -15,12 +15,12 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = ClerkAuth.of(context);
-    final clerkDataHandler = ClerkDataHandler(auth: auth);
+    final dataHandler = DataHandler(auth: auth);
 
     return AppLayout(
       currentIndex: 2,
       body: FutureBuilder<Map<String, dynamic>>(
-        future: clerkDataHandler.fetchProfile(), // This returns a Future
+        future: dataHandler.clerkFetchProfile(), // This returns a Future
         builder: (context, snapshot) {
           // Handle loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
