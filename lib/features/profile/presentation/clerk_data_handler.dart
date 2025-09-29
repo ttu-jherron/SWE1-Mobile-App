@@ -21,7 +21,7 @@ class ClerkDataHandler {
     return ClerkDataHandler(auth: auth);
   }
 
-  Map<String, dynamic> fetchProfile() {
+  Future<Map<String, dynamic>> fetchProfile() async {
     if (user == null) {
       return {};
     }
