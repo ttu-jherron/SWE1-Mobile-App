@@ -9,6 +9,13 @@ class AssetRepository {
       brand: 'Predator',
       title: '350 W Power Station',
       name: 'Predator 350 W Power Station',
+      
+      // FIX: Added required fields (condition, store, price) and imagePath
+      condition: 'New', // Default hardcoded condition
+      store: 'Harbor Freight Tools', // Default hardcoded store
+      price: 349.99, // Default hardcoded price
+      imagePath: null, // Set to null since it's an optional String?
+      
       completionDate: DateTime(2025, 10, 1),
       shortDescription: 'Recharge Station',
       notes:
@@ -29,12 +36,6 @@ class AssetRepository {
     }
     return a;
   }
-
-  /// Example async version you’ll likely use later:
-  /// Future<Asset> fetchById(String id) async {
-  ///   final resp = await http.get(Uri.parse('$baseUrl/assets/$id'));
-  ///   return Asset.fromJson(jsonDecode(resp.body));
-  /// }
 }
 
 final assetRepository = AssetRepository();
