@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // Import the package
-import 'package:mobile_app/app.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile_app/core/colors.dart';
 import 'package:mobile_app/core/data/data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
-import '../../../core/data/data_handler.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -24,22 +22,12 @@ class ProfileScreen extends StatelessWidget {
       );
     }
     
-    final clerkDataHandler = ClerkDataHandler(auth: auth);
-    // TODO dont let this be a band-aid fix, this is probably too many clerk requests
-    final userData = clerkDataHandler.fetchProfile();
-    final String? profileImageUrl = userData['imageUrl'];
-
-    final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
-    final String fullName = nameFromData.isEmpty ? "ERROR: No full name available" : nameFromData;
-
-    final String username = userData['username'] ?? 'ERROR: No username available';
-    final String email = userData['email'] ?? 'ERROR: No email available';
     final dataHandler = DataHandler(auth: auth);
 
     return AppLayout(
-      currentIndex: 2,
+      currentIndex: 3, // Fixed index to match other screens
       body: FutureBuilder<Map<String, dynamic>>(
-        future: dataHandler.clerkFetchProfile(), // This returns a Future
+        future: dataHandler.clerkFetchProfile(),
         builder: (context, snapshot) {
           // Handle loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -56,6 +44,8 @@ class ProfileScreen extends StatelessWidget {
           final String? profileImageUrl = userData['imageUrl'];
           final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
           final String fullName = nameFromData.isEmpty ? "No access to backend" : nameFromData;
+          final String username = userData['username'] ?? userData['email'] ?? 'No Username';
+          final String email = userData['email'] ?? 'No Email';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
@@ -70,12 +60,12 @@ class ProfileScreen extends StatelessWidget {
                   radius: 64,
                   backgroundColor: Colors.grey.shade200,
                   child: ClipOval(
-                    child: _buildProfileAvatar(profileImageUrl)
+                    child: _buildProfileAvatar(profileImageUrl),
                   ),
                 ),
                 const SizedBox(height: Spacing.lg),
                 Text(
-                  userData['username'] ?? 'No Username',
+                  username,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: Colors.black87,
                     fontWeight: FontWeight.w800,
@@ -98,7 +88,7 @@ class ProfileScreen extends StatelessWidget {
                         const SizedBox(height: Spacing.lg),
                         _FieldBlock(
                           label: 'Email',
-                          value: userData['email'] ?? 'No Email',
+                          value: email,
                           underline: true,
                         ),
                         const SizedBox(height: Spacing.lg),
@@ -108,6 +98,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 80), // Added spacing as requested earlier
                 SizedBox(
                   width: 160,
                   height: 48,
@@ -133,37 +124,31 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildProfileAvatar(String? imageUrl) {
     if (imageUrl == null || imageUrl.isEmpty) {
       return const CircleAvatar(
-        radius: 12,
+        radius: 64,
         backgroundImage: AssetImage('assets/images/tools.jpg'),
       );
     }
 
-    return CircleAvatar(
-      radius: 64,
-      backgroundColor: Colors.grey.shade200,
-      child: ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          width: 128,
-          height: 128,
-          errorWidget: (context, url, error) => const CircleAvatar(
-            radius: 32,
-            backgroundImage: AssetImage('assets/images/tools.jpg'),
-          ),
-        ),
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      width: 128,
+      height: 128,
+      errorWidget: (context, url, error) => const CircleAvatar(
+        radius: 64,
+        backgroundImage: AssetImage('assets/images/tools.jpg'),
       ),
     );
   }
 }
 
-class FieldBlock extends StatelessWidget {
+class _FieldBlock extends StatelessWidget {
   final String label;
   final String value;
   final bool underline;
   
-  const FieldBlock({
-    super.key, // Add super.key parameter
+  const _FieldBlock({
+    super.key,
     required this.label,
     required this.value,
     this.underline = false,

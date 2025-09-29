@@ -42,10 +42,6 @@ class AppBottomNav extends StatelessWidget {
               selectedIcon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
               label: 'Maintenance',
             ),
-            NavigationDestination(
-              icon: _buildProfileAvatar(profileImageUrl),
-              selectedIcon: _buildProfileAvatar(profileImageUrl),
-            // Profile tab with dynamic image
             const NavigationDestination(
               icon: _ProfileAvatar(),
               selectedIcon: _ProfileAvatar(),
