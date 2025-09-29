@@ -7,6 +7,7 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/maintenance/presentation/maintenance_screen.dart';
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
 import '../features/myassets/presentation/myassets.dart';
+import '../features/myassets/presentation/viewasset.dart';
 
 import 'layout/app_layout.dart';
 
@@ -79,6 +80,7 @@ class AppRoutes {
 
   static const assets = '/assets';
   static const myAssets = '/myassets';
+  static const viewAssets = '/viewassets';
 
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
@@ -96,6 +98,21 @@ class AppRoutes {
     assets: (_) => const _AssetsScaffold(),
 
     myAssets: (_) => const _MyAssetsScaffold(),
+    viewAssets: (ctx) {
+      final args = ModalRoute.of(ctx)?.settings.arguments as Map<String, String>;
+      return AppLayout(
+        currentIndex: 1, // bottom nav index
+        body: ViewAssetPage(
+          strAssetId: args['strAssetId'] ?? 'unknown',
+          strName: args['strName'] ?? 'Unnamed Asset',
+          strCondition: args['strCondition'] ?? 'N/A',
+          strLocation: args['strLocation'] ?? 'N/A',
+          strBoughtFrom: args['strBoughtFrom'] ?? 'N/A',
+          strPrice: args['strPrice'] ?? '0',
+        ),
+      );
+    },
+
     // new screens:
     profile: (_) => ProfileScreen(),
     profileEdit: (_) => const EditProfileScreen(),

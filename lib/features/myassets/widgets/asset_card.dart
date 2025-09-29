@@ -24,14 +24,14 @@ class _AssetCardState extends State<AssetCard> {
       ),
       child: Card(
         elevation: 0,
-        color: AppColors.nearWhite,
+        color: Colors.white,
         child: InkWell(
           borderRadius: BorderRadius.circular(4), // ripple follows shape
           onTap: widget.onTap ?? () {
             debugPrint("AssetCard tapped");
           },
           child: Padding(
-            padding: EdgeInsets.fromLTRB(4, 10, 4, 10), // tighter padding
+            padding: EdgeInsets.fromLTRB(5, 12, 5, 12), // tighter padding
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -52,7 +52,7 @@ class _AssetCardState extends State<AssetCard> {
                     ),
                   ),
                 ),
-                SizedBox(width: Spacing.xs),
+                SizedBox(width: Spacing.sm),
                 // Row with text + favorite
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -62,13 +62,13 @@ class _AssetCardState extends State<AssetCard> {
                       style: TextStyle(
                         color: AppColors.ebonyClay,
                         fontSize: 14,
-                        height: 1.0,
+                        height: 2.0,
                       ),
                     ),
                     AddFavorite(),
                   ],
                 ),
-                SizedBox(width: Spacing.xs),
+                SizedBox(width: Spacing.sm),
                 // Description
                 Text(
                   "350 Power Station",
