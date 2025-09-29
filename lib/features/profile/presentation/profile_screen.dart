@@ -25,28 +25,32 @@ class ProfileScreen extends StatelessWidget {
     final dataHandler = DataHandler(auth: auth);
 
     return AppLayout(
-      currentIndex: 3, // Fixed index to match other screens
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: dataHandler.clerkFetchProfile(),
+      currentIndex: 3,
+      body: FutureBuilder<Map<String, Map<String, dynamic>>>(
+        future: dataHandler.fetchBothDataSources(),
         builder: (context, snapshot) {
           // Handle loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           
-          // Handle error state
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+          // Separate data
+          final separatedData = snapshot.data ?? {};
+          final clerkData = dataHandler.getClerkData(separatedData);
+          final backendData = dataHandler.getBackendData(separatedData);
           
-          // Handle success state
-          final userData = snapshot.data ?? {};
-          final String? profileImageUrl = userData['imageUrl'];
-          final String nameFromData = "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
-          final String fullName = nameFromData.isEmpty ? "No access to backend" : nameFromData;
-          final String username = userData['username'] ?? userData['email'] ?? 'No Username';
-          final String email = userData['email'] ?? 'No Email';
-
+          // Extract data from clerk
+          final String? profileImageUrl = clerkData['imageUrl'];
+          final String email = clerkData['email'] ?? 'No Email';
+          final String username = clerkData['username'] ?? clerkData['email'] ?? 'No Username';
+          
+          // Extract data from backend
+          final String firstName = backendData['firstName'] ?? '';
+          final String lastName = backendData['lastName'] ?? '';
+          final String fullName = "$firstName $lastName".trim();
+          final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
+          final String phoneNumber = backendData['phone'] ?? 'No access to backend';
+          
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
               horizontal: Spacing.xl,
@@ -79,11 +83,11 @@ class ProfileScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _FieldBlock(label: 'Full Name', value: fullName),
+                        _FieldBlock(label: 'Full Name', value: displayFullName),
                         const SizedBox(height: Spacing.lg),
                         _FieldBlock(
                           label: 'Phone Number',
-                          value: 'No access to backend',
+                          value: phoneNumber,
                         ),
                         const SizedBox(height: Spacing.lg),
                         _FieldBlock(
@@ -98,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 80), // Added spacing as requested earlier
+                const SizedBox(height: 80),
                 SizedBox(
                   width: 160,
                   height: 48,
@@ -148,7 +152,6 @@ class _FieldBlock extends StatelessWidget {
   final bool underline;
   
   const _FieldBlock({
-    super.key,
     required this.label,
     required this.value,
     this.underline = false,

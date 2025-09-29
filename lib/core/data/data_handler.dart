@@ -23,7 +23,6 @@ class DataHandler {
     return DataHandler(auth: auth);
   }
 
-
   // =============================================================================
   // CLERK METHODS - Direct Clerk operations
   // =============================================================================
@@ -32,7 +31,9 @@ class DataHandler {
     if (user == null) {
       return {};
     }
-    clerkRefreshUserData();
+    
+    // Add await here
+    await clerkRefreshUserData();
     
     return {
       'id': user!.id,
@@ -90,7 +91,7 @@ class DataHandler {
     }
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/profile'),
+        Uri.parse('http://10.0.2.2:8080/api/profile'),
         headers: {
           'accept': '*/*',
           'X-User-Id': user!.id,  // Using the Clerk user ID
@@ -111,7 +112,49 @@ class DataHandler {
       debugPrint('DataHandler: Error fetching backend profile: $e');
       rethrow;
     }
-    
   }
 
+
+  // =============================================================================
+  // COMBINED DATA METHODS
+  // =============================================================================
+
+  /// Fetches both Clerk and backend data but returns them seperately
+  /// Returns a map with 'clerk' and 'backend' keys containing the respective data
+  Future<Map<String, Map<String, dynamic>>> fetchBothDataSources() async {
+    try {
+      final clerkData = await clerkFetchProfile();
+      
+      try {
+        final backendData = await backendFetchProfile();
+        
+        return {
+          'clerk': clerkData,
+          'backend': backendData,
+        };
+      } catch (backendError) {
+        debugPrint('DataHandler: Backend unavailable, returning clerk data only: $backendError');
+        return {
+          'clerk': clerkData,
+          'backend': <String, dynamic>{},
+        };
+      }
+    } catch (clerkError) {
+      debugPrint('DataHandler: Error fetching clerk data: $clerkError');
+      return {
+        'clerk': <String, dynamic>{},
+        'backend': <String, dynamic>{},
+      };
+    }
+  }
+
+  /// Helper method to get clerk data safely
+  Map<String, dynamic> getClerkData(Map<String, Map<String, dynamic>> separatedData) {
+    return separatedData['clerk'] ?? <String, dynamic>{};
+  }
+
+  /// Helper method to get backend data safely
+  Map<String, dynamic> getBackendData(Map<String, Map<String, dynamic>> separatedData) {
+    return separatedData['backend'] ?? <String, dynamic>{};
+  }
 }
