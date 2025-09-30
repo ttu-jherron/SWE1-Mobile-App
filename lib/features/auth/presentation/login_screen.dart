@@ -28,6 +28,13 @@ class _LoginScreenState extends State<LoginScreen> {
   late final StreamSubscription _errorSub;
   bool _loading = false;
   bool _errorShown = false;
+  bool _navigated = false;
+
+  void _navigateHomeOnce() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+  }
 
   @override
   void initState() {
@@ -44,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       });
       if (_auth.user != null) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        _navigateHomeOnce();
       }
     });
   }
@@ -52,10 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onAuthChanged() {
     if (!mounted) return;
     if (_auth.user != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login Successful')),
-      );
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      _navigateHomeOnce();
     }
   }
 

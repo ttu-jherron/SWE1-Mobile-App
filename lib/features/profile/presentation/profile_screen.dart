@@ -13,130 +13,118 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = ClerkAuth.of(context);
-    
-    // Play loading circle when signing out
+
     if (auth.user == null) {
       return AppLayout(
         currentIndex: 3,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     final dataHandler = DataHandler(auth: auth);
 
     return AppLayout(
       currentIndex: 3,
-      body: FutureBuilder<Map<String, Map<String, dynamic>>>(
-        future: dataHandler.fetchBothDataSources(),
-        builder: (context, snapshot) {
-          // Handle loading state
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          // Separate data
-          final separatedData = snapshot.data ?? {};
-          final clerkData = dataHandler.getClerkData(separatedData);
-          final backendData = dataHandler.getBackendData(separatedData);
-          
-          // Extract data from clerk
-          final String? profileImageUrl = clerkData['imageUrl'];
-          final String email = clerkData['email'] ?? 'No Email';
-          final String username = clerkData['username'] ?? clerkData['email'] ?? 'No Username';
-          
-          // Extract data from backend
-          final String firstName = backendData['firstName'] ?? '';
-          final String lastName = backendData['lastName'] ?? '';
-          final String fullName = "$firstName $lastName".trim();
-          final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
-          final String phoneNumber = backendData['phone'] ?? 'No access to backend';
-          
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.xl,
-              vertical: Spacing.lg,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: Spacing.lg),
-                CircleAvatar(
-                  radius: 64,
-                  backgroundColor: Colors.grey.shade200,
-                  child: ClipOval(
-                    child: _buildProfileAvatar(profileImageUrl),
-                  ),
+      body: StreamBuilder<Map<String, dynamic>>(
+        stream: dataHandler.clerkProfileStream,
+        initialData: dataHandler.cachedClerkProfile,
+        builder: (context, clerkSnap) {
+          final clerkData = clerkSnap.data ?? <String, dynamic>{};
+
+          return FutureBuilder<Map<String, dynamic>>(
+            future: dataHandler.backendFetchProfile(), // cached for 30s
+            builder: (context, backendSnap) {
+              if (backendSnap.connectionState == ConnectionState.waiting && clerkData.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final backendData = backendSnap.data ?? <String, dynamic>{};
+
+              final String? profileImageUrl = clerkData['imageUrl'];
+              final String email = clerkData['email'] ?? 'No Email';
+              final String username = clerkData['username'] ?? clerkData['email'] ?? 'No Username';
+
+              final String firstName = backendData['firstName'] ?? '';
+              final String lastName = backendData['lastName'] ?? '';
+              final String fullName = "$firstName $lastName".trim();
+              final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
+              final String phoneNumber = backendData['phone'] ?? 'No access to backend';
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.xl,
+                  vertical: Spacing.lg,
                 ),
-                const SizedBox(height: Spacing.lg),
-                Text(
-                  username,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: Spacing.lg),
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 260),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldBlock(label: 'Full Name', value: displayFullName),
-                        const SizedBox(height: Spacing.lg),
-                        _FieldBlock(
-                          label: 'Phone Number',
-                          value: phoneNumber,
-                        ),
-                        const SizedBox(height: Spacing.lg),
-                        _FieldBlock(
-                          label: 'Email',
-                          value: email,
-                          underline: true,
-                        ),
-                        const SizedBox(height: Spacing.lg),
-                        const _FieldBlock(label: 'Password', value: '***************'),
-                        const SizedBox(height: Spacing.xl),
-                      ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: Spacing.lg),
+                    CircleAvatar(
+                      radius: 64,
+                      backgroundColor: Colors.grey.shade200,
+                      child: ClipOval(child: _buildProfileAvatar(profileImageUrl)),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: 160,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
-                    style: ButtonStyle(
-                      alignment: Alignment.center,
-                      padding: MaterialStateProperty.all(
-                        const EdgeInsets.symmetric(vertical: 12),
+                    const SizedBox(height: Spacing.lg),
+                    Text(
+                      username,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w800,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: Spacing.lg),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 260),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _FieldBlock(label: 'Full Name', value: displayFullName),
+                            const SizedBox(height: Spacing.lg),
+                            _FieldBlock(label: 'Phone Number', value: phoneNumber),
+                            const SizedBox(height: Spacing.lg),
+                            _FieldBlock(label: 'Email', value: email, underline: true),
+                            const SizedBox(height: Spacing.lg),
+                            const _FieldBlock(label: 'Password', value: '***************'),
+                            const SizedBox(height: Spacing.xl),
+                          ],
+                        ),
                       ),
                     ),
-                    child: const Center(child: Text('Edit Profile')),
-                  ),
-                ),
-                SizedBox(height: 16),
-                SizedBox(
-                  width: 120,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                    await auth.signOut();
-                    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-                    },
-                    style: ButtonStyle(
-                      alignment: Alignment.center,
-                      padding: MaterialStateProperty.all(
-                        const EdgeInsets.symmetric(vertical: 12),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: 160,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
+                        style: ButtonStyle(
+                          alignment: Alignment.center,
+                          padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 12)),
+                        ),
+                        child: const Center(child: Text('Edit Profile')),
                       ),
                     ),
-                    child: const Center(child: Text('Sign Out')),
-                  ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: 120,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await auth.signOut();
+                          Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+                        },
+                        style: ButtonStyle(
+                          alignment: Alignment.center,
+                          padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 12)),
+                        ),
+                        child: const Center(child: Text('Sign Out')),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),

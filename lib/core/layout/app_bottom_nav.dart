@@ -62,8 +62,9 @@ class _ProfileAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final dataHandler = DataHandler.fromContext(context);
 
-    return FutureBuilder<Map<String, dynamic>>(
-      future: dataHandler.clerkFetchProfile(),
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: dataHandler.clerkProfileStream,
+      initialData: dataHandler.cachedClerkProfile,
       builder: (context, snapshot) {
         final profileImageUrl = snapshot.data?['imageUrl'];
 
