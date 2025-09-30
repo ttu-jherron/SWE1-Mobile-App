@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart'; //Image Picker
 import '../../assets/data/asset.dart'; 
 import '../../../core/colors.dart'; 
 import '../../../core/constants.dart'; 
-import '../../../core/routing.dart'; 
 
 // --------------------------------------------------------------------------
 // IMPORTANT NOTE (myassets.dart):
@@ -363,7 +362,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
           ),
           const SizedBox(height: Spacing.xs),
           DropdownButtonFormField<String>(
-            value: _selectedCondition,
+            initialValue: _selectedCondition,
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.white,
@@ -395,3 +394,4 @@ class _AddAssetPageState extends State<AddAssetPage> {
     );
   }
 }
+
