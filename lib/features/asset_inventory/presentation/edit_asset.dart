@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../assets/data/asset.dart';
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
-import '../../../core/routing.dart';
 
 class EditAssetPage extends StatefulWidget {
   final Asset asset;
@@ -363,7 +362,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
           ),
           const SizedBox(height: Spacing.xs),
           DropdownButtonFormField<String>(
-            value: _selectedCondition,
+            initialValue: _selectedCondition,
             decoration: InputDecoration(
               filled: true,
               fillColor: Colors.white,
@@ -395,4 +394,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 }
+
+
+
 
