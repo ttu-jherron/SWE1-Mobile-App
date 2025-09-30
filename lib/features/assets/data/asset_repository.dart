@@ -1,5 +1,8 @@
 import 'asset.dart';
 
+// I added two more dummy assets and a required getAll() method to simulate fetching all 
+//assets for the list page.
+
 /// Burner in-memory repo. Swap for a real API later.
 class AssetRepository {
   // Fake store
@@ -25,6 +28,35 @@ class AssetRepository {
         MaterialRow(tool: 'solar panels', location: 'bottom garage shelf'),
       ],
     ),
+    //ADDED: Additional dummy assets for the list view
+    'asset_002': Asset(
+      id: 'asset_002',
+      brand: 'John Deere',
+      title: 'Model 4020 Tractor',
+      name: 'John Deere 4020',
+      condition: 'Used - Good',
+      store: 'Local Farm Auction',
+      price: 15000.00,
+      imagePath: null,
+      completionDate: DateTime(2024, 1, 1),
+      shortDescription: 'Engine Oil Change',
+      notes: 'Need to replace hydraulic lines soon.',
+      requiredMaterials: [],
+    ),
+    'asset_003': Asset(
+      id: 'asset_003',
+      brand: 'Dyson',
+      title: 'V15 Detect',
+      name: 'Dyson V15',
+      condition: 'Used - Like New',
+      store: 'Amazon',
+      price: 699.00,
+      imagePath: null,
+      completionDate: DateTime(2026, 6, 15),
+      shortDescription: 'Filter cleaning',
+      notes: 'Annual filter cleaning required.',
+      requiredMaterials: [],
+    ),
   };
 
   /// Synchronous getter for the demo.
@@ -36,6 +68,12 @@ class AssetRepository {
     }
     return a;
   }
+  
+  //ADDED: Method to get all assets for the list page
+  List<Asset> getAll() {
+    return _items.values.toList();
+  }
 }
 
 final assetRepository = AssetRepository();
+
