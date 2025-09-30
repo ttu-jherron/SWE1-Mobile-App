@@ -102,7 +102,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: 160,
                   height: 48,
@@ -115,6 +115,24 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     child: const Center(child: Text('Edit Profile')),
+                  ),
+                ),
+                SizedBox(height: 16),
+                SizedBox(
+                  width: 120,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                    await auth.signOut();
+                    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+                    },
+                    style: ButtonStyle(
+                      alignment: Alignment.center,
+                      padding: MaterialStateProperty.all(
+                        const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                    child: const Center(child: Text('Sign Out')),
                   ),
                 ),
               ],
