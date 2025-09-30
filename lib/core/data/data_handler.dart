@@ -91,6 +91,7 @@ class DataHandler {
     }
     try {
       final response = await http.get(
+        // 10.0.2.2 allows emulator to access 127.0.0.1
         Uri.parse('http://10.0.2.2:8080/api/profile'),
         headers: {
           'accept': '*/*',
