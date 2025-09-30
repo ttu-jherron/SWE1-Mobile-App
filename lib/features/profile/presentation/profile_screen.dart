@@ -6,6 +6,7 @@ import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:mobile_app/core/widgets/loading_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -32,23 +33,35 @@ class ProfileScreen extends StatelessWidget {
           final clerkData = clerkSnap.data ?? <String, dynamic>{};
 
           return FutureBuilder<Map<String, dynamic>>(
+            // Provide cached backend profile (if any) to avoid flicker
+            initialData: dataHandler.cachedBackendProfile,
             future: dataHandler.backendFetchProfile(), // cached for 30s
             builder: (context, backendSnap) {
-              if (backendSnap.connectionState == ConnectionState.waiting && clerkData.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
+              final isLoadingBackend =
+                  backendSnap.connectionState == ConnectionState.waiting &&
+                  backendSnap.data == null &&
+                  !backendSnap.hasError;
+
+              // If we have no backend cache yet and the first fetch is in-flight, show loading
+              if (isLoadingBackend) {
+                return const LoadingScreen();
               }
 
+              // Use fetched or cached backend data; tolerate error by falling back to empty map
               final backendData = backendSnap.data ?? <String, dynamic>{};
 
               final String? profileImageUrl = clerkData['imageUrl'];
               final String email = clerkData['email'] ?? 'No Email';
-              final String username = clerkData['username'] ?? clerkData['email'] ?? 'No Username';
+              final String username =
+                  clerkData['username'] ?? clerkData['email'] ?? 'No Username';
 
               final String firstName = backendData['firstName'] ?? '';
               final String lastName = backendData['lastName'] ?? '';
               final String fullName = "$firstName $lastName".trim();
-              final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
-              final String phoneNumber = backendData['phone'] ?? 'No access to backend';
+              final String displayFullName =
+                  fullName.isEmpty ? "No access to backend" : fullName;
+              final String phoneNumber =
+                  backendData['phone'] ?? 'No access to backend';
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -99,8 +112,9 @@ class ProfileScreen extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
                         style: ButtonStyle(
-                          alignment: Alignment.center,
-                          padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 12)),
+                          padding: MaterialStateProperty.all(
+                            const EdgeInsets.symmetric(vertical: 12),
+                          ),
                         ),
                         child: const Center(child: Text('Edit Profile')),
                       ),
@@ -112,11 +126,14 @@ class ProfileScreen extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () async {
                           await auth.signOut();
-                          Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+                          if (context.mounted) {
+                            Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+                          }
                         },
                         style: ButtonStyle(
-                          alignment: Alignment.center,
-                          padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 12)),
+                          padding: MaterialStateProperty.all(
+                            const EdgeInsets.symmetric(vertical: 12),
+                          ),
                         ),
                         child: const Center(child: Text('Sign Out')),
                       ),

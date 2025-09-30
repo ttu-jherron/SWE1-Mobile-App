@@ -32,6 +32,9 @@ class DataHandler {
   Stream<Map<String, dynamic>> get clerkProfileStream => _clerkProfileController.stream;
   Map<String, dynamic>? get cachedClerkProfile => _cachedClerkProfile;
 
+  // Expose cached backend so UI can avoid flashing placeholders
+  Map<String, dynamic>? get cachedBackendProfile => _cachedBackendProfile;
+
   clerk.User? get user => auth.user;
   String get clerkID => user!.id;
 
