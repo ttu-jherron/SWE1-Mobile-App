@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_app/features/auth/presentation/logged_in_main_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
@@ -8,6 +7,8 @@ import '../features/maintenance/presentation/maintenance_screen.dart';
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
 import '../features/myassets/presentation/myassets.dart';
 import '../features/myassets/presentation/viewasset.dart';
+//ADDED: Import the Asset model to correctly type the arguments
+import '../features/assets/data/asset.dart'; 
 
 import 'layout/app_layout.dart';
 
@@ -25,17 +26,6 @@ class _HomeScaffold extends StatelessWidget {
   }
 }
 
-// class _AssetsScaffold extends StatelessWidget {
-//   const _AssetsScaffold();
-//   @override
-//   Widget build(BuildContext context) {
-//     return AppLayout(
-//       currentIndex: 1,
-//       body: const Center(child: Text('My Assets page body')),
-//     );
-//   }
-// }
-
 class _AssetsScaffold extends StatelessWidget {
   const _AssetsScaffold();
 
@@ -48,10 +38,8 @@ class _AssetsScaffold extends StatelessWidget {
           onPressed: () {
             Navigator.pushNamed(
               context,
-              AppRoutes.maintenanceDetail, // 👈 defined in your routes
-              arguments: 'asset_001',      // 👈 burner ID for now
-            // AppRoutes.maintenanceDetail, //  defined in routes
-            //   arguments: 'asset_001',
+              AppRoutes.maintenanceDetail, //defined in your routes
+              arguments: 'asset_001', //burner ID for now
             );
           },
           child: const Text('Open Maintenance Page'),
@@ -68,7 +56,7 @@ class _MyAssetsScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppLayout(
       currentIndex: 1,
-      body: const MyAssetsPage(), // 👈 Your page here
+      body: const MyAssetsPage(), //
     );
   }
 }
@@ -99,16 +87,19 @@ class AppRoutes {
 
     myAssets: (_) => const _MyAssetsScaffold(),
     viewAssets: (ctx) {
-      final args = ModalRoute.of(ctx)?.settings.arguments as Map<String, String>;
+      // CHANGE: Expect the arguments to be the Asset object directly
+      final Asset? asset = ModalRoute.of(ctx)?.settings.arguments as Asset?; 
+
+      if (asset == null) {
+        // Handle case where asset wasn't passed, perhaps navigating to the main assets list
+        return const _MyAssetsScaffold();
+      }
+
       return AppLayout(
         currentIndex: 1, // bottom nav index
         body: ViewAssetPage(
-          strAssetId: args['strAssetId'] ?? 'unknown',
-          strName: args['strName'] ?? 'Unnamed Asset',
-          strCondition: args['strCondition'] ?? 'N/A',
-          strLocation: args['strLocation'] ?? 'N/A',
-          strBoughtFrom: args['strBoughtFrom'] ?? 'N/A',
-          strPrice: args['strPrice'] ?? '0',
+          //CHANGE: Pass the single Asset object
+          asset: asset,
         ),
       );
     },
@@ -128,3 +119,4 @@ class AppRoutes {
     }
   };
 }
+
