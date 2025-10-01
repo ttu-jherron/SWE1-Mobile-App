@@ -103,35 +103,111 @@ class _EditAssetPageState extends State<EditAssetPage> {
       },
     );
   }
+
+
+  //---------------------------------------
   
-  // Logic to save the updated asset
+  // --- Custom Dialog to show the list of missing fields ---
+  void _showValidationErrorDialog(BuildContext context, List<String> missingFields) {
+    // Generate a comma-separated list with "and" before the last item
+    final String fieldsList = missingFields.length > 1
+      ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
+      : missingFields.first;
+
+    final String contentMessage =
+      'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Required Information Missing'),
+          content: Text(contentMessage),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  //-----------------------------
+  // --- LOGIC: Validate fields and save asset ---
   void _saveChanges() {
-    // Basic validation
-    if (_brandController.text.isEmpty ||
-        _nameController.text.isEmpty ||
-        _selectedCondition == null ||
-        _storeController.text.isEmpty ||
-        _priceController.text.isEmpty) {
-      debugPrint("Validation failed: Please fill all fields.");
-      // In a real app, show an error message to the user
+    final List<String> missingFields = [];
+    const double minPrice = 1.00;
+    const double maxPrice = 300000.00;
+
+    // 1. Brand Name
+    if (_brandController.text.isEmpty) {
+      missingFields.add('Brand Name');
+    }
+    // 2. Asset Name
+    if (_nameController.text.isEmpty) {
+      missingFields.add('Asset Name');
+    }
+    // 3. Condition
+    if (_selectedCondition == null) {
+      missingFields.add('Condition');
+    }
+    // 4. Store
+    if (_storeController.text.isEmpty) {
+      missingFields.add('Store');
+    }
+
+    // 5. Price (empty, invalid number, or out of range)
+    final priceText = _priceController.text;
+    final priceValue = double.tryParse(priceText);
+
+    if (priceText.isEmpty) {
+      missingFields.add('Price (cannot be empty)');
+    } else if (priceValue == null) {
+      missingFields.add('Price (must be a valid number)');
+    } else if (priceValue < minPrice || priceValue > maxPrice) {
+      missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
+    }
+
+
+    if (missingFields.isNotEmpty) {
+      _showValidationErrorDialog(context, missingFields);
       return;
     }
 
+    // Create the full updated Asset object (using copyWith for edits)
     final updatedAsset = widget.asset.copyWith(
       brand: _brandController.text,
-      title: _nameController.text,
+      title: _nameController.text, // Using name as title for simplicity
       name: '${_brandController.text} ${_nameController.text}',
-      condition: _selectedCondition,
+
+      // Purchase fields
+      condition: _selectedCondition, // Already validated not null
       store: _storeController.text,
-      price: double.tryParse(_priceController.text) ?? 0.0,
-      // Use ValueGetter to update nullable field
-      imagePath: () => _imagePath, 
+      price: priceValue, // Use the safely parsed and validated value
+
+      // NEW: Include the image path
+      imagePath: () => _imagePath, // Use ValueGetter for nullable update
     );
 
-    // Return the updated asset object back to the previous page (ViewAssetPage)
+    debugPrint('Asset data captured (Passed via routing): ${updatedAsset.toJson()}');
+
+    // Pass the updated Asset object back to the previous screen
     Navigator.pop(context, updatedAsset);
+
+    // Optional: Show a simple success snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Asset Updated Successfully!'),
+        backgroundColor: AppColors.sandyYellow,
+      ),
+    );
   }
 
+//-----------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -220,8 +296,8 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
                     // Text Fields
                     _buildTextField(
-                        label: 'Brand/Manufacturer', controller: _brandController),
-                    _buildTextField(label: 'Product Name/Title', controller: _nameController),
+                        label: 'Brand', controller: _brandController),
+                    _buildTextField(label: 'Name', controller: _nameController),
                     
                     // Condition Dropdown
                     _buildDropdownField(
@@ -234,9 +310,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
                       },
                     ),
 
-                    _buildTextField(label: 'Store/Source', controller: _storeController),
+                    _buildTextField(label: 'Store', controller: _storeController),
                     _buildTextField(
-                      label: 'Purchase Price',
+                      label: 'Price',
                       controller: _priceController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
@@ -401,6 +477,11 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 }
+
+
+
+
+
 
 
 
