@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  #image picker dependency
+  image_picker: ^1.2.0
   #clerk dependencies
   clerk_flutter: ^0.0.12-beta
   clerk_auth: ^0.0.12-beta
