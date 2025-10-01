@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants.dart';
 import '../../../../core/colors.dart';
 import '../widgets/add_favorite.dart';
-// import '../../../maintenance/data/maintenance_item.dart';
+//IMPORT: Import the Asset data structure
+import '../../assets/data/asset.dart';
+
+//Updated to accept the Asset object and use its properties for the display text.
 
 class AssetCard extends StatefulWidget {
-  final VoidCallback? onTap; // 👈 allows you to pass a function when tapped
+  final VoidCallback? onTap; //allows you to pass a function when tapped
+  //CHANGE: Pass the Asset object itself
+  final Asset asset; 
 
-  const AssetCard({Key? key, this.onTap}) : super(key: key);
+  //CHANGE: Make Asset required in the constructor
+  const AssetCard({super.key, required this.asset, this.onTap});
 
   @override
   State<AssetCard> createState() => _AssetCardState();
@@ -24,14 +30,14 @@ class _AssetCardState extends State<AssetCard> {
       ),
       child: Card(
         elevation: 0,
-        color: AppColors.nearWhite,
+        color: Colors.white,
         child: InkWell(
           borderRadius: BorderRadius.circular(4), // ripple follows shape
           onTap: widget.onTap ?? () {
-            debugPrint("AssetCard tapped");
+            debugPrint("AssetCard tapped: ${widget.asset.name}");
           },
           child: Padding(
-            padding: EdgeInsets.fromLTRB(4, 10, 4, 10), // tighter padding
+            padding: EdgeInsets.fromLTRB(5, 12, 5, 12), // tighter padding
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -52,27 +58,29 @@ class _AssetCardState extends State<AssetCard> {
                     ),
                   ),
                 ),
-                SizedBox(width: Spacing.xs),
+                SizedBox(width: Spacing.sm),
                 // Row with text + favorite
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
+                    //CHANGE: Display the asset's brand
                     Text(
-                      "Predator",
-                      style: TextStyle(
+                      widget.asset.brand, 
+                      style: const TextStyle(
                         color: AppColors.ebonyClay,
                         fontSize: 14,
-                        height: 1.0,
+                        height: 2.0,
                       ),
                     ),
-                    AddFavorite(),
+                    const AddFavorite(),
                   ],
                 ),
-                SizedBox(width: Spacing.xs),
+                SizedBox(width: Spacing.sm),
                 // Description
+                //CHANGE: Display the asset's title (name of the item)
                 Text(
-                  "350 Power Station",
-                  style: TextStyle(
+                  widget.asset.title, 
+                  style: const TextStyle(
                     color: AppColors.ebonyClay,
                     fontSize: 14,
                     height: 1.0,
@@ -87,3 +95,4 @@ class _AssetCardState extends State<AssetCard> {
     );
   }
 }
+

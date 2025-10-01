@@ -1,43 +1,55 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants.dart';
 import '../../../core/colors.dart';
-import '../../../core/routing.dart';
+// import '../../../core/routing.dart';
 import '../widgets/asset_card.dart';
+import '../presentation/viewasset.dart';
+import '../../../core/layout/app_layout.dart';
+//IMPORT: Import Asset and AssetRepository
+import '../../assets/data/asset.dart';
+import '../../assets/data/asset_repository.dart';
+//ADDED: Import the AddAssetPage
+import '../../asset_inventory/presentation/add_asset.dart';
 
 class MyAssetsPage extends StatefulWidget {
-  const MyAssetsPage({Key? key}) : super(key: key);
+  const MyAssetsPage({super.key});
 
   @override
   State<MyAssetsPage> createState() => _MyAssetsPageState();
 }
 
 class _MyAssetsPageState extends State<MyAssetsPage> {
+  //CHANGE: State to hold the list of assets
+  List<Asset> _assetList = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    //ADDED: Load assets from the repository on initialization
+    _loadAssets();
+  }
+  
+  void _loadAssets() {
+    // In a real app, this would be an async call, but for the in-memory repo, it's fine
+    try {
+      final assets = assetRepository.getAll();
+      setState(() {
+        _assetList = assets;
+      });
+    } catch (e) {
+      debugPrint("Error loading assets: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          // Top section (15%)
-          // Container(
-          //   height: MediaQuery.of(context).size.height * 0.15,
-          //   color: AppColors.ebonyClay,
-          //   padding: const EdgeInsets.all(10),
-          //   alignment: Alignment.topLeft,
-          //   child: const Text(
-          //     "HE",
-          //     style: TextStyle(
-          //       color: AppColors.sandyYellow,
-          //       fontSize: 60,
-          //       fontWeight: FontWeight.bold,
-          //     ),
-          //   ),
-          // ),
-
           // Header row
           Container(
-            height: MediaQuery.of(context).size.height * 0.1,
-            color: AppColors.nearWhite,
-            padding: const EdgeInsets.fromLTRB(30, 10, 4, 10),
+            height: MediaQuery.of(context).size.height * 0.13,
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(30, 30, 4, 10),
             alignment: Alignment.topLeft,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -46,18 +58,28 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                   "My Assets",
                   style: TextStyle(
                     color: AppColors.ebonyClay,
-                    fontSize: 22,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
+                  //CHANGE: Implement navigation to AddAssetPage
                   onPressed: () {
-                    debugPrint("Add asset was pressed");
+                    debugPrint("Add Asset was pressed!");
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AppLayout(
+                          currentIndex: 1, // Stay on the Assets tab
+                          body: AddAssetPage(),
+                        ),
+                      ),
+                    );
                   },
                   icon: const Icon(
-                    Icons.add_circle_outline_sharp,
+                    Icons.add_circle,
                     color: AppColors.ebonyClay,
-                    size: 22,
+                    size: 28,
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -69,244 +91,37 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
           // Scrollable section
           Expanded(
             child: Container(
-              color: AppColors.nearWhite,
+              color: Colors.white,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30.0),
                   child: Wrap(
-                    children: [
-                      AssetCard(
+                    children: _assetList.map((asset) {
+                      return AssetCard(
+                        asset: asset, 
                         onTap: () {
-                          // Navigator.pushNamed(
-                          //   context,
-                          //   AppRoutes.maintenanceDetail,
-                          //   arguments: 'asset_001',
-                          // );
-                          Navigator.of(context, rootNavigator: true).pushNamed(
-                            AppRoutes.maintenanceDetail,
-                            arguments: 'asset_001',
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AppLayout(
+                                currentIndex: 1,
+                                body: ViewAssetPage(
+                                  asset: asset,
+                                ),
+                              ),
+                            ),
                           );
                         },
-                      ),
-                      AssetCard(
-                        onTap: () {
-                          // Navigator.pushNamed(
-                          //   context,
-                          //   AppRoutes.maintenanceDetail,
-                          //   arguments: 'asset_002',
-                          // );
-                          Navigator.of(context, rootNavigator: true).pushNamed(
-                            AppRoutes.maintenanceDetail,
-                            arguments: 'asset_002',
-                          );
-                        },
-                      ),
-                      AssetCard(
-                        onTap: () {
-                          // Navigator.pushNamed(
-                          //   context,
-                          //   AppRoutes.maintenanceDetail,
-                          //   arguments: 'asset_003',
-                          // );
-                          Navigator.of(context, rootNavigator: true).pushNamed(
-                            AppRoutes.maintenanceDetail,
-                            arguments: 'asset_003',
-                          );
-                        },
-                      ),
-                    ],
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
             ),
           ),
-
-          // // Bottom bar
-          // Container(
-          //   height: MediaQuery.of(context).size.height * 0.15,
-          //   width: MediaQuery.of(context).size.width,
-          //   color: AppColors.ebonyClay,
-          //   padding: const EdgeInsets.all(8),
-          //   child: Wrap(
-          //     children: [
-          //       // Home
-          //       TextButton(
-          //         onPressed: () {
-          //           Navigator.pushNamed(context, AppRoutes.home);
-          //         },
-          //         style: TextButton.styleFrom(
-          //           backgroundColor: AppColors.ebonyClay,
-          //           foregroundColor: AppColors.nearWhite,
-          //         ),
-          //         child: Column(
-          //           mainAxisSize: MainAxisSize.min,
-          //           children: const [
-          //             Icon(Icons.home_outlined,
-          //                 color: AppColors.sandyYellow, size: 24),
-          //             Text("Home", style: TextStyle(fontSize: 17)),
-          //           ],
-          //         ),
-          //       ),
-          //       const SizedBox(width: Spacing.sm),
-
-          //       // My Assets
-          //       TextButton(
-          //         onPressed: () {
-          //           Navigator.pushNamed(context, AppRoutes.myAssets);
-          //         },
-          //         style: TextButton.styleFrom(
-          //           backgroundColor: AppColors.ebonyClay,
-          //           foregroundColor: AppColors.nearWhite,
-          //         ),
-          //         child: Column(
-          //           mainAxisSize: MainAxisSize.min,
-          //           children: const [
-          //             Icon(Icons.agriculture_outlined,
-          //                 color: AppColors.sandyYellow, size: 24),
-          //             Text("My Assets", style: TextStyle(fontSize: 17)),
-          //           ],
-          //         ),
-          //       ),
-          //       const SizedBox(width: Spacing.sm),
-
-          //       // Profile
-          //       TextButton(
-          //         onPressed: () {
-          //           Navigator.pushNamed(context, AppRoutes.profile);
-          //         },
-          //         style: TextButton.styleFrom(
-          //           backgroundColor: AppColors.ebonyClay,
-          //           foregroundColor: AppColors.nearWhite,
-          //         ),
-          //         child: Column(
-          //           mainAxisSize: MainAxisSize.min,
-          //           children: const [
-          //             Icon(Icons.account_circle_outlined,
-          //                 color: AppColors.sandyYellow, size: 24),
-          //             Text("Profile", style: TextStyle(fontSize: 17)),
-          //           ],
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
         ],
       ),
     );
   }
 }
-
-
-// class AssetCard extends StatefulWidget {
-//   final VoidCallback? onTap; // 👈 allows you to pass a function when tapped
-
-//   const AssetCard({Key? key, this.onTap}) : super(key: key);
-
-//   @override
-//   State<AssetCard> createState() => _AssetCardState();
-// }
-
-// class _AssetCardState extends State<AssetCard> {
-//   @override
-//   Widget build(BuildContext context) {
-//     return ConstrainedBox(
-//       constraints: const BoxConstraints(
-//         minWidth: 140,
-//         maxWidth: 140,
-//         minHeight: 60,
-//       ),
-//       child: Card(
-//         elevation: 0,
-//         color: AppColors.nearWhite,
-//         child: InkWell(
-//           borderRadius: BorderRadius.circular(4), // ripple follows shape
-//           onTap: widget.onTap ?? () {
-//             debugPrint("AssetCard tapped");
-//           },
-//           child: Padding(
-//             padding: EdgeInsets.fromLTRB(4, 10, 4, 10), // tighter padding
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 // Image placeholder with its own Card aesthetic
-//                 Card(
-//                   margin: EdgeInsets.zero,
-//                   color: AppColors.nearWhite,
-//                   child: const SizedBox(
-//                     height: 75,
-//                     width: double.infinity,
-//                     child: Center(
-//                       child: Icon(
-//                         Icons.image,
-//                         size: 40,
-//                         semanticLabel: 'Image of missing image',
-//                         color: AppColors.ebonyClay,
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//                 SizedBox(width: Spacing.xs),
-//                 // Row with text + favorite
-//                 Row(
-//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                   children: const [
-//                     Text(
-//                       "Predator",
-//                       style: TextStyle(
-//                         color: AppColors.ebonyClay,
-//                         fontSize: 14,
-//                         height: 1.0,
-//                       ),
-//                     ),
-//                     AddFavorite(),
-//                   ],
-//                 ),
-//                 SizedBox(width: Spacing.xs),
-//                 // Description
-//                 Text(
-//                   "350 Power Station",
-//                   style: TextStyle(
-//                     color: AppColors.ebonyClay,
-//                     fontSize: 14,
-//                     height: 1.0,
-//                     fontWeight: FontWeight.bold,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-
-// class AddFavorite extends StatefulWidget {
-//   const AddFavorite({Key? key}) : super(key: key);
-
-//   @override
-//   State<AddFavorite> createState() => _AddFavoriteState();
-// }
-
-// class _AddFavoriteState extends State<AddFavorite> {
-//   bool _isClicked = false;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return GestureDetector(
-//       behavior: HitTestBehavior.translucent, // still tappable
-//       onTap: () {
-//         setState(() {
-//           _isClicked = !_isClicked;
-//         });
-//       },
-//       child: Icon(
-//         _isClicked ? Icons.favorite : Icons.favorite_border,
-//         color: _isClicked ? Colors.red : AppColors.ebonyClay,
-//         size: 14, // exact match to your text size
-//       ),
-//     );
-//   }
-// }

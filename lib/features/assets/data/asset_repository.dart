@@ -1,5 +1,8 @@
 import 'asset.dart';
 
+// I added two more dummy assets and a required getAll() method to simulate fetching all 
+//assets for the list page.
+
 /// Burner in-memory repo. Swap for a real API later.
 class AssetRepository {
   // Fake store
@@ -9,6 +12,13 @@ class AssetRepository {
       brand: 'Predator',
       title: '350 W Power Station',
       name: 'Predator 350 W Power Station',
+      
+      // FIX: Added required fields (condition, store, price) and imagePath
+      condition: 'New', // Default hardcoded condition
+      store: 'Harbor Freight Tools', // Default hardcoded store
+      price: 349.99, // Default hardcoded price
+      imagePath: null, // Set to null since it's an optional String?
+      
       completionDate: DateTime(2025, 10, 1),
       shortDescription: 'Recharge Station',
       notes:
@@ -17,6 +27,35 @@ class AssetRepository {
         MaterialRow(tool: 'power supply cord', location: 'cord box'),
         MaterialRow(tool: 'solar panels', location: 'bottom garage shelf'),
       ],
+    ),
+    //ADDED: Additional dummy assets for the list view
+    'asset_002': Asset(
+      id: 'asset_002',
+      brand: 'John Deere',
+      title: 'Model 4020 Tractor',
+      name: 'John Deere 4020',
+      condition: 'Used - Good',
+      store: 'Local Farm Auction',
+      price: 15000.00,
+      imagePath: null,
+      completionDate: DateTime(2024, 1, 1),
+      shortDescription: 'Engine Oil Change',
+      notes: 'Need to replace hydraulic lines soon.',
+      requiredMaterials: [],
+    ),
+    'asset_003': Asset(
+      id: 'asset_003',
+      brand: 'Dyson',
+      title: 'V15 Detect',
+      name: 'Dyson V15',
+      condition: 'Used - Like New',
+      store: 'Amazon',
+      price: 699.00,
+      imagePath: null,
+      completionDate: DateTime(2026, 6, 15),
+      shortDescription: 'Filter cleaning',
+      notes: 'Annual filter cleaning required.',
+      requiredMaterials: [],
     ),
   };
 
@@ -29,12 +68,12 @@ class AssetRepository {
     }
     return a;
   }
-
-  /// Example async version you’ll likely use later:
-  /// Future<Asset> fetchById(String id) async {
-  ///   final resp = await http.get(Uri.parse('$baseUrl/assets/$id'));
-  ///   return Asset.fromJson(jsonDecode(resp.body));
-  /// }
+  
+  //ADDED: Method to get all assets for the list page
+  List<Asset> getAll() {
+    return _items.values.toList();
+  }
 }
 
 final assetRepository = AssetRepository();
+
