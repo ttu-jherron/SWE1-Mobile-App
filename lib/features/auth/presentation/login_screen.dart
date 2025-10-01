@@ -11,7 +11,6 @@ import 'widgets/link_text.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:clerk_flutter/clerk_flutter.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -39,8 +38,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorSub = _auth.errorStream.listen((err) {
         if (mounted && !_errorShown) {
           _errorShown = true;
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(err.message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(err.message)));
         }
       });
       if (_auth.user != null) {
@@ -52,15 +52,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onAuthChanged() {
     if (!mounted) return;
     if (_auth.user != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login Successful')),
-      );
-
-      Navigator.pushNamedAndRemoveUntil(
+      ScaffoldMessenger.of(
         context,
-        AppRoutes.home,
-        (_) => false,
-      );
+      ).showSnackBar(const SnackBar(content: Text('Login Successful')));
+
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
     }
   }
 
@@ -80,9 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted && !_errorShown) {
         _errorShown = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     } finally {
       if (mounted) {
@@ -92,12 +88,12 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-  
+
   @override
   void dispose() {
     usernameCtrl.dispose();
     passwordCtrl.dispose();
-    if(mounted){
+    if (mounted) {
       _auth.removeListener(_onAuthChanged);
     }
     _errorSub.cancel();
@@ -116,7 +112,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 titleLine1: 'Hippo',
                 titleLine2: 'Exchange',
                 subtitle: "don’t buy. borrow.",
-                image: const AssetImage('assets/images/tools.jpg'),
+                image: const AssetImage('assets/images/HippoMan.png'),
+                imageScale: 1.12,
+                imageOffsetY: 2, // move image up inside circle to reveal top
+                circleOffsetY: 190.0,
+                belowSpacing: 90, // pushes the form further down
               ),
               const SizedBox(height: 24),
               Padding(
