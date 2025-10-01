@@ -80,38 +80,105 @@ class _AddAssetPageState extends State<AddAssetPage> {
     );
   }
 
-  // Logic to save the new asset
+
+  //----------------------------------------
+   // --- Custom Dialog to show the list of missing fields ---
+  void _showValidationErrorDialog(BuildContext context, List<String> missingFields) {
+    // Generate a comma-separated list with "and" before the last item
+    final String fieldsList = missingFields.length > 1
+      ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
+      : missingFields.first;
+
+    final String contentMessage = 
+      'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Required Information Missing'),
+          content: Text(contentMessage),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  // --- LOGIC: Pass the data back to the calling screen (My Assets Page) ---
   void _addAsset() {
-    // Basic validation
-    if (_brandController.text.isEmpty ||
-        _nameController.text.isEmpty ||
-        _selectedCondition == null ||
-        _storeController.text.isEmpty ||
-        _priceController.text.isEmpty) {
-      debugPrint("Validation failed: Please fill all fields.");
-      // In a real app, show an error message to the user
-      return;
+    final List<String> missingFields = [];
+    const double minPrice = 1.00;
+    const double maxPrice = 300000.00;
+
+    // 1. Brand Name
+    if (_brandController.text.isEmpty) {
+      missingFields.add('Brand Name');
+    }
+    // 2. Asset Name
+    if (_nameController.text.isEmpty) {
+      missingFields.add('Asset Name');
+    }
+    // 3. Condition
+    if (_selectedCondition == null) {
+      missingFields.add('Condition');
+    }
+    // 4. Store
+    if (_storeController.text.isEmpty) {
+      missingFields.add('Store');
     }
 
+    // 5. Price (empty, invalid number, or out of range)
+    final priceText = _priceController.text;
+    final priceValue = double.tryParse(priceText);
+
+    if (priceText.isEmpty) {
+      missingFields.add('Price (cannot be empty)');
+    } else if (priceValue == null) {
+      missingFields.add('Price (must be a valid number)');
+    } else if (priceValue < minPrice || priceValue > maxPrice) {
+      missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
+    }
+
+
+    if (missingFields.isNotEmpty) {
+      _showValidationErrorDialog(context, missingFields);
+      return; 
+    }
+    
+    // Create the full new Asset object
     final newAsset = Asset(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // Simple unique ID
+      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
       brand: _brandController.text,
-      title: _nameController.text,
+      title: _nameController.text, // Using name as title for simplicity
       name: '${_brandController.text} ${_nameController.text}',
+      
+      // Purchase fields
       condition: _selectedCondition!,
       store: _storeController.text,
-      price: double.tryParse(_priceController.text) ?? 0.0,
-      imagePath: _imagePath,
-      // Placeholder maintenance data (as per original model)
-      completionDate: DateTime.now(),
-      shortDescription: 'New Asset Added',
-      notes: 'Initial entry from Add Asset form.',
+      price: priceValue!, // Use the safely parsed and validated value
+      imagePath: _imagePath, // NEW: Include the image path
+      
+      // Default/placeholder values for Maintenance fields
+      completionDate: DateTime.now().add(const Duration(days: 365)),
+      shortDescription: 'Newly added asset.',
+      notes: '',
       requiredMaterials: [],
     );
 
-    // Return the new asset object back to the previous page (MyAssetsPage)
-    Navigator.pop(context, newAsset);
+    debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
+    
+    // Pass the new Asset object back to the previous screen
+    Navigator.pop(context, newAsset); 
   }
+  //---------------------------------------------
+
 
   @override
   Widget build(BuildContext context) {
@@ -201,8 +268,8 @@ class _AddAssetPageState extends State<AddAssetPage> {
 
                     // Text Fields
                     _buildTextField(
-                        label: 'Brand/Manufacturer', controller: _brandController),
-                    _buildTextField(label: 'Product Name/Title', controller: _nameController),
+                        label: 'Brand', controller: _brandController),
+                    _buildTextField(label: 'Name', controller: _nameController),
                     
                     // Condition Dropdown
                     _buildDropdownField(
@@ -215,9 +282,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
                       },
                     ),
 
-                    _buildTextField(label: 'Store/Source', controller: _storeController),
+                    _buildTextField(label: 'Store', controller: _storeController),
                     _buildTextField(
-                      label: 'Purchase Price',
+                      label: 'Price',
                       controller: _priceController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
@@ -382,6 +449,5 @@ class _AddAssetPageState extends State<AddAssetPage> {
     );
   }
 }
-
 
 
