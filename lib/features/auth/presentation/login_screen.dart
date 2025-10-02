@@ -10,6 +10,7 @@ import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:mobile_app/core/data/data_handler.dart'; // ADD
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,6 +60,10 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onAuthChanged() {
     if (!mounted) return;
     if (_auth.user != null) {
+      // Start bounded backend priming if no cache yet
+      final dh = DataHandler(auth: _auth);
+      dh.startPrimingIfNeeded();
+
       _navigateHomeOnce();
     }
   }

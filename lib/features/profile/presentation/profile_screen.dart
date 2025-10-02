@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:mobile_app/core/colors.dart';
@@ -20,18 +22,31 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   Future<Map<String, dynamic>>? _backendFuture;
   Future<void>? _splashFuture;
 
+  Timer? _retryTimer;
+  int _retryAttempts = 0;
+  bool _subscribed = false; // avoid double-subscribing RouteObserver
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _resetAndStartFetch());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Ensure we’re in profile context even on first mount
+      try {
+        final dh = DataHandler.fromContext(context);
+        dh.enterProfileContext();
+      } catch (_) {}
+      _resetAndStartFetch();
+      _startRetryLoop(); // also start bounded retry on first entry (no cache/offline cases)
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
-    if (route is PageRoute) {
+    if (!_subscribed && route is PageRoute) {
       routeObserver.subscribe(this, route);
+      _subscribed = true;
     }
   }
 
@@ -41,7 +56,11 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     try {
       DataHandler.fromContext(context).exitProfileContext();
     } catch (_) {}
-    routeObserver.unsubscribe(this);
+    _stopRetryLoop();
+    if (_subscribed) {
+      routeObserver.unsubscribe(this);
+      _subscribed = false;
+    }
     super.dispose();
   }
 
@@ -73,10 +92,12 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     final dh = DataHandler.fromContext(context);
     dh.enterProfileContext();
     _resetAndStartFetch();
+    _startRetryLoop();
   }
 
   void _leaveProfile() {
     DataHandler.fromContext(context).exitProfileContext();
+    _stopRetryLoop();
   }
 
   void _resetAndStartFetch() {
@@ -93,15 +114,62 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     // 100ms splash per navigation
     _splashFuture = Future.delayed(const Duration(milliseconds: 100));
 
-    // Force a backend fetch when opening Profile; fallback to cache on timeout
-    _backendFuture = dh
-        .backendFetchProfile(force: true)
-        .timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{},
-        );
+    // Force a backend fetch; fallback to cache on timeout
+    setState(() {
+      _backendFuture = dh
+          .backendFetchProfile(force: true)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{},
+          );
+    });
+  }
 
-    setState(() {});
+  // Bounded retry loop to handle offline->online while Profile is open.
+  // IMPORTANT: rebuild the Future each attempt so FutureBuilder updates.
+  void _startRetryLoop() {
+    _stopRetryLoop();
+    final dh = DataHandler.fromContext(context);
+    final noCache = dh.cachedBackendProfile == null || dh.cachedBackendProfile!.isEmpty;
+    if (!noCache) return;
+
+    // Try immediately once and rebuild the future
+    setState(() {
+      _backendFuture = dh
+          .backendFetchProfile(force: true)
+          .timeout(const Duration(seconds: 5), onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{});
+    });
+
+    _retryAttempts = 0;
+    _retryTimer = Timer.periodic(const Duration(seconds: 5), (t) async {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      final handler = DataHandler.fromContext(context);
+      final hasCache = handler.cachedBackendProfile != null && handler.cachedBackendProfile!.isNotEmpty;
+      if (hasCache) {
+        t.cancel();
+        return;
+      }
+      _retryAttempts += 1;
+      if (_retryAttempts > 6) { // ~30s total, then stop
+        t.cancel();
+        return;
+      }
+      // Rebuild the future each attempt
+      setState(() {
+        _backendFuture = handler
+            .backendFetchProfile(force: true)
+            .timeout(const Duration(seconds: 5), onTimeout: () => handler.cachedBackendProfile ?? <String, dynamic>{});
+      });
+    });
+  }
+
+  void _stopRetryLoop() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _retryAttempts = 0;
   }
 
   @override
@@ -146,7 +214,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
               return FutureBuilder<Map<String, dynamic>>(
                 future: _backendFuture,
                 builder: (context, backendSnap) {
-                  // Prefer stream (live updates) after splash. Fallback to the fetch result, then cache.
                   final futureData = backendSnap.data ?? <String, dynamic>{};
                   final effective =
                       streamData.isNotEmpty ? streamData
@@ -164,7 +231,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                   final String phoneNumber =
                       effective['phone_number'] ?? effective['phoneNumber'] ?? 'No access to backend';
 
-                  // Avatar loading state: show spinner if still fetching and we don't yet have profile data
                   final bool avatarLoading =
                       backendSnap.connectionState == ConnectionState.waiting &&
                       streamData.isEmpty &&

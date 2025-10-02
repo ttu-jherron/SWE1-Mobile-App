@@ -345,4 +345,93 @@ class DataHandler {
       // Fallback to cache is handled in _refreshBackendProfileForUser
     }
   }
+
+  // ==== Bounded priming (backend only) ====
+  static Timer? _primeTimer;
+  static bool _isPriming = false;
+  static int _primeIndex = 0;
+  static DateTime? _lastPrimeStop;
+  static String? _primingUserId;
+
+  // Immediate, 5s, 10s, 20s, 40s (≈5 attempts over ~75s)
+  static const List<Duration> _primeSchedule = <Duration>[
+    Duration(seconds: 0),
+    Duration(seconds: 5),
+    Duration(seconds: 10),
+    Duration(seconds: 20),
+    Duration(seconds: 40),
+  ];
+  // Minimum wait before allowing another priming burst if still no cache
+  static const Duration _primeCooldown = Duration(minutes: 1);
+
+  /// Kick off a bounded set of backend fetch attempts when:
+  /// - user is logged in
+  /// - there is no cached backend profile
+  /// Runs until data arrives or attempts are exhausted, then cools down.
+  void startPrimingIfNeeded() {
+    final u = auth.user;
+    if (u == null) {
+      _stopPriming();
+      return;
+    }
+
+    // If we already have cache, no priming needed.
+    if (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty) {
+      _stopPriming();
+      return;
+    }
+
+    // Already priming for this user
+    if (_isPriming && _primingUserId == u.id) return;
+
+    // Respect cooldown between bursts
+    if (_lastPrimeStop != null &&
+        DateTime.now().difference(_lastPrimeStop!) < _primeCooldown) {
+      return;
+    }
+
+    _primingUserId = u.id;
+    _isPriming = true;
+    _primeIndex = 0;
+
+    _primeTimer?.cancel();
+    _primeTimer = Timer(_primeSchedule[_primeIndex], () => _runPrimeTick());
+  }
+
+  void _runPrimeTick() async {
+    // Stop if cache landed meanwhile
+    if (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty) {
+      _stopPriming();
+      return;
+    }
+
+    try {
+      final result = await backendFetchProfile(force: true)
+          .timeout(const Duration(seconds: 5), onTimeout: () => <String, dynamic>{});
+
+      if (result.isNotEmpty ||
+          (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty)) {
+        _stopPriming();
+        return;
+      }
+    } catch (_) {
+      // ignore and continue schedule
+    }
+
+    _primeIndex += 1;
+    if (_primeIndex >= _primeSchedule.length) {
+      _stopPriming();
+      return;
+    }
+
+    _primeTimer?.cancel();
+    _primeTimer = Timer(_primeSchedule[_primeIndex], () => _runPrimeTick());
+  }
+
+  static void _stopPriming() {
+    _primeTimer?.cancel();
+    _primeTimer = null;
+    _isPriming = false;
+    _lastPrimeStop = DateTime.now();
+  }
 }
