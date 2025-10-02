@@ -17,7 +17,7 @@ class AssetRepository {
       condition: 'New', // Default hardcoded condition
       store: 'Harbor Freight Tools', // Default hardcoded store
       price: 349.99, // Default hardcoded price
-      imagePath: 'assets/images/Predator.jpg',
+      imagePath: 'assets/images/PredatorHippo.png',
       
       completionDate: DateTime(2025, 10, 1),
       shortDescription: 'Recharge Station',
