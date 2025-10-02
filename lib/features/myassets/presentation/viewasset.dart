@@ -7,6 +7,7 @@ import '../widgets/add_maintenance.dart';
 import '../../asset_inventory/presentation/edit_asset.dart';
 import '../../assets/data/asset.dart';
 import '../../../core/layout/app_layout.dart';
+import '../../../core/routing.dart'; // add
 
 class ViewAssetPage extends StatelessWidget {
   final Asset asset;
@@ -200,34 +201,69 @@ class ViewAssetPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 40),
+
+                      // Buttons: Edit Asset + View Maintenance
                       Center(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            debugPrint("Edit Asset Button Pressed for ID: ${asset.id}");
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AppLayout(
-                                  currentIndex: 1,
-                                  body: EditAssetPage(asset: asset),
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          runAlignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 12,
+                          runSpacing: 8,
+                          children: [
+                            // Moved Edit Asset first
+                            ElevatedButton(
+                              onPressed: () {
+                                debugPrint("Edit Asset Button Pressed for ID: ${asset.id}");
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AppLayout(
+                                      currentIndex: 1,
+                                      body: EditAssetPage(asset: asset),
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.ebonyClay,
+                                foregroundColor: AppColors.sandyYellow,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Spacing.xl,
+                                  vertical: Spacing.md,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(Radii.md),
                                 ),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.ebonyClay,
-                            foregroundColor: AppColors.sandyYellow,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: Spacing.xl,
-                              vertical: Spacing.md,
+                              child: const Text('Edit Asset'),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(Radii.md),
+                            // Now second: View Maintenance
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.maintenanceDetail,
+                                  arguments: asset.id,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.ebonyClay,
+                                foregroundColor: AppColors.sandyYellow,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Spacing.xl,
+                                  vertical: Spacing.md,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(Radii.md),
+                                ),
+                              ),
+                              child: const Text('View Maintenance'),
                             ),
-                          ),
-                          child: const Text('Edit Asset'),
+                          ],
                         ),
                       ),
+
                       const SizedBox(height: 40),
                     ],
                   ),

@@ -3,137 +3,131 @@ import 'package:mobile_app/features/assets/data/asset.dart';
 import 'package:mobile_app/features/assets/data/asset_repository.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
-import '../../../core/layout/app_layout.dart';
-import '../../assets/data/asset_repository.dart';
-import '../../assets/data/asset.dart';
+import '../../../core/layout/app_layout.dart'; // ADD
 
 class MaintenanceDetailScreen extends StatelessWidget {
-  /// If navigating with data already loaded, pass it here.
-  /// Otherwise, provide an `assetId` and this screen will load from repo.
-  final String? assetId;
-  final Asset? asset;
-
-  const MaintenanceDetailScreen({super.key, this.assetId, this.asset});
+  const MaintenanceDetailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final a = asset ?? assetRepository.getById(assetId ?? 'asset_001');
-    final daysLeft = a.completionDate
-        .difference(DateTime.now())
-        .inDays; // simplistic
+    final args = ModalRoute.of(context)!.settings.arguments;
+    Asset? a;
+    if (args is Asset) {
+      a = args;
+    } else if (args is String) {
+      try {
+        a = assetRepository.getAll().firstWhere((x) => x.id == args);
+      } catch (_) {
+        a = null;
+      }
+    }
 
-    return AppLayout(
-      currentIndex: 1, // My Assets tab
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          Spacing.xl,
-          Spacing.lg,
-          Spacing.xl,
-          Spacing.xl,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Brand + Title (matches hierarchy in mock)
-            Text(
-              a.brand,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              a.title,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF36404B), // dark gray like the mock
-              ),
-            ),
-            const SizedBox(height: Spacing.xl),
-
-            _Label('Asset Name'),
-            const SizedBox(height: 2),
-            _Value(a.name),
-            const SizedBox(height: Spacing.lg),
-
-            _Label('Completion Date'),
-            const SizedBox(height: 2),
-            _Value(
-              _formatDate(a.completionDate) +
-                  '  •  ${daysLeft.abs()} days ${daysLeft >= 0 ? "left" : "ago"}',
-            ),
-            const SizedBox(height: Spacing.lg),
-
-            _Label('Short Description'),
-            const SizedBox(height: 2),
-            _Value(a.shortDescription),
-            const SizedBox(height: Spacing.lg),
-
-            _Label('Notes'),
-            const SizedBox(height: 2),
-            Text(
-              a.notes,
-              style: const TextStyle(height: 1.35, color: Colors.black87),
-            ),
-            const SizedBox(height: Spacing.xl),
-
-            _Label('Required Materials'),
-            const SizedBox(height: Spacing.sm),
-            _MaterialsTable(rows: a.requiredMaterials),
-
-            const SizedBox(height: Spacing.xl),
-
-            Center(
-              child: SizedBox(
-                width: 280,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.ebonyClay,
-                    foregroundColor: Colors.white,
-                    shape: const StadiumBorder(),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: Spacing.sm,
-                      horizontal: Spacing.xl,
-                    ),
-                    textStyle: const TextStyle(
+    return AppLayout( // WRAP with AppLayout to restore header + bottom nav
+      currentIndex: 2, // Maintenance tab
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Custom header with title + X (kept)
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    a != null ? 'Maintenance: ${a.title}' : 'Maintenance Detail',
+                    maxLines: 2,
+                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.ebonyClay,
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      fontSize: 18,
                     ),
                   ),
-                  onPressed: () {
-                    // TODO: call backend to mark maintenance as completed
-                    // await repo.completeMaintenance(a.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Maintenance recorded')),
-                    );
-                  },
-                  child: const Text('Maintenance Completed'),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: AppColors.ebonyClay, size: 28),
+                  tooltip: 'Close',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+
+          if (a == null)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('Asset not found', style: TextStyle(color: Colors.black87)),
+            )
+          else
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.xl),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: Spacing.xl),
+                    Text(
+                      a.brand,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      a.title,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF36404B),
+                          ),
+                    ),
+                    const SizedBox(height: Spacing.xl),
+
+                    _Label('Asset Name'),
+                    const SizedBox(height: 2),
+                    _Value(a.name),
+                    const SizedBox(height: Spacing.lg),
+
+                    _Label('Completion Date'),
+                    const SizedBox(height: 2),
+                    _Value(_formatDate(a.completionDate)),
+                    const SizedBox(height: Spacing.lg),
+
+                    _Label('Short Description'),
+                    const SizedBox(height: 2),
+                    _Value(a.shortDescription),
+                    const SizedBox(height: Spacing.lg),
+
+                    _Label('Notes'),
+                    const SizedBox(height: 2),
+                    Text(
+                      a.notes,
+                      style: const TextStyle(height: 1.35, color: Colors.black87),
+                    ),
+                    const SizedBox(height: Spacing.xl),
+
+                    _Label('Required Materials'),
+                    const SizedBox(height: Spacing.sm),
+                    _MaterialsTable(rows: a.requiredMaterials),
+                    const SizedBox(height: Spacing.xl),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-          ],
-        ),
+        ],
       ),
     );
   }
 
   static String _formatDate(DateTime d) {
-    // Simple formatter; swap for intl if you add it later.
     final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December',
     ];
     final m = months[d.month - 1];
     final day = d.day.toString().padLeft(2, '0');
@@ -144,34 +138,24 @@ class MaintenanceDetailScreen extends StatelessWidget {
 class _Label extends StatelessWidget {
   final String text;
   const _Label(this.text);
-
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.w800,
-        color: Colors.black87,
-      ),
-    );
+    return Text(text, style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.black87));
   }
 }
 
 class _Value extends StatelessWidget {
   final String text;
   const _Value(this.text);
-
   @override
   Widget build(BuildContext context) {
     return Text(text, style: const TextStyle(color: Colors.black87));
   }
 }
 
-/// Simple table to match the mock (striped, two columns).
 class _MaterialsTable extends StatelessWidget {
   final List<MaterialRow> rows;
   const _MaterialsTable({required this.rows});
-
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -190,9 +174,7 @@ class _MaterialsTable extends StatelessWidget {
           ),
           for (int i = 0; i < rows.length; i++)
             TableRow(
-              decoration: BoxDecoration(
-                color: i.isOdd ? Colors.black12 : Colors.transparent,
-              ),
+              decoration: BoxDecoration(color: i.isOdd ? Colors.black12 : Colors.transparent),
               children: [_Cell(rows[i].tool), _Cell(rows[i].location)],
             ),
         ],
@@ -204,14 +186,10 @@ class _MaterialsTable extends StatelessWidget {
 class _HeaderCell extends StatelessWidget {
   final String text;
   const _HeaderCell(this.text);
-
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.sm,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
       child: Text(
         text,
         style: const TextStyle(
@@ -227,14 +205,10 @@ class _HeaderCell extends StatelessWidget {
 class _Cell extends StatelessWidget {
   final String text;
   const _Cell(this.text);
-
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.sm,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
       child: Text(text, style: const TextStyle(color: Colors.black87)),
     );
   }

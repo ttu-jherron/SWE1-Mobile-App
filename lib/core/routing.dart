@@ -99,14 +99,10 @@ class AppRoutes {
     profileEdit: (_) => const EditProfileScreen(),
     maintenance: (_) => const MaintenanceScreen(),
 
-    AppRoutes.maintenanceDetail: (ctx) {
-      final args = ModalRoute.of(ctx)?.settings.arguments;
-      if (args is String) {
-        return MaintenanceDetailScreen(assetId: args);
-      } else {
-        return const MaintenanceDetailScreen(assetId: 'asset_001');
-      }
-    }
+    maintenanceDetail: (context) {
+      // Screen will read ModalRoute.of(context)!.settings.arguments
+      return const MaintenanceDetailScreen();
+    },
   };
 }
 
