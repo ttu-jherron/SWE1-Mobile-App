@@ -30,47 +30,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _initialUsername = usernameCtrl.text.trim();
     _initialEmail = emailCtrl.text.trim();
-    // Prefill from Clerk + backend after first build
     WidgetsBinding.instance.addPostFrameCallback((_) => _prefillFromSources());
   }
 
   Future<void> _prefillFromSources() async {
+    final auth = ClerkAuth.of(context);
+    final u = auth.user;
+    Map<String, dynamic>? backend;
     try {
       final dh = DataHandler.fromContext(context);
-      // Prefer backend for profile fields (uses PascalCase keys per your API)
-      final backend = await dh.backendFetchProfile(force: true);
-      // Also read current Clerk user for username/email fallback
-      final auth = ClerkAuth.of(context);
-      final u = auth.user;
-
-      // Backend keys per example payload
-      final backendUsername = backend['username'] as String?;
-      final backendEmail = backend['email'] as String?;
-      final backendFirst = backend['first_name'] as String?;
-      final backendLast = backend['last_name'] as String?;
-      final backendPhone = backend['phone_number'] as String?;
-
-      setState(() {
-        usernameCtrl.text = (backendUsername?.trim().isNotEmpty == true
-                ? backendUsername
-                : u?.username)?.trim() ??
-            usernameCtrl.text;
-        emailCtrl.text = (backendEmail?.trim().isNotEmpty == true
-                ? backendEmail
-                : u?.email)?.trim() ??
-            emailCtrl.text;
-
-        firstNameCtrl.text = (backendFirst ?? u?.firstName ?? '').trim();
-        lastNameCtrl.text = (backendLast ?? u?.lastName ?? '').trim();
-        phoneCtrl.text = (backendPhone ?? '').trim();
-
-        _initialUsername = usernameCtrl.text.trim();
-        _initialEmail = emailCtrl.text.trim();
-        _prefilled = true;
-      });
+      backend = await dh.backendFetchProfile(force: true);
     } catch (_) {
-      // Silent prefill failure; keep defaults
+      // ignore; will fall back to Clerk-only data
     }
+
+    if (!mounted) return;
+    setState(() {
+      final backendUsername = backend?['username'] as String?;
+      final backendEmail = backend?['email'] as String?;
+      final backendFirst = backend?['first_name'] as String?;
+      final backendLast = backend?['last_name'] as String?;
+      final backendPhone = backend?['phone_number'] as String?;
+
+      usernameCtrl.text =
+          (backendUsername?.trim().isNotEmpty == true ? backendUsername : u?.username)?.trim() ?? '';
+      emailCtrl.text =
+          (backendEmail?.trim().isNotEmpty == true ? backendEmail : u?.email)?.trim() ?? '';
+      firstNameCtrl.text = (backendFirst ?? u?.firstName ?? '').trim();
+      lastNameCtrl.text = (backendLast ?? u?.lastName ?? '').trim();
+      phoneCtrl.text = (backendPhone ?? '').trim();
+
+      _initialUsername = usernameCtrl.text.trim();
+      _initialEmail = emailCtrl.text.trim();
+      _prefilled = true; // stop showing loader even if backend failed
+    });
   }
 
   @override
@@ -116,8 +109,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         firstName: _emptyToNull(firstNameCtrl.text),
         lastName: _emptyToNull(lastNameCtrl.text),
         phoneNumber: _emptyToNull(phoneCtrl.text),
+        // Temporary until Clerk owns these fully
         username: _emptyToNull(newUsername),
-        email: _emptyToNull(newEmail)
+        email: _emptyToNull(newEmail),
       );
 
       if (!mounted) return;
@@ -138,9 +132,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loader until backend fetch/prefill completes
+    if (!_prefilled) {
+      return AppLayout(
+        currentIndex: 3,
+        popOnCurrentTabTap: true,
+        body: const Center(
+          child: SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
     return AppLayout(
       currentIndex: 3,
-      popOnCurrentTabTap: true, // enable pop on same-tab tap
+      popOnCurrentTabTap: true,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: Spacing.xl,
@@ -158,10 +167,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
             const SizedBox(height: Spacing.xs),
+            // TODO Re-enable and use backend profile image URL
+            /*
             const CircleAvatar(
               radius: 56,
               backgroundImage: AssetImage('assets/images/bob.jpg'),
             ),
+            */
             const SizedBox(height: Spacing.lg),
 
             // username “chip” with larger yellow outline
