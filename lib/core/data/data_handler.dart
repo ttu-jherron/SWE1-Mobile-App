@@ -400,11 +400,17 @@ class DataHandler {
     String? firstName,
     String? lastName,
     String? phoneNumber,
+    // TODO Remove Username and Email from backend and transition to clerk
+    String? username,
+    String? email,
   }) async {
     final body = <String, dynamic>{};
     if (firstName != null) body['firstName'] = firstName;
     if (lastName != null) body['lastName'] = lastName;
     if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
+    // TODO Remove Username and Email from backend and transition to clerk
+    if (username != null) body['username'] = username;
+    if (email != null) body['email'] = email;
 
     if (body.isEmpty) return;
 

@@ -93,6 +93,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       final newUsername = usernameCtrl.text.trim();
       final newEmail = emailCtrl.text.trim();
+
+      //TODO add Clerk api calls and user updates
       /*
       // Clerk-managed updates
       if (newUsername.isNotEmpty && newUsername != _initialUsername) {
@@ -106,6 +108,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
       */
 
+      // TODO Remove Username and Email from backend and transition to clerk
       // Backend-managed updates (PATCH users/{clerkId})
       final dh = DataHandler.fromContext(context);
       await dh.updateUserProfile(
@@ -113,6 +116,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         firstName: _emptyToNull(firstNameCtrl.text),
         lastName: _emptyToNull(lastNameCtrl.text),
         phoneNumber: _emptyToNull(phoneCtrl.text),
+        username: _emptyToNull(newUsername),
+        email: _emptyToNull(newEmail)
       );
 
       if (!mounted) return;
