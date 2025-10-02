@@ -8,67 +8,64 @@ import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:http/http.dart' as http;
 
 class DataHandler {
+  // Instance deps
   final ClerkAuthState auth;
+  final String baseUrl;
+  final http.Client _client;
 
-  DataHandler({required this.auth}) {
+  // Use emulator base URL by default; kept in a static so static fetch can use it
+  static String _globalBaseUrl = 'http://10.0.2.2:8080';
+
+  DataHandler({required this.auth, String? baseUrl, http.Client? client})
+      : baseUrl = baseUrl ?? _globalBaseUrl,
+        _client = client ?? http.Client() {
+    // Keep static base URL in sync with latest instance
+    _globalBaseUrl = this.baseUrl;
     _ensureClerkSubscription(auth);
     _ensurePollingStarted();
   }
-
-  // Static variable to track last refresh time (shared across all instances)
-  static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(0);
-  static const Duration _refreshThreshold = Duration(minutes: 1);
-
-  // Caching for Clerk profile (30s TTL)
-  static const Duration _clerkTtl = Duration(seconds: 30);
-  static Map<String, dynamic>? _cachedClerkProfile;
-  static DateTime? _clerkCachedAt;
-
-  // Caching for backend profile
-  // Cache is the primary source of truth; background polling refreshes it.
-  static const Duration _backendTtl = Duration(seconds: 30); // kept for reference/inspections
-  static Map<String, dynamic>? _cachedBackendProfile;
-  static DateTime? _backendCachedAt;
-
-  // Streams
-  static final _clerkProfileController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get clerkProfileStream => _clerkProfileController.stream;
-  Map<String, dynamic>? get cachedClerkProfile => _cachedClerkProfile;
-
-  static final _backendProfileController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get backendProfileStream => _backendProfileController.stream;
-
-  // Expose cached backend so UI can avoid flashing placeholders
-  Map<String, dynamic>? get cachedBackendProfile => _cachedBackendProfile;
-
-  // Activity + polling
-  static const Duration _pollInterval = Duration(seconds: 30);
-  static const Duration _activityWindow = Duration(seconds: 30);
-  static DateTime _lastActivity = DateTime.fromMillisecondsSinceEpoch(0);
-  static Timer? _pollTimer;
-  static Future<Map<String, dynamic>>? _ongoingBackendFetch;
-
-  // NEW: gate backend polling to Profile context only
-  static bool _profileActive = false;
-
-  clerk.User? get user => auth.user;
-  String get clerkID => user!.id;
 
   static DataHandler fromContext(BuildContext context) {
     final auth = ClerkAuth.of(context);
     return DataHandler(auth: auth);
   }
 
-  // =============================================================================
-  // PUBLIC API – Always use backend for reads
-  // =============================================================================
+  // ===== Caches, streams, activity/polling (unchanged) =====
+  static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(0);
+  static const Duration _refreshThreshold = Duration(minutes: 1);
 
-  // Mark user activity manually (e.g., call from top-level navigation, screen focus, or interaction handlers)
+  static const Duration _clerkTtl = Duration(seconds: 30);
+  static Map<String, dynamic>? _cachedClerkProfile;
+  static DateTime? _clerkCachedAt;
+
+  static const Duration _backendTtl = Duration(seconds: 30);
+  static Map<String, dynamic>? _cachedBackendProfile;
+  static DateTime? _backendCachedAt;
+
+  static final _clerkProfileController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get clerkProfileStream => _clerkProfileController.stream;
+  Map<String, dynamic>? get cachedClerkProfile => _cachedClerkProfile;
+
+  static final _backendProfileController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get backendProfileStream => _backendProfileController.stream;
+  Map<String, dynamic>? get cachedBackendProfile => _cachedBackendProfile;
+
+  static const Duration _pollInterval = Duration(seconds: 30);
+  static const Duration _activityWindow = Duration(seconds: 30);
+  static DateTime _lastActivity = DateTime.fromMillisecondsSinceEpoch(0);
+  static Timer? _pollTimer;
+  static Future<Map<String, dynamic>>? _ongoingBackendFetch;
+
+  static bool _profileActive = false;
+
+  clerk.User? get user => auth.user;
+  String get clerkID => user!.id;
+
+  // ===== Public read API =====
   void markActivity() {
     _lastActivity = DateTime.now();
   }
 
-  // NEW: enable/disable profile-driven polling window
   void enterProfileContext() {
     _profileActive = true;
     markActivity();
@@ -78,11 +75,7 @@ class DataHandler {
     _profileActive = false;
   }
 
-  // Primary read method: returns cached data, attempts to refresh if needed.
-  // - preferCache: if true (default), returns cache immediately (if present).
-  // - forceNetwork: if true, forces a fetch; still falls back to cache when fetch fails.
   Future<Map<String, dynamic>> getProfile({bool preferCache = true, bool forceNetwork = false}) async {
-    // Reading counts as activity so background polling keeps running while user is active
     markActivity();
 
     final uid = user?.id;
@@ -94,21 +87,15 @@ class DataHandler {
       return _cachedBackendProfile!;
     }
 
-    // Try to refresh; fallback to cache if fetch fails
     return await _refreshBackendProfileForUser(uid);
   }
 
-  // Backwards-compatible name (now uses the new behavior)
   Future<Map<String, dynamic>> backendFetchProfile({bool force = false}) {
     return getProfile(preferCache: !force, forceNetwork: force);
   }
 
-  // =============================================================================
-  // CLERK METHODS - Direct Clerk operations (still used for auth/user id; updates unchanged)
-  // =============================================================================
-
+  // ===== Clerk methods =====
   Future<Map<String, dynamic>> clerkFetchProfile({bool force = false}) async {
-    // Use cache if available and fresh
     final now = DateTime.now();
     final fresh = _clerkCachedAt != null && now.difference(_clerkCachedAt!) < _clerkTtl;
     if (!force && _cachedClerkProfile != null && fresh) {
@@ -121,7 +108,6 @@ class DataHandler {
       return _cachedClerkProfile!;
     }
 
-    // Refresh Clerk client/environment, but rate limit it
     await clerkRefreshUserData();
 
     final map = {
@@ -159,13 +145,8 @@ class DataHandler {
     }
   }
 
-  // =============================================================================
-  // BACKEND METHODS - Our backend API (centralized fetch + cache + fallback)
-  // =============================================================================
-
-  // Internal: fetch and update cache for a given user id, fallback to cached data on failure.
+  // ===== Backend fetch (uses global base URL) =====
   static Future<Map<String, dynamic>> _refreshBackendProfileForUser(String userId) async {
-    // Coalesce concurrent fetches
     if (_ongoingBackendFetch != null) {
       return await _ongoingBackendFetch!;
     }
@@ -173,8 +154,11 @@ class DataHandler {
     _ongoingBackendFetch = () async {
       try {
         final response = await http.get(
-          // 10.0.2.2 allows emulator to access 127.0.0.1
-          Uri.parse("http://10.0.2.2:8080/users/$userId"),
+          Uri.parse("$_globalBaseUrl/users/$userId"),
+          headers: {
+            'Accept': 'application/json',
+            'X-User-Id': userId, // required by backend
+          },
         );
 
         if (response.statusCode == 200) {
@@ -185,7 +169,6 @@ class DataHandler {
         } else {
           debugPrint('DataHandler: Backend request failed with status: ${response.statusCode}');
           debugPrint('DataHandler: Response body: ${response.body}');
-          // Fallback to cache when possible
           if (_cachedBackendProfile != null) {
             return _cachedBackendProfile!;
           }
@@ -214,21 +197,24 @@ class DataHandler {
     }
   }
 
+  static void _mergeBackendPatch(Map<String, dynamic> patch) {
+    final current = _cachedBackendProfile ?? <String, dynamic>{};
+    final merged = Map<String, dynamic>.from(current)..addAll(patch);
+    _updateBackendCacheIfChanged(merged);
+  }
+
   static void _emitBackend() {
     if (_cachedBackendProfile != null) {
       _backendProfileController.add(_cachedBackendProfile!);
     }
   }
 
-  // =============================================================================
-  // COMBINED DATA METHODS (kept for compatibility, but backend is the source)
-  // =============================================================================
-
+  // ===== Combined helpers =====
   Future<Map<String, Map<String, dynamic>>> fetchBothDataSources({bool force = false}) async {
     try {
       final backendData = await backendFetchProfile(force: force);
       return {
-        'clerk': <String, dynamic>{}, // Clerk data no longer used for retrieval
+        'clerk': <String, dynamic>{},
         'backend': backendData,
       };
     } catch (e) {
@@ -241,7 +227,6 @@ class DataHandler {
   }
 
   Map<String, dynamic> getClerkData(Map<String, Map<String, dynamic>> separatedData) {
-    // Clerk retrieval is no longer used; keep empty for compatibility
     return separatedData['clerk'] ?? <String, dynamic>{};
   }
 
@@ -249,17 +234,13 @@ class DataHandler {
     return separatedData['backend'] ?? <String, dynamic>{};
   }
 
-  // =============================================================================
-  // Clerk subscription (still used to know current user id; also clears cache on sign-out)
-  // =============================================================================
-
+  // ===== Clerk subscription =====
   static ClerkAuthState? _subscribedAuth;
 
   static void _ensureClerkSubscription(ClerkAuthState auth) {
     if (_subscribedAuth != null) return;
     _subscribedAuth = auth;
     _subscribedAuth!.addListener(_onClerkAuthChanged);
-    // Emit immediately if we already have a user (initial render)
     _onClerkAuthChanged();
   }
 
@@ -269,7 +250,6 @@ class DataHandler {
 
     final u = auth.user;
     if (u == null) {
-      // Clear caches on sign-out
       _cachedClerkProfile = <String, dynamic>{};
       _clerkCachedAt = DateTime.now();
 
@@ -310,17 +290,13 @@ class DataHandler {
     }
   }
 
-  // Add a public staleness check so callers avoid unnecessary refreshes
   bool get isClerkStale {
     final at = _clerkCachedAt;
     if (at == null) return true;
     return DateTime.now().difference(at) > _clerkTtl;
   }
 
-  // =============================================================================
-  // Polling control (30s) – only if there is activity in the last 30s
-  // =============================================================================
-
+  // ===== Polling =====
   static void _ensurePollingStarted() {
     if (_pollTimer != null) return;
     _pollTimer = Timer.periodic(_pollInterval, (_) => _onPollTick());
@@ -331,29 +307,23 @@ class DataHandler {
     final u = auth?.user;
     if (u == null) return;
 
-    // Only poll when Profile is active AND the user was active in the last 30s
     if (!_profileActive) return;
 
     final inactive = DateTime.now().difference(_lastActivity) > _activityWindow;
-    if (inactive) {
-      return;
-    }
+    if (inactive) return;
 
     try {
       await _refreshBackendProfileForUser(u.id);
-    } catch (e) {
-      // Fallback to cache is handled in _refreshBackendProfileForUser
-    }
+    } catch (_) {}
   }
 
-  // ==== Bounded priming (backend only) ====
+  // ===== Priming (unchanged) =====
   static Timer? _primeTimer;
   static bool _isPriming = false;
   static int _primeIndex = 0;
   static DateTime? _lastPrimeStop;
   static String? _primingUserId;
 
-  // Immediate, 5s, 10s, 20s, 40s (≈5 attempts over ~75s)
   static const List<Duration> _primeSchedule = <Duration>[
     Duration(seconds: 0),
     Duration(seconds: 5),
@@ -361,13 +331,8 @@ class DataHandler {
     Duration(seconds: 20),
     Duration(seconds: 40),
   ];
-  // Minimum wait before allowing another priming burst if still no cache
   static const Duration _primeCooldown = Duration(minutes: 1);
 
-  /// Kick off a bounded set of backend fetch attempts when:
-  /// - user is logged in
-  /// - there is no cached backend profile
-  /// Runs until data arrives or attempts are exhausted, then cools down.
   void startPrimingIfNeeded() {
     final u = auth.user;
     if (u == null) {
@@ -375,16 +340,13 @@ class DataHandler {
       return;
     }
 
-    // If we already have cache, no priming needed.
     if (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty) {
       _stopPriming();
       return;
     }
 
-    // Already priming for this user
     if (_isPriming && _primingUserId == u.id) return;
 
-    // Respect cooldown between bursts
     if (_lastPrimeStop != null &&
         DateTime.now().difference(_lastPrimeStop!) < _primeCooldown) {
       return;
@@ -399,7 +361,6 @@ class DataHandler {
   }
 
   void _runPrimeTick() async {
-    // Stop if cache landed meanwhile
     if (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty) {
       _stopPriming();
       return;
@@ -414,9 +375,7 @@ class DataHandler {
         _stopPriming();
         return;
       }
-    } catch (_) {
-      // ignore and continue schedule
-    }
+    } catch (_) {}
 
     _primeIndex += 1;
     if (_primeIndex >= _primeSchedule.length) {
@@ -433,5 +392,38 @@ class DataHandler {
     _primeTimer = null;
     _isPriming = false;
     _lastPrimeStop = DateTime.now();
+  }
+
+  // ===== Write API =====
+  Future<void> updateUserProfile({
+    required String clerkId,
+    String? firstName,
+    String? lastName,
+    String? phoneNumber,
+  }) async {
+    final body = <String, dynamic>{};
+    if (firstName != null) body['firstName'] = firstName;
+    if (lastName != null) body['lastName'] = lastName;
+    if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
+
+    if (body.isEmpty) return;
+
+    final uri = Uri.parse('$baseUrl/users/$clerkId');
+    final res = await _client.patch(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-User-Id': clerkId, // required by backend
+      },
+      body: jsonEncode(body),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('Backend update failed (${res.statusCode}): ${res.body}');
+    }
+
+    // Optimistically update cache and notify listeners
+    _mergeBackendPatch(body);
   }
 }
