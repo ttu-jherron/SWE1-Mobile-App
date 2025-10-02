@@ -53,7 +53,7 @@ class AssetRepository {
       condition: 'Used - Like New',
       store: 'Amazon',
       price: 699.00,
-      imagePath: 'assets/images/Vacuum.png',
+      imagePath: 'assets/images/HippoVacuumV2.png',
       completionDate: DateTime(2026, 6, 15),
       shortDescription: 'Filter cleaning',
       notes: 'Annual filter cleaning required.',
