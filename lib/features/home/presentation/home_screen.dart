@@ -7,6 +7,7 @@ import '../../maintenance/data/maintenance_item.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/maintenance_card.dart';
 import 'widgets/asset_card.dart';
+import '../../assets/data/asset_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,61 +42,35 @@ class _HomeScreenState extends State<HomeScreen> {
       thumbAsset: 'assets/images/bob.jpg',
     ),
   ];
-
-  final List<Asset> allAssets = [
-    Asset(
-      id: 'asset_001',
-      brand: 'Predator',
-      title: '350W Power Station',
-      name: 'Predator 350W Power Station',
-      condition: 'New',
-      store: 'Harbor Freight',
-      price: 299.0,
-      imagePath: 'assets/images/Predator.jpg',
-      completionDate: DateTime.now().subtract(const Duration(days: 30)),
-      shortDescription: 'Portable power station',
-      notes: 'Keep charged',
-      requiredMaterials: const [],
-      favorite: true,
-    ),
-    Asset(
-      id: 'asset_002',
-      brand: 'Niagara',
-      title: '4 Gal Backpack Chemical Sprayer',
-      name: 'Niagara 4 Gal Sprayer',
-      condition: 'Used',
-      store: 'Home Depot',
-      price: 119.0,
-      imagePath: 'assets/images/Niagara.jpg',
-      completionDate: DateTime.now().subtract(const Duration(days: 10)),
-      shortDescription: 'Backpack sprayer',
-      notes: 'Rinse after use',
-      requiredMaterials: const [],
-      favorite: true,
-    ),
-    Asset(
-      id: 'asset_003',
-      brand: 'Derwent',
-      title: 'Graphic Design',
-      name: 'Derwent Graphic Design',
-      condition: 'Used',
-      store: 'Amazon',
-      price: 49.0,
-      imagePath: 'assets/images/bob.jpg',
-      completionDate: DateTime.now().subtract(const Duration(days: 5)),
-      shortDescription: 'Design kit',
-      notes: 'Handle with care',
-      requiredMaterials: const [],
-      favorite: false,
-    ),
-  ];
   // ---------------------------------------------------
+
+  // REPLACE: repository-driven assets
+  List<Asset> _assets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAssets();
+  }
+
+  void _loadAssets() {
+    try {
+      final assets = assetRepository.getAll(); // in-memory, sync
+      debugPrint('HomeScreen: loaded ${assets.length} assets');
+      for (final a in assets) {
+        debugPrint(' - ${a.title} | imagePath=${a.imagePath}');
+      }
+      setState(() => _assets = assets);
+    } catch (e) {
+      debugPrint('HomeScreen: failed to load assets: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Compute favorites from all assets where favorite == true
+    // Compute favorites from repository assets where favorite == true
     final List<Asset> favorites =
-        allAssets.where((a) => a.favorite).toList(growable: false);
+        _assets.where((a) => a.favorite).toList(growable: false);
 
     return AppLayout(
       currentIndex: 0, // Home tab

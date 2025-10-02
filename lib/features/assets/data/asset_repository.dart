@@ -17,7 +17,7 @@ class AssetRepository {
       condition: 'New', // Default hardcoded condition
       store: 'Harbor Freight Tools', // Default hardcoded store
       price: 349.99, // Default hardcoded price
-      imagePath: null, // Set to null since it's an optional String?
+      imagePath: 'assets/images/Predator.jpg',
       
       completionDate: DateTime(2025, 10, 1),
       shortDescription: 'Recharge Station',
@@ -27,6 +27,7 @@ class AssetRepository {
         MaterialRow(tool: 'power supply cord', location: 'cord box'),
         MaterialRow(tool: 'solar panels', location: 'bottom garage shelf'),
       ],
+      favorite: true,
     ),
     //ADDED: Additional dummy assets for the list view
     'asset_002': Asset(
@@ -37,11 +38,12 @@ class AssetRepository {
       condition: 'Used - Good',
       store: 'Local Farm Auction',
       price: 15000.00,
-      imagePath: null,
+      imagePath: 'assets/images/Tractor.png',
       completionDate: DateTime(2024, 1, 1),
       shortDescription: 'Engine Oil Change',
       notes: 'Need to replace hydraulic lines soon.',
       requiredMaterials: [],
+      favorite: true,
     ),
     'asset_003': Asset(
       id: 'asset_003',
@@ -51,11 +53,12 @@ class AssetRepository {
       condition: 'Used - Like New',
       store: 'Amazon',
       price: 699.00,
-      imagePath: null,
+      imagePath: 'assets/images/Vacuum.png',
       completionDate: DateTime(2026, 6, 15),
       shortDescription: 'Filter cleaning',
       notes: 'Annual filter cleaning required.',
       requiredMaterials: [],
+      favorite: true
     ),
   };
 
