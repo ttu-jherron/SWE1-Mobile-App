@@ -164,6 +164,13 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                   final String phoneNumber =
                       effective['phone_number'] ?? effective['phoneNumber'] ?? 'No access to backend';
 
+                  // Avatar loading state: show spinner if still fetching and we don't yet have profile data
+                  final bool avatarLoading =
+                      backendSnap.connectionState == ConnectionState.waiting &&
+                      streamData.isEmpty &&
+                      (dataHandler.cachedBackendProfile == null ||
+                       dataHandler.cachedBackendProfile!.isEmpty);
+
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
                       horizontal: Spacing.xl,
@@ -176,7 +183,12 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                         CircleAvatar(
                           radius: 64,
                           backgroundColor: Colors.grey.shade200,
-                          child: ClipOval(child: _buildProfileAvatar(profileImageUrl)),
+                          child: ClipOval(
+                            child: _buildProfileAvatar(
+                              profileImageUrl,
+                              loading: avatarLoading,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: Spacing.lg),
                         Text(
@@ -251,23 +263,50 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     );
   }
 
-  Widget _buildProfileAvatar(String? imageUrl) {
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return const CircleAvatar(
-        radius: 64,
-        backgroundImage: AssetImage('assets/images/tools.jpg'),
+  Widget _buildProfileAvatar(String? imageUrl, {bool loading = false}) {
+    // While fetching with no data yet: show a spinner in a neutral grey circle
+    if (loading) {
+      return Container(
+        width: 128,
+        height: 128,
+        color: Colors.grey.shade300,
+        child: const Center(
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+        ),
       );
     }
 
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
+    // If we have an image URL, load it with a simple grey placeholder
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        width: 128,
+        height: 128,
+        placeholder: (context, _) => Container(
+          width: 128,
+          height: 128,
+          color: Colors.grey.shade300,
+        ),
+        errorWidget: (context, url, error) => Container(
+          width: 128,
+          height: 128,
+          color: Colors.grey.shade400,
+          child: const Icon(Icons.person, size: 48, color: Colors.white),
+        ),
+      );
+    }
+
+    // No image: neutral grey placeholder
+    return Container(
       width: 128,
       height: 128,
-      errorWidget: (context, url, error) => const CircleAvatar(
-        radius: 64,
-        backgroundImage: AssetImage('assets/images/tools.jpg'),
-      ),
+      color: Colors.grey.shade400,
+      child: const Icon(Icons.person, size: 48, color: Colors.white),
     );
   }
 }

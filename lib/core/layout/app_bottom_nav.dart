@@ -26,23 +26,22 @@ class AppBottomNav extends StatelessWidget {
           selectedIndex: currentIndex,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: onTap,
-          destinations: [
-            const NavigationDestination(
+          destinations: const [
+            NavigationDestination(
               icon: Icon(Icons.home_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.home, color: AppColors.sandyYellow),
               label: 'Home',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.handyman_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.handyman, color: AppColors.sandyYellow),
               label: 'My Assets',
             ),
-            const NavigationDestination(
+            NavigationDestination(
               icon: Icon(Icons.calendar_month_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
               label: 'Maintenance',
             ),
-            // Profile avatar uses cached data; no fetching unless Profile tab is opened
             NavigationDestination(
               icon: ProfileAvatarBackend(),
               selectedIcon: ProfileAvatarBackend(),
@@ -57,23 +56,47 @@ class AppBottomNav extends StatelessWidget {
 
 // Backend-driven profile avatar (no implicit fetch)
 class ProfileAvatarBackend extends StatelessWidget {
+  const ProfileAvatarBackend({super.key});
+
   @override
   Widget build(BuildContext context) {
     final dh = DataHandler.fromContext(context);
+
     return StreamBuilder<Map<String, dynamic>>(
-      stream: dh.backendProfileStream, // will only emit when Profile is active
+      stream: dh.backendProfileStream,
       initialData: dh.cachedBackendProfile,
       builder: (context, snapshot) {
-        final imageUrl = (snapshot.data?['image_url'] ??
-            snapshot.data?['imageUrl']) as String?;
+        final hasCache = dh.cachedBackendProfile != null && dh.cachedBackendProfile!.isNotEmpty;
+        final imageUrl = (snapshot.data?['image_url'] ?? snapshot.data?['imageUrl']) as String?;
 
-        if (imageUrl == null || imageUrl.isEmpty) {
-          return const CircleAvatar(
+        // Show a small spinner while waiting for the very first fetch and we have no cache
+        final isInitialLoading = !hasCache && (snapshot.data == null || snapshot.data!.isEmpty);
+
+        if (isInitialLoading) {
+          return CircleAvatar(
             radius: 12,
-            backgroundImage: AssetImage('assets/images/bob.jpg'),
+            backgroundColor: Colors.grey.shade400,
+            child: const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.sandyYellow),
+              ),
+            ),
           );
         }
 
+        // If no image, show a neutral grey placeholder (no bob.png)
+        if (imageUrl == null || imageUrl.isEmpty) {
+          return CircleAvatar(
+            radius: 12,
+            backgroundColor: Colors.grey.shade400,
+            child: const Icon(Icons.person, size: 14, color: Colors.white),
+          );
+        }
+
+        // Normal image
         return CircleAvatar(
           radius: 12,
           backgroundColor: Colors.grey.shade200,
@@ -83,9 +106,16 @@ class ProfileAvatarBackend extends StatelessWidget {
               fit: BoxFit.cover,
               width: 24,
               height: 24,
-              errorWidget: (context, url, error) => const CircleAvatar(
+              // Keep a neutral grey placeholder while the network image loads
+              placeholder: (context, _) => Container(
+                width: 24,
+                height: 24,
+                color: Colors.grey.shade300,
+              ),
+              errorWidget: (context, url, error) => CircleAvatar(
                 radius: 12,
-                backgroundImage: AssetImage('assets/images/bob.jpg'),
+                backgroundColor: Colors.grey.shade400,
+                child: const Icon(Icons.person, size: 14, color: Colors.white),
               ),
             ),
           ),
