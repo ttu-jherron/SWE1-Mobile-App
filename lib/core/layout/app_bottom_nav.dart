@@ -32,19 +32,20 @@ class AppBottomNav extends StatelessWidget {
               selectedIcon: Icon(Icons.home, color: AppColors.sandyYellow),
               label: 'Home',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.handyman_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.handyman, color: AppColors.sandyYellow),
               label: 'My Assets',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.calendar_month_outlined, color: AppColors.sandyYellow),
               selectedIcon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
               label: 'Maintenance',
             ),
-            const NavigationDestination(
-              icon: _ProfileAvatar(),
-              selectedIcon: _ProfileAvatar(),
+            // Profile avatar uses cached data; no fetching unless Profile tab is opened
+            NavigationDestination(
+              icon: ProfileAvatarBackend(),
+              selectedIcon: ProfileAvatarBackend(),
               label: 'Profile',
             ),
           ],
@@ -54,21 +55,19 @@ class AppBottomNav extends StatelessWidget {
   }
 }
 
-// Separate widget for the profile avatar
-class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar();
-
+// Backend-driven profile avatar (no implicit fetch)
+class ProfileAvatarBackend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final dataHandler = DataHandler.fromContext(context);
-
+    final dh = DataHandler.fromContext(context);
     return StreamBuilder<Map<String, dynamic>>(
-      stream: dataHandler.clerkProfileStream,
-      initialData: dataHandler.cachedClerkProfile,
+      stream: dh.backendProfileStream, // will only emit when Profile is active
+      initialData: dh.cachedBackendProfile,
       builder: (context, snapshot) {
-        final profileImageUrl = snapshot.data?['imageUrl'];
+        final imageUrl = (snapshot.data?['image_url'] ??
+            snapshot.data?['imageUrl']) as String?;
 
-        if (profileImageUrl == null || profileImageUrl.isEmpty) {
+        if (imageUrl == null || imageUrl.isEmpty) {
           return const CircleAvatar(
             radius: 12,
             backgroundImage: AssetImage('assets/images/bob.jpg'),
@@ -80,7 +79,7 @@ class _ProfileAvatar extends StatelessWidget {
           backgroundColor: Colors.grey.shade200,
           child: ClipOval(
             child: CachedNetworkImage(
-              imageUrl: profileImageUrl,
+              imageUrl: imageUrl,
               fit: BoxFit.cover,
               width: 24,
               height: 24,

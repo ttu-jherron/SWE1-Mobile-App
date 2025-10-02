@@ -19,9 +19,9 @@ class _LifeCycleRefresherState extends State<LifeCycleRefresher> with WidgetsBin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Initial sync shortly after start
+    // Initial lightweight sync (auth only)
     WidgetsBinding.instance.addPostFrameCallback((_) => _refreshOnce());
-    _startTimer(); // foreground polling
+    _startTimer(); // foreground auth refresh cadence
   }
 
   @override
@@ -45,7 +45,7 @@ class _LifeCycleRefresherState extends State<LifeCycleRefresher> with WidgetsBin
 
   void _startTimer() {
     _timer?.cancel();
-    // Poll every 60s; DataHandler only hits network if cache is stale
+    // Keep Clerk fresh every 60s; DataHandler controls its own 30s polling for Profile only
     _timer = Timer.periodic(const Duration(seconds: 60), (_) => _refreshOnce());
   }
 
@@ -61,6 +61,7 @@ class _LifeCycleRefresherState extends State<LifeCycleRefresher> with WidgetsBin
       final auth = ClerkAuth.of(context);
       if (auth.user != null) {
         final dh = DataHandler(auth: auth);
+        // Keep Clerk fresh for auth-bound actions; DO NOT fetch backend profile here
         if (dh.isClerkStale) {
           await dh.clerkFetchProfile(force: true);
         }
@@ -70,6 +71,24 @@ class _LifeCycleRefresherState extends State<LifeCycleRefresher> with WidgetsBin
     }
   }
 
+  void _markActivity() {
+    try {
+      final auth = ClerkAuth.of(context);
+      if (auth.user != null) {
+        DataHandler(auth: auth).markActivity();
+      }
+    } catch (_) {}
+  }
+
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    // Global lightweight activity tracker
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _markActivity(),
+      onPointerMove: (_) => _markActivity(),
+      onPointerUp: (_) => _markActivity(),
+      child: widget.child,
+    );
+  }
 }

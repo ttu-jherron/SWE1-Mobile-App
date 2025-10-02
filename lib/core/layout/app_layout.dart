@@ -48,24 +48,7 @@ class _AppLayoutState extends State<AppLayout> {
       appBar: const AppHeaderBar(),
       bottomNavigationBar: AppBottomNav(
         currentIndex: widget.currentIndex,
-        onTap: (index) {
-          // Special-case: if already on the My Assets tab (index 1), always go to MyAssets list
-          // This ensures ViewAsset -> tap "My Assets" goes to the list (not pop back to Home)
-          if (index == widget.currentIndex && index == 1) {
-            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.myAssets, (_) => false);
-            return;
-          }
-
-          // For other tabs, tapping the current tab can pop if enabled
-          if (index == widget.currentIndex && widget.popOnCurrentTabTap) {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-              return;
-            }
-          }
-
-          _handleNavTap(context, index);
-        },
+        onTap: (i) => _handleNavTap(context, i),
       ),
       body: widget.body,
     );

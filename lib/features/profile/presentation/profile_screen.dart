@@ -37,20 +37,46 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
   @override
   void dispose() {
+    // Leave profile context when this widget is disposed
+    try {
+      DataHandler.fromContext(context).exitProfileContext();
+    } catch (_) {}
     routeObserver.unsubscribe(this);
     super.dispose();
   }
 
-  // Called when this page is pushed on top of stack
+  // Entered Profile tab
   @override
   void didPush() {
+    _enterAndFetch();
+  }
+
+  // Returned to Profile tab
+  @override
+  void didPopNext() {
+    _enterAndFetch();
+  }
+
+  // Navigating away from Profile tab
+  @override
+  void didPushNext() {
+    _leaveProfile();
+  }
+
+  // Popping Profile tab
+  @override
+  void didPop() {
+    _leaveProfile();
+  }
+
+  void _enterAndFetch() {
+    final dh = DataHandler.fromContext(context);
+    dh.enterProfileContext();
     _resetAndStartFetch();
   }
 
-  // Called when returning to this page (e.g., from Edit Profile)
-  @override
-  void didPopNext() {
-    _resetAndStartFetch();
+  void _leaveProfile() {
+    DataHandler.fromContext(context).exitProfileContext();
   }
 
   void _resetAndStartFetch() {
@@ -64,10 +90,10 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     if (auth.user == null) return;
     final dh = DataHandler(auth: auth);
 
-    // 200ms splash per navigation
-    _splashFuture = Future.delayed(const Duration(milliseconds: 200));
+    // 100ms splash per navigation
+    _splashFuture = Future.delayed(const Duration(milliseconds: 100));
 
-    // Force a backend fetch on navigation to Profile (bypass 30s cache)
+    // Force a backend fetch when opening Profile; fallback to cache on timeout
     _backendFuture = dh
         .backendFetchProfile(force: true)
         .timeout(
@@ -91,8 +117,8 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
     final dataHandler = DataHandler(auth: auth);
 
-    // Lazy-init futures so FutureBuilder never receives null even on first build.
-    _splashFuture ??= Future.delayed(const Duration(milliseconds: 200));
+    // Ensure builders have futures even on first build
+    _splashFuture ??= Future.delayed(const Duration(milliseconds: 100));
     _backendFuture ??= dataHandler
         .backendFetchProfile(force: true)
         .timeout(
@@ -103,38 +129,40 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     return AppLayout(
       currentIndex: 3,
       body: StreamBuilder<Map<String, dynamic>>(
-        stream: dataHandler.clerkProfileStream,
-        initialData: dataHandler.cachedClerkProfile,
-        builder: (context, clerkSnap) {
-          final clerkData = clerkSnap.data ?? <String, dynamic>{};
+        stream: dataHandler.backendProfileStream,
+        initialData: dataHandler.cachedBackendProfile,
+        builder: (context, streamSnap) {
+          final streamData = streamSnap.data ?? <String, dynamic>{};
 
           return FutureBuilder<void>(
             future: _splashFuture,
             builder: (context, splashSnap) {
               final inSplash = splashSnap.connectionState == ConnectionState.waiting;
 
+              if (inSplash) {
+                return const LoadingScreen();
+              }
+
               return FutureBuilder<Map<String, dynamic>>(
-                initialData: dataHandler.cachedBackendProfile,
                 future: _backendFuture,
                 builder: (context, backendSnap) {
-                  if (inSplash) {
-                    return const LoadingScreen();
-                  }
+                  // Prefer stream (live updates) after splash. Fallback to the fetch result, then cache.
+                  final futureData = backendSnap.data ?? <String, dynamic>{};
+                  final effective =
+                      streamData.isNotEmpty ? streamData
+                      : futureData.isNotEmpty ? futureData
+                      : (dataHandler.cachedBackendProfile ?? <String, dynamic>{});
 
-                  final backendData =
-                      (backendSnap.data ?? dataHandler.cachedBackendProfile) ?? <String, dynamic>{};
+                  final String? profileImageUrl = effective['image_url'] ?? effective['imageUrl'];
+                  final String email = effective['email'] ?? effective['Email'] ?? 'No Email';
+                  final String username = effective['username'] ?? email;
 
-                  final String? profileImageUrl = backendData['image_url'];
-                  final String email = clerkData['email'] ?? 'No Email';
-                  final String username =
-                      clerkData['username'] ?? clerkData['email'] ?? 'No Username';
-
-                  final String firstName = backendData['first_name'] ?? '';
-                  final String lastName = backendData['last_name'] ?? '';
+                  final String firstName = effective['first_name'] ?? effective['firstName'] ?? '';
+                  final String lastName = effective['last_name'] ?? effective['lastName'] ?? '';
                   final String fullName = "$firstName $lastName".trim();
-                  final String displayFullName =
-                      fullName.isEmpty ? "No access to backend" : fullName;
-                  final String phoneNumber = backendData['phone_number'] ?? 'No access to backend';
+                  final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
+                  final String phoneNumber =
+                      effective['phone_number'] ?? effective['phoneNumber'] ?? 'No access to backend';
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
