@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
+import 'package:mobile_app/core/data/data_handler.dart';
 import '../colors.dart';
 
 class AppBottomNav extends StatelessWidget {
@@ -15,11 +15,6 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get user profile image from ClerkDataHandler
-    final clerkDataHandler = ClerkDataHandler.fromContext(context);
-    final userData = clerkDataHandler.fetchProfile();
-    final String? profileImageUrl = userData['imageUrl'];
-
     return Container(
       decoration: const BoxDecoration(color: AppColors.ebonyClay),
       child: SafeArea(
@@ -47,9 +42,9 @@ class AppBottomNav extends StatelessWidget {
               selectedIcon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
               label: 'Maintenance',
             ),
-            NavigationDestination(
-              icon: _buildProfileAvatar(profileImageUrl),
-              selectedIcon: _buildProfileAvatar(profileImageUrl),
+            const NavigationDestination(
+              icon: _ProfileAvatar(),
+              selectedIcon: _ProfileAvatar(),
               label: 'Profile',
             ),
           ],
@@ -57,33 +52,46 @@ class AppBottomNav extends StatelessWidget {
       ),
     );
   }
+}
 
-  // Helper method to build the profile avatar
-  Widget _buildProfileAvatar(String? imageUrl) {
-    if (imageUrl == null || imageUrl.isEmpty) {
-      // Fallback to the static asset if no URL is available
-      return const CircleAvatar(
-        radius: 12,
-        backgroundImage: AssetImage('assets/images/bob.jpg'),
-      );
-    }
+// Separate widget for the profile avatar
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar();
 
-    // Use CachedNetworkImage with the user's profile image
-    return CircleAvatar(
-      radius: 12,
-      backgroundColor: Colors.grey.shade200,
-      child: ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          width: 24,
-          height: 24,
-          errorWidget: (context, url, error) => const CircleAvatar(
+  @override
+  Widget build(BuildContext context) {
+    final dataHandler = DataHandler.fromContext(context);
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: dataHandler.clerkProfileStream,
+      initialData: dataHandler.cachedClerkProfile,
+      builder: (context, snapshot) {
+        final profileImageUrl = snapshot.data?['imageUrl'];
+
+        if (profileImageUrl == null || profileImageUrl.isEmpty) {
+          return const CircleAvatar(
             radius: 12,
             backgroundImage: AssetImage('assets/images/bob.jpg'),
+          );
+        }
+
+        return CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.grey.shade200,
+          child: ClipOval(
+            child: CachedNetworkImage(
+              imageUrl: profileImageUrl,
+              fit: BoxFit.cover,
+              width: 24,
+              height: 24,
+              errorWidget: (context, url, error) => const CircleAvatar(
+                radius: 12,
+                backgroundImage: AssetImage('assets/images/bob.jpg'),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
