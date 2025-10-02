@@ -24,7 +24,13 @@ class AppLayout extends StatefulWidget {
 
 class _AppLayoutState extends State<AppLayout> {
   void _handleNavTap(BuildContext context, int i) {
-    if (i == widget.currentIndex) return;
+    // If user taps the current tab, optionally pop (used by View Asset and Edit Profile)
+    if (i == widget.currentIndex) {
+      if (widget.popOnCurrentTabTap) {
+        Navigator.of(context).maybePop();
+      }
+      return;
+    }
     switch (i) {
       case 0:
         Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);

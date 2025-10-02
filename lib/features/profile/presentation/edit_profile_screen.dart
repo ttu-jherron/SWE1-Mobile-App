@@ -140,6 +140,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return AppLayout(
       currentIndex: 3,
+      popOnCurrentTabTap: true, // enable pop on same-tab tap
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: Spacing.xl,
@@ -147,7 +148,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         child: Column(
           children: [
-            const SizedBox(height: Spacing.lg),
+            // Add "X" close button
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                tooltip: 'Close',
+                icon: const Icon(Icons.close, color: AppColors.ebonyClay),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+            ),
+            const SizedBox(height: Spacing.xs),
             const CircleAvatar(
               radius: 56,
               backgroundImage: AssetImage('assets/images/bob.jpg'),
