@@ -7,9 +7,76 @@ import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:mobile_app/core/widgets/loading_screen.dart';
+import 'package:mobile_app/app.dart'; // for routeObserver
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
+  Future<Map<String, dynamic>>? _backendFuture;
+  Future<void>? _splashFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resetAndStartFetch());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  // Called when this page is pushed on top of stack
+  @override
+  void didPush() {
+    _resetAndStartFetch();
+  }
+
+  // Called when returning to this page (e.g., from Edit Profile)
+  @override
+  void didPopNext() {
+    _resetAndStartFetch();
+  }
+
+  void _resetAndStartFetch() {
+    _backendFuture = null;
+    _splashFuture = null;
+    _startFetch();
+  }
+
+  void _startFetch() {
+    final auth = ClerkAuth.of(context);
+    if (auth.user == null) return;
+    final dh = DataHandler(auth: auth);
+
+    // 200ms splash per navigation
+    _splashFuture = Future.delayed(const Duration(milliseconds: 200));
+
+    // Force a backend fetch on navigation to Profile (bypass 30s cache)
+    _backendFuture = dh
+        .backendFetchProfile(force: true)
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{},
+        );
+
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +91,15 @@ class ProfileScreen extends StatelessWidget {
 
     final dataHandler = DataHandler(auth: auth);
 
+    // Lazy-init futures so FutureBuilder never receives null even on first build.
+    _splashFuture ??= Future.delayed(const Duration(milliseconds: 200));
+    _backendFuture ??= dataHandler
+        .backendFetchProfile(force: true)
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => dataHandler.cachedBackendProfile ?? <String, dynamic>{},
+        );
+
     return AppLayout(
       currentIndex: 3,
       body: StreamBuilder<Map<String, dynamic>>(
@@ -32,42 +108,33 @@ class ProfileScreen extends StatelessWidget {
         builder: (context, clerkSnap) {
           final clerkData = clerkSnap.data ?? <String, dynamic>{};
 
-          // Stage 1: always show a short 200ms loader
           return FutureBuilder<void>(
-            future: Future.delayed(const Duration(milliseconds: 200)),
-            builder: (context, delaySnap) {
-              final stillInSplash = delaySnap.connectionState == ConnectionState.waiting;
+            future: _splashFuture,
+            builder: (context, splashSnap) {
+              final inSplash = splashSnap.connectionState == ConnectionState.waiting;
 
-              // Stage 2: kick off backend fetch (max 5s), but never show full-screen loader again.
               return FutureBuilder<Map<String, dynamic>>(
                 initialData: dataHandler.cachedBackendProfile,
-                future: dataHandler
-                    .backendFetchProfile() // cached for 30s
-                    .timeout(
-                      const Duration(seconds: 5),
-                      onTimeout: () => dataHandler.cachedBackendProfile ?? <String, dynamic>{},
-                    ),
+                future: _backendFuture,
                 builder: (context, backendSnap) {
-                  // If within the 200ms splash window, show loader and avoid flicker.
-                  if (stillInSplash) {
+                  if (inSplash) {
                     return const LoadingScreen();
                   }
 
-                  // After 200ms, render with cached (if any) and update when fetch completes (<=5s).
-                  final backendData = backendSnap.data ?? <String, dynamic>{};
+                  final backendData =
+                      (backendSnap.data ?? dataHandler.cachedBackendProfile) ?? <String, dynamic>{};
 
-                  final String? profileImageUrl = clerkData['imageUrl'];
+                  final String? profileImageUrl = backendData['image_url'];
                   final String email = clerkData['email'] ?? 'No Email';
                   final String username =
                       clerkData['username'] ?? clerkData['email'] ?? 'No Username';
 
-                  final String firstName = backendData['firstName'] ?? '';
-                  final String lastName = backendData['lastName'] ?? '';
+                  final String firstName = backendData['first_name'] ?? '';
+                  final String lastName = backendData['last_name'] ?? '';
                   final String fullName = "$firstName $lastName".trim();
                   final String displayFullName =
                       fullName.isEmpty ? "No access to backend" : fullName;
-                  final String phoneNumber =
-                      backendData['phone'] ?? 'No access to backend';
+                  final String phoneNumber = backendData['phone_number'] ?? 'No access to backend';
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
@@ -181,7 +248,7 @@ class _FieldBlock extends StatelessWidget {
   final String label;
   final String value;
   final bool underline;
-  
+
   const _FieldBlock({
     required this.label,
     required this.value,
