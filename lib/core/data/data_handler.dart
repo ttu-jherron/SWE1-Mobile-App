@@ -117,11 +117,7 @@ class DataHandler {
     try {
       final response = await http.get(
         // 10.0.2.2 allows emulator to access 127.0.0.1
-        Uri.parse('http://10.0.2.2:8080/api/profile'),
-        headers: {
-          'accept': '*/*',
-          'X-User-Id': user!.id,  // Using the Clerk user ID
-        },
+        Uri.parse("http://10.0.2.2:8080/users/${user!.id}")
       );
 
       if (response.statusCode == 200) {
@@ -136,7 +132,7 @@ class DataHandler {
         throw Exception('Failed to fetch profile: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('DataHandler: Error fetching backend profile: $e');
+      debugPrint('DataHandler: Error fetching backend profile for user ${user!.id}: $e');
       rethrow;
     }
   }
