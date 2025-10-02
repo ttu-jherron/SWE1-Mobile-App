@@ -12,22 +12,22 @@ class ViewAssetPage extends StatelessWidget {
   final Asset asset;
   const ViewAssetPage({super.key, required this.asset});
 
-  // Same image logic as Home/MyAssets
-  Widget _buildAssetImage(String? path) {
+  // Use full-width sizing by default (shows full image, no cropping)
+  Widget _buildAssetImage(String? path, {BoxFit fit = BoxFit.fitWidth}) {
     if (path == null || path.isEmpty) {
-      return Image.asset('assets/images/bob.jpg', fit: BoxFit.cover);
+      return Image.asset('assets/images/bob.jpg', fit: fit);
     }
     if (path.startsWith('assets/')) {
       return Image.asset(
         path,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+        fit: fit,
+        errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: fit),
       );
     }
     return Image.file(
       File(path),
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+      fit: fit,
+      errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: fit),
     );
   }
 
@@ -66,6 +66,8 @@ class ViewAssetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxImageHeight = MediaQuery.of(context).size.height * 0.33;
+
     return Scaffold(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,7 +84,7 @@ class ViewAssetPage extends StatelessWidget {
                   Expanded(
                     child: Text(
                       asset.title,
-                      maxLines: 3, // allow wrapping
+                      maxLines: 3,
                       softWrap: true,
                       overflow: TextOverflow.visible,
                       style: const TextStyle(
@@ -112,7 +114,7 @@ class ViewAssetPage extends StatelessWidget {
             ),
           ),
 
-          // Scrollable content (unchanged)
+          // Scrollable content
           Expanded(
             child: Container(
               color: const Color(0xFFF5F5F5),
@@ -123,17 +125,24 @@ class ViewAssetPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: _buildAssetImage(asset.imagePath),
+                      // Full image, capped at 33% screen height
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: maxImageHeight,
+                            minWidth: double.infinity,
+                          ),
+                          child: Center(
+                            child: _buildAssetImage(
+                              asset.imagePath,
+                              fit: BoxFit.contain, // show entire image
+                            ),
+                          ),
                         ),
                       ),
 
                       const SizedBox(height: 30),
-
-                      // Details
                       const Text(
                         "Asset Details",
                         style: TextStyle(
@@ -152,8 +161,6 @@ class ViewAssetPage extends StatelessWidget {
                       _buildDetailRow("ID", asset.id),
 
                       const SizedBox(height: 30),
-
-                      // Maintenance placeholder (unchanged)
                       const Text(
                         "Next Maintenance",
                         style: TextStyle(
@@ -176,8 +183,6 @@ class ViewAssetPage extends StatelessWidget {
                       ),
 
                       const SizedBox(height: 30),
-
-                      // Notes
                       const Text(
                         "Notes",
                         style: TextStyle(
@@ -194,10 +199,7 @@ class ViewAssetPage extends StatelessWidget {
                           fontSize: 16,
                         ),
                       ),
-
                       const SizedBox(height: 40),
-
-                      // Edit Asset button (unchanged)
                       Center(
                         child: ElevatedButton(
                           onPressed: () {
@@ -226,7 +228,6 @@ class ViewAssetPage extends StatelessWidget {
                           child: const Text('Edit Asset'),
                         ),
                       ),
-
                       const SizedBox(height: 40),
                     ],
                   ),

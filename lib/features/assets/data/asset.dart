@@ -65,6 +65,7 @@ class Asset {
 
     // Favorites
     this.favorite = false,
+    //this.currentLocation,
   });
 
   // Factory constructor for creating an Asset object from JSON

@@ -58,7 +58,8 @@ class AssetRepository {
       shortDescription: 'Filter cleaning',
       notes: 'Annual filter cleaning required.',
       requiredMaterials: [],
-      favorite: true
+      favorite: true,
+      //currentLocation: "Living Room",
     ),
   };
 

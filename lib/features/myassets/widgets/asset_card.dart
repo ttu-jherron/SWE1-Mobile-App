@@ -36,7 +36,7 @@ class _AssetCardState extends State<AssetCard> {
                   margin: EdgeInsets.zero,
                   color: AppColors.nearWhite,
                   child: SizedBox(
-                    height: 75,
+                    height: 120, // was 75
                     width: double.infinity,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
