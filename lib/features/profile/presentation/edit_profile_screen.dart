@@ -44,11 +44,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final u = auth.user;
 
       // Backend keys per example payload
-      final backendUsername = backend['Username'] as String?;
-      final backendEmail = backend['Email'] as String?;
-      final backendFirst = backend['FirstName'] as String?;
-      final backendLast = backend['LastName'] as String?;
-      final backendPhone = backend['PhoneNumber'] as String?;
+      final backendUsername = backend['username'] as String?;
+      final backendEmail = backend['email'] as String?;
+      final backendFirst = backend['first_name'] as String?;
+      final backendLast = backend['last_name'] as String?;
+      final backendPhone = backend['phone_number'] as String?;
 
       setState(() {
         usernameCtrl.text = (backendUsername?.trim().isNotEmpty == true
