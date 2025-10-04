@@ -6,9 +6,8 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/maintenance/presentation/maintenance_screen.dart';
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
 import '../features/myassets/presentation/myassets.dart';
-import '../features/myassets/presentation/viewasset.dart';
-//ADDED: Import the Asset model to correctly type the arguments
-import '../features/assets/data/asset.dart'; 
+import 'package:mobile_app/features/myassets/presentation/viewasset.dart';
+import 'package:mobile_app/features/assets/data/asset.dart'; 
 
 import 'layout/app_layout.dart';
 
@@ -76,7 +75,7 @@ class AppRoutes {
 
   static const maintenanceDetail = '/maintenance/detail';
   
-  static final routes = <String, WidgetBuilder>{
+  static Map<String, WidgetBuilder> get routes => {
     login: (_) => const LoginScreen(),
     signUp: (_) => const SignUpScreen(),
 
@@ -86,21 +85,12 @@ class AppRoutes {
     assets: (_) => const _AssetsScaffold(),
 
     myAssets: (_) => const _MyAssetsScaffold(),
-    viewAssets: (ctx) {
-      // CHANGE: Expect the arguments to be the Asset object directly
-      final Asset? asset = ModalRoute.of(ctx)?.settings.arguments as Asset?; 
-
-      if (asset == null) {
-        // Handle case where asset wasn't passed, perhaps navigating to the main assets list
-        return const _MyAssetsScaffold();
-      }
-
+    viewAssets: (context) {
+      final args = ModalRoute.of(context)!.settings.arguments as Asset;
       return AppLayout(
-        currentIndex: 1, // bottom nav index
-        body: ViewAssetPage(
-          //CHANGE: Pass the single Asset object
-          asset: asset,
-        ),
+        currentIndex: 1, // My Assets tab index
+        popOnCurrentTabTap: true, // NEW: tapping "My Assets" acts like close
+        body: ViewAssetPage(asset: args),
       );
     },
 
@@ -109,14 +99,10 @@ class AppRoutes {
     profileEdit: (_) => const EditProfileScreen(),
     maintenance: (_) => const MaintenanceScreen(),
 
-    AppRoutes.maintenanceDetail: (ctx) {
-      final args = ModalRoute.of(ctx)?.settings.arguments;
-      if (args is String) {
-        return MaintenanceDetailScreen(assetId: args);
-      } else {
-        return const MaintenanceDetailScreen(assetId: 'asset_001');
-      }
-    }
+    maintenanceDetail: (context) {
+      // Screen will read ModalRoute.of(context)!.settings.arguments
+      return const MaintenanceDetailScreen();
+    },
   };
 }
 

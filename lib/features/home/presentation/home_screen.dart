@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/assets/data/asset.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
@@ -6,6 +7,7 @@ import '../../maintenance/data/maintenance_item.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/maintenance_card.dart';
 import 'widgets/asset_card.dart';
+import '../../assets/data/asset_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,31 +42,36 @@ class _HomeScreenState extends State<HomeScreen> {
       thumbAsset: 'assets/images/bob.jpg',
     ),
   ];
-
-  final List<_FavAsset> favorites = [
-    _FavAsset(
-      brand: 'Predator',
-      name: '350W Power Station',
-      img: 'assets/images/Predator.jpg',
-      idForDetail: 'asset_001',
-    ),
-    _FavAsset(
-      brand: 'Niagara',
-      name: '4 Gal Backpack Chemical Sprayer',
-      img: 'assets/images/Niagara.jpg',
-      idForDetail: 'asset_002',
-    ),
-    _FavAsset(
-      brand: 'Derwent',
-      name: 'Graphic Design',
-      img: 'assets/images/bob.jpg',
-      idForDetail: 'asset_003',
-    ),
-  ];
   // ---------------------------------------------------
+
+  // REPLACE: repository-driven assets
+  List<Asset> _assets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAssets();
+  }
+
+  void _loadAssets() {
+    try {
+      final assets = assetRepository.getAll(); // in-memory, sync
+      debugPrint('HomeScreen: loaded ${assets.length} assets');
+      for (final a in assets) {
+        debugPrint(' - ${a.title} | imagePath=${a.imagePath}');
+      }
+      setState(() => _assets = assets);
+    } catch (e) {
+      debugPrint('HomeScreen: failed to load assets: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Compute favorites from repository assets where favorite == true
+    final List<Asset> favorites =
+        _assets.where((a) => a.favorite).toList(growable: false);
+
     return AppLayout(
       currentIndex: 0, // Home tab
       body: SingleChildScrollView(
@@ -75,8 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (showAlert)
               AlertBanner(
                 title: 'Important',
-                message:
-                    'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
+                message: 'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
                 onClose: () => setState(() => showAlert = false),
               ),
             const SizedBox(height: Spacing.xl),
@@ -92,12 +98,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (ctx, i) => MaintenanceCard(
                   item: upcoming[i],
                   onTap: () {
-                    // Navigate to detail
                     Navigator.pushNamed(
                       context,
                       AppRoutes.maintenance,
-                      //AppRoutes.maintenanceDetail,
-                      arguments: favorites.first.idForDetail, // demo id
+                      arguments: upcoming[i].id,
                     );
                   },
                 ),
@@ -109,24 +113,28 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: Spacing.md),
             SizedBox(
               height: 200,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: favorites.length,
-                separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-                itemBuilder: (ctx, i) => AssetCard(
-                  titleTop: favorites[i].brand,
-                  titleBottom: favorites[i].name,
-                  imageAsset: favorites[i].img,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.maintenance,
-                      //AppRoutes.maintenanceDetail,
-                      arguments: favorites[i].idForDetail,
-                    );
-                  },
-                ),
-              ),
+              child: favorites.isEmpty
+                  ? const Center(child: Text('No favorites yet'))
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: favorites.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                      itemBuilder: (ctx, i) {
+                        final asset = favorites[i];
+                        return AssetCard(
+                          titleTop: asset.brand,
+                          titleBottom: asset.title,
+                          imageAsset: asset.imagePath ?? 'assets/images/bob.jpg',
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.viewAssets,
+                              arguments: asset,
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -149,17 +157,4 @@ class _SectionTitle extends StatelessWidget {
       ),
     );
   }
-}
-
-class _FavAsset {
-  final String brand;
-  final String name;
-  final String img;
-  final String idForDetail;
-  _FavAsset({
-    required this.brand,
-    required this.name,
-    required this.img,
-    required this.idForDetail,
-  });
 }

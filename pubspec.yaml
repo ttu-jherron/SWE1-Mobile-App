@@ -37,6 +37,7 @@ dependencies:
   clerk_auth: ^0.0.12-beta
   #used for caching profile image from clerk
   cached_network_image: ^3.3.1
+  http: ^1.1.0
 
   intl: ^0.20.2
 
