@@ -18,7 +18,7 @@ class AlertBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.sandyYellow,
+        color: const Color.fromARGB(210, 255, 244, 123),
         borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.md, Spacing.lg),

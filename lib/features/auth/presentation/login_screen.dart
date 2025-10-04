@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: Spacing.xs),
                               SizedBox(
-                                height: 40,
+                                height: 50,
                                 child: AppTextField(
                                   controller: usernameCtrl,
                                   label: 'Email/Username',
@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: Spacing.xs),
                               SizedBox(
-                                height: 40,
+                                height: 50,
                                 child: AppTextField(
                                   controller: passwordCtrl,
                                   label: 'Password',

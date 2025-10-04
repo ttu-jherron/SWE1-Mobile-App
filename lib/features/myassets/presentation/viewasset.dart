@@ -1,13 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
 import '../widgets/add_favorite.dart';
 import '../widgets/add_maintenance.dart';
 import '../../asset_inventory/presentation/edit_asset.dart';
 import '../../assets/data/asset.dart';
+import '../../maintenance/data/maintenance_store.dart';
+import '../../maintenance/data/maintenance_entry.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/routing.dart'; // add
+
+  final DateFormat _df = DateFormat('MMM dd, yyyy');
 
 class ViewAssetPage extends StatelessWidget {
   final Asset asset;
@@ -33,6 +38,9 @@ class ViewAssetPage extends StatelessWidget {
   }
 
   String _formatCurrency(double price) => '\$${price.toStringAsFixed(2)}';
+
+  String _formatEntry(MaintenanceEntry e) =>
+      '${_df.format(e.date)} — ${e.summary}';
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
@@ -170,18 +178,63 @@ class ViewAssetPage extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 15),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: const [
-                            MaintenanceCard(),
-                            MaintenanceCard(),
-                            MaintenanceCard(),
-                            MaintenanceCard(),
-                          ],
-                        ),
+                      const SizedBox(height: 12),
+
+                      // Shows the single "next" line and the horizontal scroller below it
+                      AnimatedBuilder(
+                        animation: maintenanceStore,                            // NEW
+                        builder: (context, _) {
+                          // All entries for this asset, soonest first
+                          final List<MaintenanceEntry> entries = 
+                              [...maintenanceStore.allFor(asset.id)]..sort((a,b)=>a.date.compareTo(b.date));
+
+                          final MaintenanceEntry? next = entries.isEmpty ? null : entries.first;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Top single line like your mock: "Oct. 01, 2025 — Take to vet"
+                              Text(
+                                next == null ? '—' : _formatEntry(next),
+                                style: const TextStyle(
+                                  color: AppColors.ebonyClay,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // Horizontal list of upcoming items (keeps the “can move left/right” feel)
+                              if (entries.isNotEmpty)
+                                SizedBox(
+                                  height: 96,
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: entries.length,
+                                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                    itemBuilder: (ctx, i) {
+                                      final e = entries[i];
+                                      return _MaintChip(                                  // NEW
+                                        dateLabel: _df.format(e.date),
+                                        title: e.summary,
+                                        onTap: () {
+                                          // Optional: jump to your maintenance detail route for this asset
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.maintenanceDetail,
+                                            arguments: asset.id,
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
                       ),
+
 
                       const SizedBox(height: 30),
                       const Text(
@@ -276,5 +329,70 @@ class ViewAssetPage extends StatelessWidget {
     );
   }
 }
+
+class _MaintChip extends StatelessWidget {
+  final String dateLabel;
+  final String title;
+  final VoidCallback onTap;
+
+  const _MaintChip({
+    required this.dateLabel,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.black12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.build, color: AppColors.ebonyClay),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(dateLabel, style: const TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.ebonyClay,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: AppColors.ebonyClay),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 

@@ -74,9 +74,9 @@ class AssetRepository {
   }
   
   //ADDED: Method to get all assets for the list page
-  List<Asset> getAll() {
-    return _items.values.toList();
-  }
+  List<Asset> getAll() => List.unmodifiable(_items.values);
+
+  // TODO: (backend) replace with async API call later.
 }
 
 final assetRepository = AssetRepository();
