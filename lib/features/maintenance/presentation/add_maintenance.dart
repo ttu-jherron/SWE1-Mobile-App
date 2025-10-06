@@ -9,9 +9,7 @@ import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import '../../assets/data/asset.dart'; // change to maintenance page
 
-//REMOVE PHOTO 
 //DROP DOWN ASSET NAMES
-//CHANGE NAMES
 //ADD TABLE
 
 class AddMaintenancePage extends StatefulWidget {
@@ -29,6 +27,8 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
   final _notes = TextEditingController();
   final _requiredTools = TextEditingController();
   final _toolLocations = TextEditingController();
+  final List<TextEditingController> controllers1 = [];
+  final List<TextEditingController> controllers2 = [];
 
   final List<String> _currentAssets = [
     //  CHANGE TO LOGIC WHEN BACKEND
@@ -39,6 +39,16 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
   ];
 
   @override
+    void initState() {
+    super.initState();
+    // Initialize with 4 rows
+    for (int i = 0; i < 4; i++) {
+      controllers1.add(TextEditingController());
+      controllers2.add(TextEditingController());
+    }
+  }
+
+  @override
   void dispose() {
     _completionDate.dispose();
     _shortDescription.dispose();
@@ -46,38 +56,37 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
     _requiredTools.dispose();
     _toolLocations.dispose();
     super.dispose();
+    for (final c in controllers1) {
+      c.dispose();
+    }
+    for (final c in controllers2) {
+      c.dispose();
+    }
   }
 
 
-  // TODO: NEW VALIDTION USING ASTERICKS (*)
-  // --- Custom Dialog to show the list of missing fields ---
-  // void _showValidationErrorDialog(BuildContext context, List<String> missingFields) {
-  //   // Generate a comma-separated list with "and" before the last item
-  //   final String fieldsList = missingFields.length > 1
-  //     ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
-  //     : missingFields.first;
-
-  //   final String contentMessage = 
-  //     'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
-
-  //   showDialog(
-  //     context: context,
-  //     builder: (BuildContext dialogContext) {
-  //       return AlertDialog(
-  //         title: const Text('Required Information Missing'),
-  //         content: Text(contentMessage),
-  //         actions: <Widget>[
-  //           TextButton(
-  //             child: const Text('OK'),
-  //             onPressed: () {
-  //               Navigator.of(dialogContext).pop();
-  //             },
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
+  // VALIDTION USING ASTERICKS (*)
+  //--- Custom Dialog to show the list of missing fields ---
+  void _showValidationErrorDialog(BuildContext context) {
+    final String contentMessage = 'The field(s) with an asterick (*) must be filled out in order to save the asset.';
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Required Information Missing'),
+          content: Text(contentMessage),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
   // ----------------------------------------------------
   
 
@@ -103,7 +112,6 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
     if (_notes.text.isEmpty) {
       missingFields.add('Store');
     }
-
     // 5. Price (empty, invalid number, or out of range)
     final priceText = _requiredTools.text;
     final priceValue = double.tryParse(priceText);
@@ -116,10 +124,10 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
       missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
     }
 
-    // if (missingFields.isNotEmpty) {
-    //   _showValidationErrorDialog(context, missingFields);
-    //   return; 
-    // }
+    if (missingFields.isNotEmpty) {
+      _showValidationErrorDialog(context);
+      return; 
+    }
     
     // Create the full new Asset object
     final newAsset = Asset(
@@ -151,20 +159,6 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white, 
-
-      //MOVE THIS INSIDE PAGE
-      // appBar: AppBar(
-      //   // Use colors from the AppHeaderBar style
-      //   backgroundColor: AppColors.ebonyClay,
-      //   iconTheme: const IconThemeData(color: AppColors.sandyYellow), 
-      //   title: const Text(
-      //     "Add New Maintenance",
-      //     style: TextStyle(
-      //       color: AppColors.sandyYellow,
-      //       fontWeight: FontWeight.bold,
-      //     ),
-      //   ),
-      // ),
       body: SingleChildScrollView(
         child: Padding( 
           padding: const EdgeInsets.all(32.0),
@@ -178,17 +172,44 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  
               const SizedBox(height: Spacing.lg), 
+              Text(
+                "* - Must be filled out",
+                style: const TextStyle(
+                  color: AppColors.ebonyClay,
+                  fontSize: TypographyScale.field,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+              const SizedBox(height: Spacing.md), 
         
               // Form Fields
-              _buildConditionDropdown("AssetName", _selectedCondition, (newValue) {
+              _buildConditionDropdown("AssetName *", _selectedCondition, (newValue) {
                 setState(() => _selectedCondition = newValue);
               }),
-              _buildTextField("Completion Date (MM/DD/YYYY)", _completionDate, TextInputType.datetime),
-              _buildTextField("Short Description", _shortDescription, TextInputType.text),
+              _buildTextField("Completion Date (MM/DD/YYYY) *", _completionDate, TextInputType.datetime),
+              _buildTextField("Short Description *", _shortDescription, TextInputType.text),
               _buildTextField("Notes", _notes, TextInputType.text),
-              _buildTextTable(context, "Required Materials", _requiredTools, _toolLocations, TextInputType.text),
+              _buildTextTable(context, "Required Materials", controllers1, controllers2, TextInputType.text),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    controllers1.add(TextEditingController());
+                    controllers2.add(TextEditingController());
+                  });
+                },
+                icon: const Icon(
+                  Icons.add,
+                  color: AppColors.ebonyClay,
+                  size: 14),
+                label: const Text(
+                  "Add Row",
+                  style: const TextStyle(
+                    color: AppColors.ebonyClay,
+                    fontSize: TypographyScale.field,
+                    fontWeight: FontWeight.bold,
+                  ),),
+              ),
               // _buildTextField("Tools", _requiredTools, TextInputType.text),
               // _buildTextField("Location", _toolLocations, TextInputType.text),
               
@@ -208,7 +229,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                       borderRadius: BorderRadius.circular(Radii.md),
                     ),
                   ),
-                  child: const Text('Save New Asset'),
+                  child: const Text('Save Asset'),
                 ),
               ),
               const SizedBox(height: Spacing.lg),
@@ -315,122 +336,149 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
   }
 }
 
- // Custom input table component 
 Widget _buildTextTable(
   BuildContext context,
-  String label, 
-  TextEditingController controller1, 
-  TextEditingController controller2, 
-  TextInputType type, 
-  {bool readOnly = false}) {
+  String label,
+  List<TextEditingController> controllers1,
+  List<TextEditingController> controllers2,
+  TextInputType type, {
+  bool readOnly = false,
+}) {
+  // total column width = 250 + gap + 250 = 250 + Spacing.md + 250
+  final double totalWidth = 250 + Spacing.md + 250;
+
   return Padding(
-    padding: const EdgeInsets.only(top: Spacing.sm),
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.ebonyClay,
-              fontSize: TypographyScale.field,
-              fontWeight: FontWeight.bold,
+    padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section label
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.ebonyClay,
+            fontSize: TypographyScale.field,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: Spacing.xs),
+
+        // Horizontal scroll
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: MediaQuery.of(context).size.width * 1.5,
             ),
-          ),
-          const SizedBox(height: Spacing.xs),
-          //TOOLS COLUMN
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                width: 250,
-                child: Text(
-                  "Tools",
-                  style: const TextStyle(
-                    color: AppColors.ebonyClay,
-                    fontSize: TypographyScale.field,
-                    fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED
-                  ),
-                ),
-              ),
-              const SizedBox(width: Spacing.md),
-              SizedBox(
-                width: 250,
-                child: Text(
-                  "Current Location",
-                  style: const TextStyle(
-                    color: AppColors.ebonyClay,
-                    fontSize: TypographyScale.field,
-                    fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED box c
-                  ),
-                ),
-              ),
-            ],
-          ),
-          IntrinsicHeight(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              child: 
-                  Divider(
-                    height: 14,
-                    thickness: 2,
-                    color: AppColors.lightGrey
-                  ),
-            ),
-          ),
-          
-          //REQUIRED TOOL COLUMN - default 4 textfields 
-          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text),
-          const SizedBox(height: Spacing.xs),
-          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text), 
-          const SizedBox(height: Spacing.xs),
-          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text),
-          const SizedBox(height: Spacing.xs),
-          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text),
-          ]),
-              
-      
-          /*IconButton(
-            onPressed: () {
-              debugPrint("Add Maintenance Required Tool was pressed!");
-              Row(
-                children: [
-                  _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                  _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 250,
+                      child: Text(
+                        "Tools",
+                        style: const TextStyle(
+                          color: AppColors.ebonyClay,
+                          fontSize: TypographyScale.field,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: Spacing.md),
+                    SizedBox(
+                      width: 250,
+                      child: Text(
+                        "Current Location",
+                        style: const TextStyle(
+                          color: AppColors.ebonyClay,
+                          fontSize: TypographyScale.field,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
                   ],
-                );
-                },
-                icon: const Icon(
-                  Icons.add_circle,
-                  color: AppColors.ebonyClay,
-                  size: 28,
                 ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ), */
-          
-        
+
+                const SizedBox(height: Spacing.xs),
+
+                // Divider Bar
+                SizedBox(
+                  width: totalWidth,
+                  child: Divider(
+                    thickness: 2,
+                    color: AppColors.lightGrey,
+                  ),
+                ),
+
+                const SizedBox(height: Spacing.xs),
+
+                // START OF THE TABLE
+                Column(
+                  children: List<Widget>.generate(
+                    controllers1.length,
+                    (index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: Spacing.xs),
+                        child: Row(
+                          children: [
+                            // Tool input box
+                            SizedBox(
+                              width: 250,
+                              child: _buildTextInput(
+                                controller: controllers1[index],
+                                type: type,
+                                readOnly: readOnly,
+                              ),
+                            ),
+
+                            const SizedBox(width: Spacing.xs),
+
+                            // Location input box
+                            SizedBox(
+                              width: 250,
+                              child: _buildTextInput(
+                                controller: controllers2[index],
+                                type: type,
+                                readOnly: readOnly,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }
 
+
 Widget _buildRow({
-  required TextEditingController controller1,
-  required TextEditingController controller2,
+  required int index,
+  required List<TextEditingController> controller1,
+  required List<TextEditingController> controller2,
   required TextInputType type}) {
   return Row(
     children:[
       SizedBox(
         width:250, 
         child:
-            _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+            _buildTextInput(controller:controller1[index], type:TextInputType.text, readOnly: false),
       ),
-      const SizedBox(width: Spacing.xs),
+      const SizedBox(height: Spacing.xs),
       SizedBox(
         width:250, 
         child:
-          _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
+          _buildTextInput(controller:controller2[index], type:TextInputType.text, readOnly: false),
       ),
     ]);
   }
