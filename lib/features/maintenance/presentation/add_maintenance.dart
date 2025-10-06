@@ -316,136 +316,123 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
 }
 
  // Custom input table component 
-  Widget _buildTextTable(
-    BuildContext context,
-    String label, TextEditingController controller1, TextEditingController controller2, TextInputType type, {bool readOnly = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(top: Spacing.sm),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.ebonyClay,
-                fontSize: TypographyScale.field,
-                fontWeight: FontWeight.bold,
-              ),
+Widget _buildTextTable(
+  BuildContext context,
+  String label, 
+  TextEditingController controller1, 
+  TextEditingController controller2, 
+  TextInputType type, 
+  {bool readOnly = false}) {
+  return Padding(
+    padding: const EdgeInsets.only(top: Spacing.sm),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.ebonyClay,
+              fontSize: TypographyScale.field,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: Spacing.xs),
-            //TOOLS COLUMN
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  width: 250,
-                  child: Text(
-                    "Tools",
-                    style: const TextStyle(
-                      color: AppColors.ebonyClay,
-                      fontSize: TypographyScale.field,
-                      fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED
-                    ),
+          ),
+          const SizedBox(height: Spacing.xs),
+          //TOOLS COLUMN
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SizedBox(
+                width: 250,
+                child: Text(
+                  "Tools",
+                  style: const TextStyle(
+                    color: AppColors.ebonyClay,
+                    fontSize: TypographyScale.field,
+                    fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED
                   ),
                 ),
-                const SizedBox(width: Spacing.md),
-                SizedBox(
-                  width: 250,
-                  child: Text(
-                    "Current Location",
-                    style: const TextStyle(
-                      color: AppColors.ebonyClay,
-                      fontSize: TypographyScale.field,
-                      fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED box c
-                    ),
+              ),
+              const SizedBox(width: Spacing.md),
+              SizedBox(
+                width: 250,
+                child: Text(
+                  "Current Location",
+                  style: const TextStyle(
+                    color: AppColors.ebonyClay,
+                    fontSize: TypographyScale.field,
+                    fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED box c
                   ),
                 ),
-              ],
-            ),
-            IntrinsicHeight(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: 
-                    Divider(
-                      height: 14,
-                      thickness: 2,
-                      color: AppColors.lightGrey
-                    ),
               ),
+            ],
+          ),
+          IntrinsicHeight(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width,
+              child: 
+                  Divider(
+                    height: 14,
+                    thickness: 2,
+                    color: AppColors.lightGrey
+                  ),
             ),
-            
-            //REQUIRED TOOL COLUMN - default 4 textfields 
-            Row(
-              children:[
-                SizedBox(
-                  width:250, 
-                  child:
-                      _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                ),
-                const SizedBox(width: Spacing.md),
-                SizedBox(
-                  width:250, 
-                  child:
-                    _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                ),
-              ]),
-              const SizedBox(height: Spacing.xs),
+          ),
+          
+          //REQUIRED TOOL COLUMN - default 4 textfields 
+          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text),
+          const SizedBox(height: Spacing.xs),
+          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text), 
+          const SizedBox(height: Spacing.xs),
+          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text),
+          const SizedBox(height: Spacing.xs),
+          _buildRow(controller1:controller1, controller2:controller2, type:TextInputType.text),
+          ]),
+              
+      
+          /*IconButton(
+            onPressed: () {
+              debugPrint("Add Maintenance Required Tool was pressed!");
               Row(
-                children:[
-                  SizedBox(
-                    width:250, 
-                    child:
-                        _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                  ),
-                  const SizedBox(width: Spacing.md),
-                  SizedBox(
-                    width:250, 
-                    child:
-                      _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                  ),
-                ]),
-                const SizedBox(height: Spacing.xs),
-                Row(
-                children:[
-                  SizedBox(
-                    width:250, 
-                    child:
-                        _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                  ),
-                  const SizedBox(width: Spacing.md),
-                  SizedBox(
-                    width:250, 
-                    child:
-                      _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                  ),
-                ])
-                ]),
-                
+                children: [
+                  _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+                  _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
+                  ],
+                );
+                },
+                icon: const Icon(
+                  Icons.add_circle,
+                  color: AppColors.ebonyClay,
+                  size: 28,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ), */
+          
         
-                  /*IconButton(
-                    onPressed: () {
-                      debugPrint("Add Maintenance Required Tool was pressed!");
-                      Row(
-                        children: [
-                          _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                          _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
-                          ],
-                        );
-                        },
-                        icon: const Icon(
-                          Icons.add_circle,
-                          color: AppColors.ebonyClay,
-                          size: 28,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ), */
-           
-         
+    ),
+  );
+}
+
+Widget _buildRow({
+  required TextEditingController controller1,
+  required TextEditingController controller2,
+  required TextInputType type}) {
+  return Row(
+    children:[
+      SizedBox(
+        width:250, 
+        child:
+            _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
       ),
-    );
+      const SizedBox(width: Spacing.xs),
+      SizedBox(
+        width:250, 
+        child:
+          _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
+      ),
+    ]);
   }
 
 Widget _buildTextInput({required TextEditingController controller,required TextInputType type,required bool readOnly,}) {
