@@ -204,7 +204,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                   size: 14),
                 label: const Text(
                   "Add Row",
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.ebonyClay,
                     fontSize: TypographyScale.field,
                     fontWeight: FontWeight.bold,
@@ -461,27 +461,6 @@ Widget _buildTextTable(
   );
 }
 
-
-Widget _buildRow({
-  required int index,
-  required List<TextEditingController> controller1,
-  required List<TextEditingController> controller2,
-  required TextInputType type}) {
-  return Row(
-    children:[
-      SizedBox(
-        width:250, 
-        child:
-            _buildTextInput(controller:controller1[index], type:TextInputType.text, readOnly: false),
-      ),
-      const SizedBox(height: Spacing.xs),
-      SizedBox(
-        width:250, 
-        child:
-          _buildTextInput(controller:controller2[index], type:TextInputType.text, readOnly: false),
-      ),
-    ]);
-  }
 
 Widget _buildTextInput({required TextEditingController controller,required TextInputType type,required bool readOnly,}) {
   return TextField(
