@@ -7,4 +7,7 @@ class AppColors {
   // Supporting neutrals
   static const nearWhite   = Color(0xFFF8F9FB);
   static const darkText    = Color(0xFF1E1E1E);
+
+  //textboxes
+  static const lightGrey = Color(0xFFEBECED);
 }

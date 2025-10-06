@@ -4,6 +4,7 @@ import '../../../core/colors.dart';
 //import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:intl/intl.dart';
+import '../../maintenance/presentation/add_maintenance.dart';
 
 enum FilterType { all, overdue, upcoming, history }
 DateTime now = DateTime.now();
@@ -99,9 +100,27 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 const SizedBox(width: Spacing.md),
                 //addMaintenance button
                 IconButton(
-                  onPressed: () {}, // TODO: add maintenance routing page
-                  icon: const Icon(Icons.add_circle,color: AppColors.ebonyClay,size: 28,),
+                  //CHANGE: Implement navigation to AddAssetPage
+                  onPressed: () {
+                    debugPrint("Add Asset was pressed!");
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AppLayout(
+                          currentIndex: 1, // Stay on the Assets tab
+                          body: AddMaintenancePage(),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.add_circle,
+                    color: AppColors.ebonyClay,
+                    size: 28,
                   ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
               ],
             ),
             // FILTER BUTTONS

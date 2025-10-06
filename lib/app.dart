@@ -18,7 +18,7 @@ class App extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Hippo Exchange',
         theme: buildTheme(),
-        initialRoute: AppRoutes.login,
+        initialRoute: AppRoutes.home,
         routes: AppRoutes.routes,
         navigatorObservers: [routeObserver],
       ),
