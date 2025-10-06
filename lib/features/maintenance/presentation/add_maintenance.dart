@@ -323,24 +323,25 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
       padding: const EdgeInsets.only(top: Spacing.sm),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: IntrinsicWidth(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.ebonyClay,
-                  fontSize: TypographyScale.field,
-                  fontWeight: FontWeight.bold,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.ebonyClay,
+                fontSize: TypographyScale.field,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: Spacing.xs),
-              //TOOLS COLUMN
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
+            ),
+            const SizedBox(height: Spacing.xs),
+            //TOOLS COLUMN
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  width: 250,
+                  child: Text(
                     "Tools",
                     style: const TextStyle(
                       color: AppColors.ebonyClay,
@@ -348,17 +349,23 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                       fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED
                     ),
                   ),
-                  Text(
+                ),
+                const SizedBox(width: Spacing.md),
+                SizedBox(
+                  width: 250,
+                  child: Text(
                     "Current Location",
                     style: const TextStyle(
                       color: AppColors.ebonyClay,
                       fontSize: TypographyScale.field,
-                      fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED
+                      fontWeight: FontWeight.normal,  //CHANGE TO ITALICIZED box c
                     ),
                   ),
-                ],
-              ),
-              SizedBox(
+                ),
+              ],
+            ),
+            IntrinsicHeight(
+              child: SizedBox(
                 width: MediaQuery.of(context).size.width,
                 child: 
                     Divider(
@@ -367,51 +374,76 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                       color: AppColors.lightGrey
                     ),
               ),
-              
-              //REQUIRED TOOL COLUMN - default 4 textfields 
-              Column(
-                  children: [
-                    Table(
-                      columnWidths: const {
-                        0: FractionColumnWidth(0.8),
-                        1: FractionColumnWidth(0.8),
-                        },
-                      children: [
-                        TableRow( 
-                          children: [
-                            _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                            const SizedBox(width: Spacing.md),
-                            _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
-                        ]),
-                        // TableRow( children: [
-                        //    _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                        //    _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
-                        // ])
-                      ],
-                    ),
-                    ],
+            ),
+            
+            //REQUIRED TOOL COLUMN - default 4 textfields 
+            Row(
+              children:[
+                SizedBox(
+                  width:250, 
+                  child:
+                      _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
                 ),
-                    /*IconButton(
-                      onPressed: () {
-                        debugPrint("Add Maintenance Required Tool was pressed!");
-                        Row(
-                          children: [
-                            _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
-                            _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
-                            ],
-                          );
-                          },
-                          icon: const Icon(
-                            Icons.add_circle,
-                            color: AppColors.ebonyClay,
-                            size: 28,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ), */
-             ],
-           ),
-        ),
+                const SizedBox(width: Spacing.md),
+                SizedBox(
+                  width:250, 
+                  child:
+                    _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+                ),
+              ]),
+              const SizedBox(height: Spacing.xs),
+              Row(
+                children:[
+                  SizedBox(
+                    width:250, 
+                    child:
+                        _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+                  ),
+                  const SizedBox(width: Spacing.md),
+                  SizedBox(
+                    width:250, 
+                    child:
+                      _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+                  ),
+                ]),
+                const SizedBox(height: Spacing.xs),
+                Row(
+                children:[
+                  SizedBox(
+                    width:250, 
+                    child:
+                        _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+                  ),
+                  const SizedBox(width: Spacing.md),
+                  SizedBox(
+                    width:250, 
+                    child:
+                      _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+                  ),
+                ])
+                ]),
+                
+        
+                  /*IconButton(
+                    onPressed: () {
+                      debugPrint("Add Maintenance Required Tool was pressed!");
+                      Row(
+                        children: [
+                          _buildTextInput(controller:controller1, type:TextInputType.text, readOnly: false),
+                          _buildTextInput(controller:controller2, type:TextInputType.text, readOnly: false),
+                          ],
+                        );
+                        },
+                        icon: const Icon(
+                          Icons.add_circle,
+                          color: AppColors.ebonyClay,
+                          size: 28,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ), */
+           
+         
       ),
     );
   }
@@ -419,7 +451,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
 Widget _buildTextInput({required TextEditingController controller,required TextInputType type,required bool readOnly,}) {
   return TextField(
     controller: controller,
-    keyboardType: type,
+    keyboardType: type, 
     readOnly: readOnly,
     style: const TextStyle(color: AppColors.ebonyClay),
     decoration: InputDecoration(
