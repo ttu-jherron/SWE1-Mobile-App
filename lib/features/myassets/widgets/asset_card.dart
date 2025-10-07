@@ -5,101 +5,93 @@ import '../../../../core/colors.dart';
 import '../widgets/add_favorite.dart';
 import '../../assets/data/asset.dart';
 
-class AssetCard extends StatelessWidget {
-  final Asset asset;
+class AssetCard extends StatefulWidget {
   final VoidCallback? onTap;
+  final Asset asset;
+
   const AssetCard({super.key, required this.asset, this.onTap});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // Two columns layout width (adjust if you want 3-up)
-    final double cardWidth = (MediaQuery.of(context).size.width - 30*2 - 16) / 2;
+  State<AssetCard> createState() => _AssetCardState();
+}
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: cardWidth.clamp(160, 320), // prevents overly narrow wrap width
-        margin: const EdgeInsets.only(bottom: 18, right: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.black12),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top row (title + favorite or status icon)
-            Row(
+class _AssetCardState extends State<AssetCard> {
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 140, maxWidth: 140, minHeight: 60),
+      child: Card(
+        elevation: 0,
+        color: Colors.white,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(4),
+          onTap: widget.onTap ?? () => debugPrint("AssetCard tapped: ${widget.asset.name}"),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Text gets remaining space
-                Expanded(
-                  child: Text(
-                    asset.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ebonyClay,
+                // Image (same behavior as Home)
+                Card(
+                  margin: EdgeInsets.zero,
+                  color: AppColors.nearWhite,
+                  child: SizedBox(
+                    height: 120, // was 75
+                    width: double.infinity,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: _buildImage(widget.asset.imagePath),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  asset.favorite ? Icons.star : Icons.star_border,
-                  size: 20,
-                  color: asset.favorite ? AppColors.sandyYellow : Colors.black26,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Optional brand / category line
-            Text(
-              asset.brand,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 6),
-
-            // Price / location row (protect with Flexible widgets)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '\$${asset.price.toStringAsFixed(0)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ebonyClay,
+                const SizedBox(width: Spacing.sm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      widget.asset.brand,
+                      style: const TextStyle(
+                        color: AppColors.ebonyClay,
+                        fontSize: 14,
+                        height: 2.0,
+                      ),
                     ),
-                  ),
+                    const AddFavorite(),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    asset.currentLocation,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: theme.textTheme.caption?.copyWith(
-                      color: Colors.black45,
-                      fontSize: 11,
-                    ),
+                const SizedBox(width: Spacing.sm),
+                Text(
+                  widget.asset.title,
+                  style: const TextStyle(
+                    color: AppColors.ebonyClay,
+                    fontSize: 14,
+                    height: 1.0,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImage(String? path) {
+    if (path == null || path.isEmpty) {
+      return Image.asset('assets/images/bob.jpg', fit: BoxFit.cover);
+    }
+    if (path.startsWith('assets/')) {
+      return Image.asset(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+      );
+    }
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
     );
   }
 }
