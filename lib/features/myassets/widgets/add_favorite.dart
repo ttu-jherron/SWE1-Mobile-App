@@ -1,36 +1,29 @@
 import 'package:flutter/material.dart';
 import '../../../../core/colors.dart';
+import '../../assets/data/asset_store.dart';
 
-class AddFavorite extends StatefulWidget {
-  final double intSize; // store the size as a field
 
-  const AddFavorite({this.intSize = 14, Key? key}) : super(key: key);
-  // You can also provide a default size
-
-  @override
-  State<AddFavorite> createState() => _AddFavoriteState();
-}
-
-class _AddFavoriteState extends State<AddFavorite> {
-  bool _isClicked = false;
+class AddFavorite extends StatelessWidget {
+  final String assetId;
+  final double intSize;
+  const AddFavorite({super.key, required this.assetId, this.intSize = 18});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent, // still tappable
-      onTap: () {
-        setState(() {
-          _isClicked = !_isClicked;
-        });
+    return AnimatedBuilder(
+      animation: assetStore,
+      builder: (context, _) {
+        final isFav = assetStore.getById(assetId).favorite == true;
+        return IconButton(
+          iconSize: intSize,
+          icon: Icon(
+            isFav ? Icons.favorite : Icons.favorite_border,
+            color: isFav ? Colors.red : Colors.black45,
+          ),
+          onPressed: () => assetStore.toggleFavorite(assetId),
+          tooltip: isFav ? 'Unfavorite' : 'Favorite',
+        );
       },
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10.0),
-        child: Icon(
-          _isClicked ? Icons.favorite : Icons.favorite_border,
-          color: _isClicked ? Colors.red : AppColors.ebonyClay,
-          size: widget.intSize, // access the size via widget.size
-        ),
-      ),
     );
   }
 }

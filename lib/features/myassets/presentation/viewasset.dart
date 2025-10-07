@@ -11,6 +11,7 @@ import '../../maintenance/data/maintenance_store.dart';
 import '../../maintenance/data/maintenance_entry.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/routing.dart'; // add
+import '../../assets/data/asset_store.dart';
 
   final DateFormat _df = DateFormat('MMM dd, yyyy');
 
@@ -104,9 +105,9 @@ class ViewAssetPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 6.0),
-                    child: AddFavorite(intSize: 32),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6.0),
+                    child: AddFavorite(assetId: asset.id, intSize: 32), // pass id
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),

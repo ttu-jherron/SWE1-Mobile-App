@@ -9,6 +9,7 @@ import '../../assets/data/asset.dart';
 import '../../assets/data/asset_repository.dart';
 //ADDED: Import the AddAssetPage
 import '../../asset_inventory/presentation/add_asset.dart';
+import '../../assets/data/asset_store.dart';
 
 class MyAssetsPage extends StatefulWidget {
   const MyAssetsPage({super.key});

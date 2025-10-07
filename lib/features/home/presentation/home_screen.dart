@@ -8,6 +8,7 @@ import 'widgets/alert_banner.dart';
 import 'widgets/maintenance_card.dart';
 import 'widgets/asset_card.dart';
 import '../../assets/data/asset_repository.dart';
+import '../../assets/data/asset_store.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

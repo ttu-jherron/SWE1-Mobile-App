@@ -19,46 +19,61 @@ class _AssetCardState extends State<AssetCard> {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 140, maxWidth: 140, minHeight: 60),
+      constraints: const BoxConstraints(
+        minWidth: 160,
+        maxWidth: 160,
+        minHeight: 60,
+      ),
       child: Card(
         elevation: 0,
         color: Colors.white,
         child: InkWell(
           borderRadius: BorderRadius.circular(4),
-          onTap: widget.onTap ?? () => debugPrint("AssetCard tapped: ${widget.asset.name}"),
+          onTap: widget.onTap ??
+              () => debugPrint("AssetCard tapped: ${widget.asset.name}"),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(5, 12, 5, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image (same behavior as Home)
+                // Image
                 Card(
                   margin: EdgeInsets.zero,
                   color: AppColors.nearWhite,
                   child: SizedBox(
-                    height: 120, // was 75
+                    height: 140,
                     width: double.infinity,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
                       child: _buildImage(widget.asset.imagePath),
                     ),
                   ),
                 ),
                 const SizedBox(width: Spacing.sm),
+
+                // ✅ Brand text + Heart row (fixed overflow)
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      widget.asset.brand,
-                      style: const TextStyle(
-                        color: AppColors.ebonyClay,
-                        fontSize: 14,
-                        height: 2.0,
+                    Expanded(
+                      child: Text(
+                        widget.asset.brand,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.ebonyClay,
+                          fontSize: 14,
+                          height: 2.0,
+                        ),
                       ),
                     ),
-                    const AddFavorite(),
+                    const SizedBox(width: 4),
+                    AddFavorite(
+                      assetId: widget.asset.id,
+                      intSize: 20, // slightly smaller to avoid layout overflow
+                    ),
                   ],
                 ),
+
                 const SizedBox(width: Spacing.sm),
                 Text(
                   widget.asset.title,
@@ -68,6 +83,8 @@ class _AssetCardState extends State<AssetCard> {
                     height: 1.0,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -85,14 +102,15 @@ class _AssetCardState extends State<AssetCard> {
       return Image.asset(
         path,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+        errorBuilder: (_, __, ___) =>
+            Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
       );
     }
     return Image.file(
       File(path),
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+      errorBuilder: (_, __, ___) =>
+          Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
     );
   }
 }
-

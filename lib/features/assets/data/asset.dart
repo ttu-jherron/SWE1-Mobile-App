@@ -43,9 +43,9 @@ class Asset {
   final List<MaterialRow> requiredMaterials;
 
   // --- Favorites ---
-  final bool favorite; // NEW: favorite flag
+  bool favorite; // NEW: favorite flag
 
-  const Asset({
+  Asset({
     required this.id,
     required this.brand,
     required this.title,
