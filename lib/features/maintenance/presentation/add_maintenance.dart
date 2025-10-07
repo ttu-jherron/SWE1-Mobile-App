@@ -32,6 +32,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
 
   final List<String> _currentAssets = [
     //  CHANGE TO LOGIC WHEN BACKEND
+    // CHANGE COLOR FOR WHEN IN TEXTBOX
     'New',
     'Used - Like New',
     'Used - Good',
@@ -93,65 +94,50 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
   // --- LOGIC: Pass the data back to the calling screen (My Assets Page) ---
   void _addMaintenance() {
     final List<String> missingFields = [];
-    const double minPrice = 1.00;
-    const double maxPrice = 300000.00;
-
-    // 1. Brand Name
-    if (_completionDate.text.isEmpty) {
-      missingFields.add('Brand Name');
-    }
-    // 2. Asset Name
-    if (_shortDescription.text.isEmpty) {
-      missingFields.add('Asset Name');
-    }
-    // 3. Condition
+    // 1. Asset Name
     if (_selectedCondition == null) {
       missingFields.add('Condition');
     }
-    // 4. Store
-    if (_notes.text.isEmpty) {
-      missingFields.add('Store');
+    // 2. Completion Date
+    if (_completionDate.text.isEmpty) {
+      missingFields.add('Completion Date');
     }
-    // 5. Price (empty, invalid number, or out of range)
-    final priceText = _requiredTools.text;
-    final priceValue = double.tryParse(priceText);
-
-    if (priceText.isEmpty) {
-      missingFields.add('Price (cannot be empty)');
-    } else if (priceValue == null) {
-      missingFields.add('Price (must be a valid number)');
-    } else if (priceValue < minPrice || priceValue > maxPrice) {
-      missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
+    // 2. Short Description
+    if (_shortDescription.text.isEmpty) {
+      missingFields.add('Task');
     }
 
     if (missingFields.isNotEmpty) {
       _showValidationErrorDialog(context);
       return; 
     }
+    debugPrint('missing fields: ): $missingFields');
+    
+
     
     // Create the full new Asset object
-    final newAsset = Asset(
-      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-      brand: _completionDate.text,
-      title: _shortDescription.text, // Using name as title for simplicity
-      name: '${_completionDate.text} ${_shortDescription.text}',
+    // final newMaintenance = Asset(
+    //   id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+    //   brand: _completionDate.text,
+    //   title: _shortDescription.text, // Using name as title for simplicity
+    //   name: '${_completionDate.text} ${_shortDescription.text}',
       
-      // Purchase fields
-      condition: _selectedCondition!,
-      store: _notes.text,
-      price: priceValue!, // Use the safely parsed and validated value
+    //   // Purchase fields
+    //   condition: _selectedCondition!,
+    //   store: _notes.text,
+    //   price: priceValue!, // Use the safely parsed and validated value
       
-      // Default/placeholder values for Maintenance fields
-      completionDate: DateTime.now().add(const Duration(days: 365)),
-      shortDescription: 'Newly added asset.',
-      notes: '',
-      requiredMaterials: [],
-    );
+    //   // Default/placeholder values for Maintenance fields
+    //   completionDate: DateTime.now().add(const Duration(days: 365)),
+    //   shortDescription: 'Newly added asset.',
+    //   notes: '',
+    //   requiredMaterials: [],
+    // );
 
-    debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
+    //debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
     
     // Pass the new Asset object back to the previous screen
-    Navigator.pop(context, newAsset); 
+  Navigator.pop(context, AppRoutes.maintenance); 
   }
   // --------------------------------------------------------------------------
 
@@ -184,7 +170,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
               const SizedBox(height: Spacing.md), 
         
               // Form Fields
-              _buildConditionDropdown("AssetName *", _selectedCondition, (newValue) {
+              _buildConditionDropdown("Asset Name *", _selectedCondition, (newValue) {
                 setState(() => _selectedCondition = newValue);
               }),
               _buildTextField("Completion Date (MM/DD/YYYY) *", _completionDate, TextInputType.datetime),
@@ -210,16 +196,19 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                     fontWeight: FontWeight.bold,
                   ),),
               ),
-              // _buildTextField("Tools", _requiredTools, TextInputType.text),
-              // _buildTextField("Location", _toolLocations, TextInputType.text),
               
               const SizedBox(height: Spacing.xxl), 
         
-              //SHRINK BUTTON
               // Button
               Center(
                 child: ElevatedButton(
-                  onPressed: _addMaintenance,
+                  onPressed: (){
+                    _addMaintenance();
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.maintenance, // demo id
+                      );
+                    },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.ebonyClay,
                     foregroundColor: AppColors.sandyYellow,
@@ -293,6 +282,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          //dropdown menu label
           Text(
             label,
             style: const TextStyle(
@@ -301,14 +291,25 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
+
           const SizedBox(height: Spacing.xs),
+
           DropdownButtonFormField<String>(
             initialValue: _selectedCondition,
+            //selected text style
+            style: const TextStyle(
+              color: AppColors.ebonyClay, // text color inside the box
+              fontSize: TypographyScale.field,
+            ),
+            //drop down menu background
+            dropdownColor: AppColors.lightGrey,
+            //drop down decorations
             decoration: InputDecoration(
               filled: true,
               fillColor: AppColors.lightGrey,
               contentPadding: const EdgeInsets.symmetric(
-                  vertical: Spacing.xs, horizontal: Spacing.sm),
+                  vertical: Spacing.xs, horizontal: Spacing.sm
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
                 borderSide: BorderSide.none,
@@ -322,11 +323,18 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                 borderSide: const BorderSide(color: AppColors.lightGrey, width: 2.0),
               ),
             ),
+            //builds the dropdown
             items: _currentAssets.map<DropdownMenuItem<String>>((String condition) {
               return DropdownMenuItem<String>(
                 value: condition,
-                child: Text(condition),
+                child: 
+                  Text(
+                    condition,
+                    style: TextStyle(
+                      color: AppColors.ebonyClay,
+                    )),
               );
+
             }).toList(),
             onChanged: onChanged,
           ),
