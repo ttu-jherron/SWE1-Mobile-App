@@ -1,0 +1,170 @@
+import 'package:flutter/material.dart';
+import 'package:mobile_app/features/assets/data/asset.dart';
+import '../../../core/layout/app_layout.dart';
+import '../../../core/constants.dart';
+import '../../../core/routing.dart';
+import '../../maintenance/data/maintenance_item.dart';
+import 'widgets/alert_banner.dart';
+import 'widgets/maintenance_card.dart';
+import 'widgets/asset_card.dart';
+import '../../assets/data/asset_repository.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  // TODO: Replace with actual user ID from auth/session
+  static const String userId = 'user_33UeIDzYloCoZABaaCR1WPmV7MT';
+  bool showAlert = true;
+
+  // --- PLACEHOLDER DATA (swap with backend later) ---
+  final List<MaintenanceItem> upcoming = [
+    MaintenanceItem(
+      id: 'm1',
+      title: 'Pittsburgh Fiberglass Claw Hammer',
+      dueDate: DateTime.now().subtract(const Duration(days: 41)),
+      isLate: true,
+      thumbAsset: 'assets/images/Niagara.jpg',
+    ),
+    MaintenanceItem(
+      id: 'm2',
+      title: 'Predator 350W Power Station — Re-oil',
+      dueDate: DateTime.now().add(const Duration(days: 12)),
+      isLate: false,
+      thumbAsset: 'assets/images/Predator.jpg',
+    ),
+    MaintenanceItem(
+      id: 'm3',
+      title: 'Graphic Design',
+      dueDate: DateTime.now().add(const Duration(days: 12)),
+      isLate: false,
+      thumbAsset: 'assets/images/bob.jpg',
+    ),
+  ];
+  // ---------------------------------------------------
+
+  // REPLACE: repository-driven assets
+  List<Asset> _assets = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAssets();
+  }
+
+  Future<void> _loadAssets() async {
+    setState(() { _isLoading = true; });
+    try {
+      final assets = await assetRepository.getAll(userId);
+      debugPrint('HomeScreen: loaded \\${assets.length} assets');
+      for (final a in assets) {
+        debugPrint(' - \\${a.itemName} | images=\\${a.images.isNotEmpty ? a.images.first : "none"}');
+      }
+      setState(() {
+        _assets = assets;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('HomeScreen: failed to load assets: \\${e}');
+      setState(() { _isLoading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Compute favorites from repository assets where favorite == true
+  final List<Asset> favorites =
+    _assets.where((a) => a.favorite).toList(growable: false);
+
+    return AppLayout(
+      currentIndex: 0, // Home tab
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(Spacing.xl, Spacing.lg, Spacing.xl, Spacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (showAlert)
+                    AlertBanner(
+                      title: 'Important',
+                      message: 'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
+                      onClose: () => setState(() => showAlert = false),
+                    ),
+                  const SizedBox(height: Spacing.xl),
+
+                  const _SectionTitle('Upcoming Maintenance'),
+                  const SizedBox(height: Spacing.md),
+                  SizedBox(
+                    height: 92,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: upcoming.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                      itemBuilder: (ctx, i) => MaintenanceCard(
+                        item: upcoming[i],
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.maintenance,
+                            arguments: upcoming[i].id,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: Spacing.xl),
+                  const _SectionTitle('Favorite Assets'),
+                  const SizedBox(height: Spacing.md),
+                  SizedBox(
+                    height: 200,
+                    child: favorites.isEmpty
+                        ? const Center(child: Text('No favorites yet'))
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: favorites.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                            itemBuilder: (ctx, i) {
+                              final asset = favorites[i];
+                              return AssetCard(
+                                titleTop: asset.brandName,
+                                titleBottom: asset.itemName,
+                                imageAsset: asset.images.isNotEmpty ? asset.images.first : 'assets/images/bob.jpg',
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.viewAssets,
+                                    arguments: asset,
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.w800,
+        fontSize: 22,
+        color: Color(0xFF3C4652),
+      ),
+    );
+  }
+}
