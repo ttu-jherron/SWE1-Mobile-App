@@ -41,7 +41,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
     _brandController = TextEditingController(text: widget.asset.brand);
     _nameController = TextEditingController(text: widget.asset.title);
     _selectedCondition = widget.asset.condition;
-    _storeController = TextEditingController(text: widget.asset.store);
+    //_storeController = TextEditingController(text: widget.asset.store);
     _priceController =
         TextEditingController(text: widget.asset.price.toStringAsFixed(2));
     _imagePath = widget.asset.imagePath;
@@ -186,7 +186,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
       // Purchase fields
       condition: _selectedCondition, // Already validated not null
-      store: _storeController.text,
+      //store: _storeController.text,
       price: priceValue, // Use the safely parsed and validated value
 
       // NEW: Include the image path

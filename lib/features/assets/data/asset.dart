@@ -32,7 +32,7 @@ class Asset {
   
   // --- Purchase/Identity Fields ---
   final String condition;
-  final String store;
+  final String currentLocation;
   final double price;
   final String? imagePath; // Path to the image file
   
@@ -53,7 +53,7 @@ class Asset {
     
     // Purchase fields
     required this.condition,
-    required this.store,
+    required this.currentLocation,
     required this.price,
     this.imagePath,
     
@@ -70,27 +70,62 @@ class Asset {
 
   // Factory constructor for creating an Asset object from JSON
   factory Asset.fromJson(Map<String, dynamic> json) {
-    return Asset(
-      id: json['id'] as String,
-      brand: json['brand'] as String,
-      title: json['title'] as String,
-      name: json['name'] as String,
-      
-      // Purchase fields
-      condition: json['condition'] as String,
-      store: json['store'] as String,
-      price: (json['price'] as num).toDouble(),
-      imagePath: json['imagePath'] as String?,
-      
-      // Maintenance fields
-      completionDate: DateTime.parse(json['completionDate'] as String),
-      shortDescription: json['shortDescription'] as String,
-      notes: json['notes'] as String,
-      requiredMaterials: (json['requiredMaterials'] as List<dynamic>)
-          .map((item) => MaterialRow.fromJson(item as Map<String, dynamic>))
-          .toList(),
+    String _readString(dynamic v, {String fallback = ''}) {
+      if (v == null) return fallback;
+      if (v is String) return v;
+      return v.toString();
+    }
 
-      // Favorites
+    double _readDouble(dynamic v, {double fallback = 0.0}) {
+      if (v == null) return fallback;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? fallback;
+    }
+
+    DateTime _readDate(dynamic v) {
+      if (v == null) return DateTime.now();
+      if (v is DateTime) return v;
+      try {
+        return DateTime.parse(v.toString());
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+
+    final imagesDynamic = json['images'];
+    String? firstImage;
+    if (imagesDynamic is List && imagesDynamic.isNotEmpty) {
+      firstImage = imagesDynamic.first.toString();
+    }
+
+    final itemName = _readString(json['itemName']);
+    final brandName = _readString(json['brandName']);
+    final category = _readString(json['category']);
+    final status = _readString(json['status']);
+    final conditionDescription = _readString(json['conditionDescription']);
+    final location = _readString(json['currentLocation']);
+    final shortDesc =
+        category.isNotEmpty ? category : (status.isNotEmpty ? status : itemName);
+
+    final notesComposed = [
+      if (status.isNotEmpty) status.toUpperCase(),
+      if (conditionDescription.isNotEmpty) conditionDescription,
+      if (location.isNotEmpty) 'Location: $location',
+    ].join(' | ');
+
+    return Asset(
+      id: _readString(json['id']),
+      brand: brandName,
+      title: itemName,
+      name: itemName, // or "$brandName $itemName"
+      condition: conditionDescription,
+      currentLocation: location,
+      price: _readDouble(json['purchaseCost']),
+      imagePath: firstImage,
+      completionDate: _readDate(json['purchaseDate']),
+      shortDescription: shortDesc,
+      notes: notesComposed,
+      requiredMaterials: const <MaterialRow>[],
       favorite: (json['favorite'] as bool?) ?? false,
     );
   }
@@ -104,7 +139,7 @@ class Asset {
         
         // Purchase fields
         'condition': condition,
-        'store': store,
+        'currentLocation': currentLocation,
         'price': price,
         'imagePath': imagePath,
         
@@ -126,7 +161,7 @@ class Asset {
     String? title,
     String? name,
     String? condition,
-    String? store,
+    String? currentLocation,
     double? price,
     ValueGetter<String?>? imagePath, // Use ValueGetter for nullable updates
     DateTime? completionDate,
@@ -141,7 +176,7 @@ class Asset {
       title: title ?? this.title,
       name: name ?? this.name,
       condition: condition ?? this.condition,
-      store: store ?? this.store,
+      currentLocation: currentLocation ?? this.currentLocation,
       price: price ?? this.price,
       imagePath: imagePath != null ? imagePath() : this.imagePath,
       completionDate: completionDate ?? this.completionDate,
