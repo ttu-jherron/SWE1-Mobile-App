@@ -182,7 +182,7 @@ class ViewAssetPage extends StatelessWidget {
                           "Purchased",
                           _df.format(asset.completionDate),
                         ),
-                        _buildDetailRow("Short Desc", asset.shortDescription),
+                        _buildDetailRow("Category", asset.shortDescription),
                         _buildDetailRow("Favorite", asset.favorite ? "Yes" : "No"),
 
                         const SizedBox(height: 30),
