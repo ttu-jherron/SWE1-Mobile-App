@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart'; //Image Picker
 import '../../assets/data/asset.dart'; 
 import '../../../core/colors.dart'; 
 import '../../../core/constants.dart'; 
+import '../../../core/data/data_handler.dart';
 
 
 class AddAssetPage extends StatefulWidget {
@@ -112,7 +113,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
   }
   
   // --- LOGIC: Pass the data back to the calling screen (My Assets Page) ---
-  void _addAsset() {
+  void _addAsset() async {
     final List<String> missingFields = [];
     const double minPrice = 1.00;
     const double maxPrice = 300000.00;
@@ -151,31 +152,62 @@ class _AddAssetPageState extends State<AddAssetPage> {
       _showValidationErrorDialog(context, missingFields);
       return; 
     }
-    
-    // Create the full new Asset object
-    final newAsset = Asset(
-      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-      brand: _brandController.text,
-      title: _nameController.text, // Using name as title for simplicity
-      name: '${_brandController.text} ${_nameController.text}',
-      
-      // Purchase fields
-      condition: _selectedCondition!,
-      store: _storeController.text,
-      price: priceValue!, // Use the safely parsed and validated value
-      imagePath: _imagePath, // NEW: Include the image path
-      
-      // Default/placeholder values for Maintenance fields
-      completionDate: DateTime.now().add(const Duration(days: 365)),
-      shortDescription: 'Newly added asset.',
-      notes: '',
-      requiredMaterials: [],
-    );
 
-    debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
-    
-    // Pass the new Asset object back to the previous screen
-    Navigator.pop(context, newAsset); 
+    try {
+      final dataHandler = DataHandler.fromContext(context);
+      
+      await dataHandler.addAsset(
+        itemName: _nameController.text,
+        brandName: _brandController.text,
+        category: 'Uncategorized', // You can add a category dropdown if needed
+        purchaseDate: DateTime.now(),
+        purchaseCost: priceValue!,
+        currentLocation: _storeController.text,
+        images: _imagePath != null ? [_imagePath!] : [],
+        conditionDescription: _selectedCondition!,
+        status: 'Active',
+        favorite: false,
+      );
+
+      // ✅ Success dialog or toast/snackbar
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Asset added successfully!")),
+      );
+
+      Navigator.pop(context, true); // Return to previous screen
+    } catch (e) {
+      debugPrint('Error adding asset: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to add asset: $e")),
+      );
+      
+      // Create the full new Asset object
+      final newAsset = Asset(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        brand: _brandController.text,
+        title: _nameController.text, // Using name as title for simplicity
+        name: '${_brandController.text} ${_nameController.text}',
+        
+        // Purchase fields
+        condition: _selectedCondition!,
+        store: _storeController.text,
+        price: priceValue!, // Use the safely parsed and validated value
+        imagePath: _imagePath, // NEW: Include the image path
+        
+        // Default/placeholder values for Maintenance fields
+        completionDate: DateTime.now().add(const Duration(days: 365)),
+        shortDescription: 'Newly added asset.',
+        notes: '',
+        requiredMaterials: [],
+      );
+
+      debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
+      
+      // Pass the new Asset object back to the previous screen
+      Navigator.pop(context);
+    }
   }
   //---------------------------------------------
 
@@ -449,5 +481,3 @@ class _AddAssetPageState extends State<AddAssetPage> {
     );
   }
 }
-
-
