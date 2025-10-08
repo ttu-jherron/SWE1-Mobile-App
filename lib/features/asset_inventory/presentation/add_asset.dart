@@ -366,15 +366,29 @@ class _AddAssetPageState extends State<AddAssetPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.ebonyClay,
-              fontSize: TypographyScale.field,
-              fontWeight: FontWeight.bold,
+          // Label with optional red asterisk
+          RichText(
+            text: TextSpan(
+              text: label,
+              style: const TextStyle(
+                color: AppColors.ebonyClay,
+                fontSize: TypographyScale.field,
+                fontWeight: FontWeight.bold,
+              ),
+              children: const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: TypographyScale.field,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: Spacing.xs),
+
+          // Input field
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
@@ -383,7 +397,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
-                  vertical: Spacing.xs, horizontal: Spacing.sm),
+                vertical: Spacing.xs,
+                horizontal: Spacing.sm,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
                 borderSide: BorderSide.none,
@@ -394,8 +410,10 @@ class _AddAssetPageState extends State<AddAssetPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
-                borderSide:
-                    const BorderSide(color: AppColors.sandyYellow, width: 2.0),
+                borderSide: const BorderSide(
+                  color: AppColors.sandyYellow,
+                  width: 2.0,
+                ),
               ),
             ),
           ),
@@ -416,30 +434,40 @@ class _AddAssetPageState extends State<AddAssetPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.ebonyClay,
-              fontSize: TypographyScale.field,
-              fontWeight: FontWeight.bold,
+          // Label with optional red asterisk
+          RichText(
+            text: TextSpan(
+              text: label,
+              style: const TextStyle(
+                color: AppColors.ebonyClay,
+                fontSize: TypographyScale.field,
+                fontWeight: FontWeight.bold,
+              ),
+              children: [
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: TypographyScale.field,
+                  ),
+                ),
+            ],
             ),
           ),
-          const SizedBox(height: Spacing.xs),
-          DropdownButtonFormField<String>(
-            // Use `value` for dynamic state tracking
-            value: currentValue, 
-            // Removed top-level style as it was being ignored.
 
-            // NEW: Use selectedItemBuilder to explicitly style the selected value text
+          const SizedBox(height: Spacing.xs),
+
+          // Dropdown field
+          DropdownButtonFormField<String>(
+            value: currentValue,
             selectedItemBuilder: (BuildContext context) {
               return _conditions.map<Widget>((String condition) {
                 return Align(
-                  alignment: Alignment.centerLeft, // Align value text to left
+                  alignment: Alignment.centerLeft,
                   child: Text(
                     condition,
                     style: const TextStyle(
-                      // IMPORTANT FIX: Force dark text color for the field value
-                      color: AppColors.ebonyClay, 
+                      color: AppColors.ebonyClay,
                       fontSize: TypographyScale.field,
                     ),
                   ),
@@ -450,7 +478,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
-                  vertical: Spacing.xs, horizontal: Spacing.sm),
+                vertical: Spacing.xs,
+                horizontal: Spacing.sm,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
                 borderSide: BorderSide.none,
@@ -461,17 +491,19 @@ class _AddAssetPageState extends State<AddAssetPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
-                borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2.0),
+                borderSide: const BorderSide(
+                  color: AppColors.sandyYellow,
+                  width: 2.0,
+                ),
               ),
             ),
             items: _conditions.map<DropdownMenuItem<String>>((String condition) {
               return DropdownMenuItem<String>(
                 value: condition,
-                // FIX: Set text color for the options *in the dropdown menu* (Near White)
                 child: Text(
-                  condition, 
+                  condition,
                   style: const TextStyle(color: AppColors.nearWhite),
-                ), 
+                ),
               );
             }).toList(),
             onChanged: onChanged,
