@@ -119,12 +119,11 @@ class MaintenanceDetailScreen extends StatelessWidget {
 
                     ElevatedButton(
                       onPressed:() {
-                        // Optional: jump to your maintenance detail route for this asset
                         if (a != null) {
                           Navigator.pushNamed(
                             context,
                             AppRoutes.maintenanceEdit,
-                            arguments: a!.id, // ✅ just pass the asset ID
+                            arguments: a.id,
                           );
                         } else {
                           debugPrint("Asset is null — cannot navigate");

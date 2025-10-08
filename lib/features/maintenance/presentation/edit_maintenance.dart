@@ -166,7 +166,7 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Maintenance",
+              Text("Edit Maintenance",
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: Colors.black87,
                     fontWeight: FontWeight.w800,
@@ -183,60 +183,62 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
                 ),
               ),
               const SizedBox(height: Spacing.md), 
-        
+      
+              if (a == null)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('Asset not found', style: TextStyle(color: Colors.black87)),
+                )
+              else
               // Form Fields
-              _buildConditionDropdown("Asset Name *", _selectedCondition, (newValue) {
-                setState(() => _selectedCondition = newValue);
-              }),
-              _buildTextField("Completion Date (MM/DD/YYYY) *", _completionDate, TextInputType.datetime),
-              _buildTextField("Short Description *", _shortDescription, TextInputType.text),
-              _buildTextField("Notes", _notes, TextInputType.text),
-              _buildTextTable(context, "Needed Materials", controllers1, controllers2, TextInputType.text),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    controllers1.add(TextEditingController());
-                    controllers2.add(TextEditingController());
-                  });
-                },
-                icon: const Icon(
-                  Icons.add,
-                  color: AppColors.ebonyClay,
-                  size: 14),
-                label: const Text(
-                  "Add Row",
-                  style: TextStyle(
+                _buildConditionDropdown("Asset Name *", _selectedCondition, (newValue) {
+                  setState(() => _selectedCondition = newValue);
+                }),
+                _buildTextField("Completion Date (MM/DD/YYYY) *", _completionDate, TextInputType.datetime),
+                _buildTextField("Short Description *", _shortDescription, TextInputType.text),
+                _buildTextField("Notes", _notes, TextInputType.text),
+                _buildTextTable(context, "Needed Materials", controllers1, controllers2, TextInputType.text),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      controllers1.add(TextEditingController());
+                      controllers2.add(TextEditingController());
+                    });
+                  },
+                  icon: const Icon(
+                    Icons.add,
                     color: AppColors.ebonyClay,
-                    fontSize: TypographyScale.field,
-                    fontWeight: FontWeight.bold,
-                  ),),
-              ),
-              
-              const SizedBox(height: Spacing.xxl), 
-        
-              // Button
-              Center(
-                child: ElevatedButton(
-                  onPressed: (){
-                    _addMaintenance();
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.maintenance, // demo id
-                      );
-                    },
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.ebonyClay,
-                    foregroundColor: AppColors.sandyYellow,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.xl, vertical: Spacing.sm),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Radii.md),
-                    ),
-                  ),
-                  child: const Text('Save Maintenance'),
+                    size: 14),
+                  label: const Text(
+                    "Add Row",
+                    style: TextStyle(
+                      color: AppColors.ebonyClay,
+                      fontSize: TypographyScale.field,
+                      fontWeight: FontWeight.bold,
+                    ),),
                 ),
-              ),
-              const SizedBox(height: Spacing.lg),
+                
+                const SizedBox(height: Spacing.xxl), 
+          
+                // Button
+                Center(
+                  child: ElevatedButton(
+                    onPressed: (){
+                      Navigator.of(context).pop();
+                      },
+                    style: TextButton.styleFrom(
+                      backgroundColor: AppColors.ebonyClay,
+                      foregroundColor: AppColors.sandyYellow,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.xl, vertical: Spacing.sm),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(Radii.md),
+                      ),
+                    ),
+                    child: const Text('Save Maintenance'),
+                  ),
+                ),
+                const SizedBox(height: Spacing.lg),
             ],
           ),
         ),
