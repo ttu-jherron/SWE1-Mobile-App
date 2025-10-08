@@ -70,20 +70,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     // Compute favorites from repository assets where favorite == true
-    final List<Asset> favorites =
-        _assets.where((a) => a.favorite).toList(growable: false);
+    final List<Asset> favorites = _assets
+        .where((a) => a.favorite)
+        .toList(growable: false);
 
     return AppLayout(
       currentIndex: 0, // Home tab
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(Spacing.xl, Spacing.lg, Spacing.xl, Spacing.xl),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.xl,
+          Spacing.lg,
+          Spacing.xl,
+          Spacing.xl,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (showAlert)
               AlertBanner(
                 title: 'Important',
-                message: 'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
+                message:
+                    'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
                 onClose: () => setState(() => showAlert = false),
               ),
             const SizedBox(height: Spacing.xl),
@@ -115,17 +122,45 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: 200,
               child: favorites.isEmpty
-                  ? const Center(child: Text('No favorites yet'))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(
+                            Icons.star_border,
+                            size: 36,
+                            color: Color(0xFF9AA3AD),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'You currently have not favorited any assets.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFF3C4652),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Go to My Assets to favorite your assets.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Color(0xFF3C4652)),
+                          ),
+                        ],
+                      ),
+                    )
                   : ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: favorites.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(width: Spacing.md),
                       itemBuilder: (ctx, i) {
                         final asset = favorites[i];
                         return AssetCard(
                           titleTop: asset.brand,
                           titleBottom: asset.title,
-                          imageAsset: asset.imagePath ?? 'assets/images/bob.jpg',
+                          imageAsset:
+                              asset.imagePath ?? 'assets/images/bob.jpg',
                           onTap: () {
                             Navigator.pushNamed(
                               context,
