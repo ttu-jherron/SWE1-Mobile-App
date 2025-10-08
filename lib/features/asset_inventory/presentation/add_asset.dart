@@ -87,11 +87,11 @@ class _AddAssetPageState extends State<AddAssetPage> {
   void _showValidationErrorDialog(BuildContext context, List<String> missingFields) {
     // Generate a comma-separated list with "and" before the last item
     final String fieldsList = missingFields.length > 1
-      ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
+      ? '   - ${missingFields.sublist(0, missingFields.length - 1).join('\n   - ')} \n   - ${missingFields.last}'
       : missingFields.first;
 
     final String contentMessage = 
-      'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
+      'The following field(s) must be filled out correctly to save the asset:\n\n$fieldsList';
 
     showDialog(
       context: context,
@@ -140,9 +140,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
     final priceValue = double.tryParse(priceText);
 
     if (priceText.isEmpty) {
-      missingFields.add('Price (cannot be empty)');
+      missingFields.add('Price');
     } else if (priceValue == null) {
-      missingFields.add('Price (must be a valid number)');
+      missingFields.add('Price');
     } else if (priceValue < minPrice || priceValue > maxPrice) {
       missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
     }
