@@ -432,4 +432,60 @@ class DataHandler {
     // Optimistically update cache and notify listeners
     _mergeBackendPatch(body);
   }
+
+  // Api call to add an asset
+  Future<void> addAsset({
+  required String itemName,
+  required String brandName,
+  required String category,
+  required DateTime purchaseDate,
+  required double purchaseCost,
+  required String currentLocation,
+  required List<String> images,
+  required String conditionDescription,
+  required String status,
+  required bool favorite,
+}) async {
+  final clerkId = user?.id;
+  if (clerkId == null) {
+    throw Exception("User not authenticated");
+  }
+
+  final uri = Uri.parse('$baseUrl/assets');
+
+  final body = {
+    "itemName": itemName,
+    "brandName": brandName,
+    "category": category,
+    "purchaseDate": purchaseDate.toIso8601String(),
+    "purchaseCost": purchaseCost,
+    "currentLocation": currentLocation,
+    "images": images,
+    "conditionDescription": conditionDescription,
+    "ownerUserId": clerkId,
+    "status": status,
+    "favorite": favorite,
+  };
+
+  final res = await _client.post(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-User-Id': clerkId,
+    },
+    body: jsonEncode(body),
+  );
+
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    debugPrint('AddAsset failed: ${res.statusCode} - ${res.body}');
+    throw Exception('Failed to add asset: ${res.statusCode}');
+  }
+
+  debugPrint('Asset added successfully: ${res.body}');
+
+  // Optionally refresh profile or assets list here
+  await _refreshBackendProfileForUser(clerkId);
+}
+
 }
