@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Import the package
 import 'package:mobile_app/app.dart';
 import 'package:mobile_app/core/colors.dart';
-import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
+//import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import '../../assets/data/asset.dart'; // change to maintenance page
+import 'package:mobile_app/features/assets/data/asset_repository.dart';
 
 //DROP DOWN ASSET NAMES
 //ADD TABLE
@@ -16,10 +17,10 @@ class AddMaintenancePage extends StatefulWidget {
   const AddMaintenancePage({super.key});
 
   @override
-  State<AddMaintenancePage> createState() => _AddMaintenancePageState();
+  State<AddMaintenancePage> createState() => _EditMaintenancePageState();
 }
 
-class _AddMaintenancePageState extends State<AddMaintenancePage> {
+class _EditMaintenancePageState extends State<AddMaintenancePage> {
   // Controllers
   final _completionDate = TextEditingController();
   final _shortDescription = TextEditingController();
@@ -38,7 +39,8 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
     'Used - Good',
     'Used - Poor',
   ];
-
+  //ADDING DYNAMIC DATA
+  
   @override
     void initState() {
     super.initState();
@@ -114,7 +116,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
     debugPrint('missing fields: ): $missingFields');
     
 
-    
+
     // Create the full new Asset object
     // final newMaintenance = Asset(
     //   id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
@@ -143,6 +145,19 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
 
   @override
   Widget build(BuildContext context) {
+
+    final args = ModalRoute.of(context)!.settings.arguments;
+    Asset? a;
+    if (args is Asset) {
+      a = args;
+    } else if (args is String) {
+      try {
+        a = assetRepository.getAll().firstWhere((x) => x.id == args);
+      } catch (_) {
+        a = null;
+      }
+    }
+
     return Scaffold(
       backgroundColor: Colors.white, 
       body: SingleChildScrollView(
@@ -176,7 +191,7 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
               _buildTextField("Completion Date (MM/DD/YYYY) *", _completionDate, TextInputType.datetime),
               _buildTextField("Short Description *", _shortDescription, TextInputType.text),
               _buildTextField("Notes", _notes, TextInputType.text),
-              _buildTextTable(context, "Required Materials", controllers1, controllers2, TextInputType.text),
+              _buildTextTable(context, "Needed Materials", controllers1, controllers2, TextInputType.text),
               TextButton.icon(
                 onPressed: () {
                   setState(() {
@@ -209,16 +224,16 @@ class _AddMaintenancePageState extends State<AddMaintenancePage> {
                         AppRoutes.maintenance, // demo id
                       );
                     },
-                  style: ElevatedButton.styleFrom(
+                  style: TextButton.styleFrom(
                     backgroundColor: AppColors.ebonyClay,
                     foregroundColor: AppColors.sandyYellow,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.xl, vertical: Spacing.md),
+                        horizontal: Spacing.xl, vertical: Spacing.sm),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(Radii.md),
                     ),
                   ),
-                  child: const Text('Save Asset'),
+                  child: const Text('Save Maintenance'),
                 ),
               ),
               const SizedBox(height: Spacing.lg),

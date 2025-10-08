@@ -5,7 +5,7 @@ import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/maintenance/presentation/maintenance_screen.dart';
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
-
+import '../features/maintenance/presentation/edit_maintenance.dart';
 import '../features/myassets/presentation/myassets.dart';
 import 'package:mobile_app/features/myassets/presentation/viewasset.dart';
 import 'package:mobile_app/features/assets/data/asset.dart'; 
@@ -72,9 +72,10 @@ class AppRoutes {
 
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
-  static const maintenance = '/maintenance';
 
+  static const maintenance = '/maintenance';
   static const maintenanceDetail = '/maintenance/detail';
+  static const maintenanceEdit = '/maintenance/edit';
   
   static Map<String, WidgetBuilder> get routes => {
     login: (_) => const LoginScreen(),
@@ -103,6 +104,10 @@ class AppRoutes {
     maintenanceDetail: (context) {
       // Screen will read ModalRoute.of(context)!.settings.arguments
       return const MaintenanceDetailScreen();
+    },
+    maintenanceEdit: (context) {
+      // Screen will read ModalRoute.of(context)!.settings.arguments
+      return const AddMaintenancePage();
     },
   };
 }

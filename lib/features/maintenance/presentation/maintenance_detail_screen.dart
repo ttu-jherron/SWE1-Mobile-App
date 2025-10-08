@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_app/features/assets/data/asset.dart';
 import 'package:mobile_app/features/assets/data/asset_repository.dart';
 import '../../../core/constants.dart';
+import '../../../core/routing.dart';
 import '../../../core/colors.dart';
 import '../../../core/layout/app_layout.dart'; // ADD
 
@@ -114,6 +115,32 @@ class MaintenanceDetailScreen extends StatelessWidget {
                     _Label('Required Materials'),
                     const SizedBox(height: Spacing.sm),
                     _MaterialsTable(rows: a.requiredMaterials),
+                    const SizedBox(height: Spacing.xl),
+
+                    ElevatedButton(
+                      onPressed:() {
+                        // Optional: jump to your maintenance detail route for this asset
+                        if (a != null) {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.maintenanceEdit,
+                            arguments: a!.id, // ✅ just pass the asset ID
+                          );
+                        } else {
+                          debugPrint("Asset is null — cannot navigate");
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.ebonyClay,
+                        foregroundColor: AppColors.sandyYellow,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Spacing.xl, vertical: Spacing.sm),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(Radii.md),
+                        ),
+                      ),
+                      child: const Text('Edit Maintenance'),
+                    ),
                     const SizedBox(height: Spacing.xl),
                   ],
                 ),
