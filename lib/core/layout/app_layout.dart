@@ -9,6 +9,7 @@ class AppLayout extends StatefulWidget {
   final Widget body;
   final bool popOnCurrentTabTap;
   final bool useYellowBackground;
+  final bool navigateToTabRootOnCurrentTap; // NEW
 
   const AppLayout({
     super.key,
@@ -16,6 +17,7 @@ class AppLayout extends StatefulWidget {
     required this.body,
     this.popOnCurrentTabTap = false,
     this.useYellowBackground = false,
+    this.navigateToTabRootOnCurrentTap = false, // NEW
   });
 
   @override
@@ -23,34 +25,64 @@ class AppLayout extends StatefulWidget {
 }
 
 class _AppLayoutState extends State<AppLayout> {
+  String _routeForIndex(int i) {
+    switch (i) {
+      case 0:
+        return AppRoutes.home;
+      case 1:
+        return AppRoutes.myAssets;
+      case 2:
+        return AppRoutes.maintenance;
+      case 3:
+        return AppRoutes.profile;
+      default:
+        return AppRoutes.home;
+    }
+  }
+
   void _handleNavTap(BuildContext context, int i) {
-    // If user taps the current tab, optionally pop (used by View Asset and Edit Profile)
+    final target = _routeForIndex(i);
+    final route = ModalRoute.of(context);
+    final currentName = route?.settings.name;
+    final hasArgs = route?.settings.arguments != null;
+
+    // Consider we are on a subpage if:
+    // - current route name differs from the tab root OR
+    // - the route has arguments (typical for detail/edit pages) OR
+    // - the navigator can pop (we're deeper than the tab root)
+    final onSubRoute =
+        (currentName != null && currentName != target) ||
+        hasArgs ||
+        Navigator.of(context).canPop();
+
+    // If user taps the current tab...
     if (i == widget.currentIndex) {
+      if (widget.navigateToTabRootOnCurrentTap || onSubRoute) {
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).pushNamedAndRemoveUntil(target, (_) => false);
+        return;
+      }
       if (widget.popOnCurrentTabTap) {
         Navigator.of(context).maybePop();
       }
       return;
     }
-    switch (i) {
-      case 0:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
-        break;
-      case 1:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.myAssets, (_) => false);
-        break;
-      case 2:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.maintenance, (_) => false);
-        break;
-      case 3:
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.profile, (_) => false);
-        break;
-    }
+
+    // Different tab tapped: always go to that tab's root via root navigator
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil(target, (_) => false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: widget.useYellowBackground ? AppColors.sandyYellow : null,
+      backgroundColor: widget.useYellowBackground
+          ? AppColors.sandyYellow
+          : null,
       appBar: const AppHeaderBar(),
       bottomNavigationBar: AppBottomNav(
         currentIndex: widget.currentIndex,

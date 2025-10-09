@@ -27,7 +27,11 @@ class AppBottomNav extends StatelessWidget {
           indicatorColor: Colors.transparent,
           selectedIndex: currentIndex,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          onDestinationSelected: onTap,
+          onDestinationSelected: (i) {
+            // IMPORTANT: do not early-return when i == currentIndex
+            // ...any analytics or haptics...
+            onTap(i);
+          },
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.home_outlined, color: AppColors.sandyYellow),
@@ -40,8 +44,14 @@ class AppBottomNav extends StatelessWidget {
               label: 'My Assets',
             ),
             NavigationDestination(
-              icon: Icon(Icons.calendar_month_outlined, color: AppColors.sandyYellow),
-              selectedIcon: Icon(Icons.calendar_month, color: AppColors.sandyYellow),
+              icon: Icon(
+                Icons.calendar_month_outlined,
+                color: AppColors.sandyYellow,
+              ),
+              selectedIcon: Icon(
+                Icons.calendar_month,
+                color: AppColors.sandyYellow,
+              ),
               label: 'Maintenance',
             ),
             NavigationDestination(
@@ -64,7 +74,8 @@ class ProfileAvatarBackend extends StatefulWidget {
   State<ProfileAvatarBackend> createState() => _ProfileAvatarBackendState();
 }
 
-class _ProfileAvatarBackendState extends State<ProfileAvatarBackend> with WidgetsBindingObserver {
+class _ProfileAvatarBackendState extends State<ProfileAvatarBackend>
+    with WidgetsBindingObserver {
   Timer? _burstTimer;
   Timer? _slowTimer;
   int _burstStep = 0;
@@ -118,7 +129,8 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend> with Widget
   bool _hasCache() {
     try {
       final dh = DataHandler.fromContext(context);
-      return dh.cachedBackendProfile != null && dh.cachedBackendProfile!.isNotEmpty;
+      return dh.cachedBackendProfile != null &&
+          dh.cachedBackendProfile!.isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -131,16 +143,20 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend> with Widget
     }
     final auth = ClerkAuth.of(context);
     final dh = DataHandler(auth: auth);
-    if (dh.cachedBackendProfile != null && dh.cachedBackendProfile!.isNotEmpty) {
+    if (dh.cachedBackendProfile != null &&
+        dh.cachedBackendProfile!.isNotEmpty) {
       _stopTimers();
       return;
     }
     try {
-      await dh.backendFetchProfile(force: true).timeout(const Duration(seconds: 5));
+      await dh
+          .backendFetchProfile(force: true)
+          .timeout(const Duration(seconds: 5));
     } catch (_) {
       // ignore; retry schedule continues
     }
-    if (dh.cachedBackendProfile != null && dh.cachedBackendProfile!.isNotEmpty) {
+    if (dh.cachedBackendProfile != null &&
+        dh.cachedBackendProfile!.isNotEmpty) {
       _stopTimers();
       if (mounted) setState(() {});
     }
@@ -176,7 +192,9 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend> with Widget
     _burstTimer?.cancel();
     _burstTimer = Timer(delay, () async {
       if (!mounted) return;
-      final exceeded = _burstStarted != null && DateTime.now().difference(_burstStarted!) > _burstMax;
+      final exceeded =
+          _burstStarted != null &&
+          DateTime.now().difference(_burstStarted!) > _burstMax;
       if (exceeded) {
         _startSlow();
         return;
@@ -219,7 +237,8 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend> with Widget
   @override
   Widget build(BuildContext context) {
     final dh = DataHandler.fromContext(context);
-    final hasCache = dh.cachedBackendProfile != null && dh.cachedBackendProfile!.isNotEmpty;
+    final hasCache =
+        dh.cachedBackendProfile != null && dh.cachedBackendProfile!.isNotEmpty;
 
     // Keep priming alive as state changes
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensurePriming());
@@ -259,7 +278,11 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend> with Widget
                 errorWidget: (context, url, error) => CircleAvatar(
                   radius: 12,
                   backgroundColor: Colors.grey.shade400,
-                  child: const Icon(Icons.person, size: 14, color: Colors.white),
+                  child: const Icon(
+                    Icons.person,
+                    size: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -280,7 +303,9 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend> with Widget
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.sandyYellow),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.sandyYellow,
+                    ),
                   ),
                 ),
               );
