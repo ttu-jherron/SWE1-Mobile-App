@@ -1,15 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
-// import '../../../core/routing.dart';
 import '../widgets/asset_card.dart';
 import '../presentation/viewasset.dart';
 import '../../../core/layout/app_layout.dart';
-//IMPORT: Import Asset and AssetRepository
+// CHANGE: Use DataHandler + Asset model instead of in‑memory repo
+import 'package:mobile_app/core/data/data_handler.dart';
 import '../../assets/data/asset.dart';
-import '../../assets/data/asset_repository.dart';
-//ADDED: Import the AddAssetPage
 import '../../asset_inventory/presentation/add_asset.dart';
-import '../../assets/data/asset_store.dart';
 
 class MyAssetsPage extends StatefulWidget {
   const MyAssetsPage({super.key});
@@ -19,34 +18,130 @@ class MyAssetsPage extends StatefulWidget {
 }
 
 class _MyAssetsPageState extends State<MyAssetsPage> {
-  //CHANGE: State to hold the list of assets
   List<Asset> _assetList = [];
-  
+  bool _loading = true;
+  bool _error = false;
+  StreamSubscription<List<Asset>>? _sub;
+  bool _initialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    //ADDED: Load assets from the repository on initialization
-    _loadAssets();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) return;
+    _initialized = true;
+    _initLoad();
   }
-  
-  void _loadAssets() {
-    // In a real app, this would be an async call, but for the in-memory repo, it's fine
-    try {
-      final assets = assetRepository.getAll();
+
+  Future<void> _initLoad() async {
+    final handler = DataHandler.fromContext(context);
+    // Stream for live updates
+    _sub = handler.assetsStream.listen((assets) {
+      if (!mounted) return;
       setState(() {
         _assetList = assets;
+        _loading = false;
+        _error = false;
+      });
+    });
+    try {
+      final assets = await handler.getAssets(); // cached or network
+      if (!mounted) return;
+      setState(() {
+        _assetList = assets;
+        _loading = false;
+        _error = false;
       });
     } catch (e) {
-      debugPrint("Error loading assets: $e");
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    final handler = DataHandler.fromContext(context);
+    try {
+      final assets = await handler.getAssets(force: true, staleOk: false);
+      if (!mounted) return;
+      setState(() {
+        _assetList = assets;
+        _error = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = true;
+      });
     }
   }
 
   @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    Widget body;
+
+    if (_loading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (_error) {
+      body = Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Failed to load assets'),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _loading = true;
+                  _error = false;
+                });
+                _refresh();
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    } else if (_assetList.isEmpty) {
+      body = const Center(child: Text('No assets yet'));
+    } else {
+      body = SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+            child: Wrap(
+              children: _assetList.map((asset) {
+                return AssetCard(
+                  asset: asset,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AppLayout(
+                          currentIndex: 1,
+                          body: ViewAssetPage(asset: asset),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Column(
         children: [
-          // Header row
           Container(
             height: MediaQuery.of(context).size.height * 0.13,
             color: Colors.white,
@@ -64,14 +159,12 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                   ),
                 ),
                 IconButton(
-                  //CHANGE: Implement navigation to AddAssetPage
                   onPressed: () {
-                    debugPrint("Add Asset was pressed!");
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const AppLayout(
-                          currentIndex: 1, // Stay on the Assets tab
+                          currentIndex: 1,
                           body: AddAssetPage(),
                         ),
                       ),
@@ -85,39 +178,21 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Refresh',
+                  onPressed: _refresh,
+                  icon: const Icon(Icons.refresh, color: AppColors.ebonyClay),
+                ),
               ],
             ),
           ),
-
-          // Scrollable section
           Expanded(
-            child: Container(
-              color: Colors.white,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                  child: Wrap(
-                    children: _assetList.map((asset) {
-                      return AssetCard(
-                        asset: asset, 
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AppLayout(
-                                currentIndex: 1,
-                                body: ViewAssetPage(
-                                  asset: asset,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ),
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              child: Container(
+                color: Colors.white,
+                child: body,
               ),
             ),
           ),

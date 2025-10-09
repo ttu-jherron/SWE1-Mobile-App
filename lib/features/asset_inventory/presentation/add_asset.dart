@@ -192,7 +192,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
         
         // Purchase fields
         condition: _selectedCondition!,
-        store: _storeController.text,
+        //store: _storeController.text,
         price: priceValue!, // Use the safely parsed and validated value
         imagePath: _imagePath, // NEW: Include the image path
         
@@ -200,7 +200,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
         completionDate: DateTime.now().add(const Duration(days: 365)),
         shortDescription: 'Newly added asset.',
         notes: '',
-        requiredMaterials: [],
+        requiredMaterials: [], currentLocation: '',
       );
 
       debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');

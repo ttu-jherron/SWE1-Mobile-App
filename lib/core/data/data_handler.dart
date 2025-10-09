@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:http/http.dart' as http;
+import 'package:mobile_app/features/assets/data/asset.dart';
 
 class DataHandler {
   // Instance deps
@@ -13,16 +14,50 @@ class DataHandler {
   final String baseUrl;
   final http.Client _client;
 
-  // Use emulator base URL by default; kept in a static so static fetch can use it
-  static String _globalBaseUrl = 'http://10.0.2.2:8080';
+  // Global base URL (kept in sync by latest instance)
+  static final String _globalDevUrl = 'http://10.0.2.2:8080';
+  static final String _globalProdUrl = 'https://api.thehippoexchange.com';
+  static String _globalBaseUrl = "";
+  static bool _useProd = true; // environment flag
+
+  static String get _defaultBaseUrl => _useProd ? _globalProdUrl : _globalDevUrl;
+
+  // NEW: normalize helper (ensures scheme + strips trailing slash)
+  static String _normalizeBase(String raw) {
+    var v = raw.trim();
+    if (v.isEmpty) return _defaultBaseUrl;
+    if (!v.startsWith('http://') && !v.startsWith('https://')) {
+      v = 'https://$v'; // default to https
+    }
+    if (v.endsWith('/')) v = v.substring(0, v.length - 1);
+    return v;
+  }
+
+  static void setEnvironment({required bool production}) {
+    _useProd = production;
+    _globalBaseUrl = _normalizeBase(production ? _globalProdUrl : _globalDevUrl);
+  }
 
   DataHandler({required this.auth, String? baseUrl, http.Client? client})
-      : baseUrl = baseUrl ?? _globalBaseUrl,
+      : baseUrl = _normalizeBase(
+            baseUrl ??
+                (_globalBaseUrl.isNotEmpty
+                    ? _globalBaseUrl
+                    : _defaultBaseUrl)),
         _client = client ?? http.Client() {
-    // Keep static base URL in sync with latest instance
+    // Keep global in sync & normalized
     _globalBaseUrl = this.baseUrl;
     _ensureClerkSubscription(auth);
     _ensurePollingStarted();
+  }
+
+  // Convenience to build a full Uri safely
+  static Uri _buildUri(String path) {
+    final base = _normalizeBase(
+        _globalBaseUrl.isNotEmpty ? _globalBaseUrl : _defaultBaseUrl);
+    final cleanPath =
+        path.startsWith('/') ? path : '/$path'; // ensure single slash join
+    return Uri.parse('$base$cleanPath');
   }
 
   static DataHandler fromContext(BuildContext context) {
@@ -30,38 +65,174 @@ class DataHandler {
     return DataHandler(auth: auth);
   }
 
-  // ===== Caches, streams, activity/polling (unchanged) =====
+  // ================== Profile Caches / Streams ==================
   static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(0);
   static const Duration _refreshThreshold = Duration(minutes: 1);
 
+  // Clerk
   static const Duration _clerkTtl = Duration(seconds: 30);
   static Map<String, dynamic>? _cachedClerkProfile;
   static DateTime? _clerkCachedAt;
-
-  static const Duration _backendTtl = Duration(seconds: 30);
-  static Map<String, dynamic>? _cachedBackendProfile;
-  static DateTime? _backendCachedAt;
-
   static final _clerkProfileController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get clerkProfileStream => _clerkProfileController.stream;
   Map<String, dynamic>? get cachedClerkProfile => _cachedClerkProfile;
 
+  // Backend profile
+  static const Duration _backendTtl = Duration(seconds: 30);
+  static Map<String, dynamic>? _cachedBackendProfile;
+  static DateTime? _backendCachedAt;
   static final _backendProfileController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get backendProfileStream => _backendProfileController.stream;
   Map<String, dynamic>? get cachedBackendProfile => _cachedBackendProfile;
+  static Future<Map<String, dynamic>>? _ongoingBackendFetch;
 
+  // Activity / polling
   static const Duration _pollInterval = Duration(seconds: 30);
   static const Duration _activityWindow = Duration(seconds: 30);
   static DateTime _lastActivity = DateTime.fromMillisecondsSinceEpoch(0);
   static Timer? _pollTimer;
-  static Future<Map<String, dynamic>>? _ongoingBackendFetch;
-
   static bool _profileActive = false;
 
+  // Clerk user
   clerk.User? get user => auth.user;
   String get clerkID => user!.id;
 
-  // ===== Public read API =====
+  // ================== Assets Cache ==================
+  static const Duration _assetsSoftTtl = Duration(seconds: 60);
+  static const Duration _assetsHardTtl = Duration(minutes: 10);
+  static List<Asset>? _cachedAssets;                                  // CHANGED
+  static DateTime? _assetsFetchedAt;
+  static Future<List<Asset>>? _inFlightAssets;                        // CHANGED
+  static final _assetsController = StreamController<List<Asset>>.broadcast(); // CHANGED
+
+  Stream<List<Asset>> get assetsStream => _assetsController.stream;   // CHANGED
+  List<Asset>? get cachedAssets => _cachedAssets;                     // CHANGED
+
+  bool _assetsSoftExpired() {
+    if (_assetsFetchedAt == null) return true;
+    return DateTime.now().difference(_assetsFetchedAt!) > _assetsSoftTtl;
+  }
+
+  bool _assetsHardExpired() {
+    if (_assetsFetchedAt == null) return true;
+    return DateTime.now().difference(_assetsFetchedAt!) > _assetsHardTtl;
+  }
+
+  void invalidateAssets() {
+    _assetsFetchedAt = null;
+  }
+
+  void _emitAssets() {
+    if (_cachedAssets != null) {
+      _assetsController.add(List<Asset>.unmodifiable(_cachedAssets!)); // CHANGED
+    }
+  }
+
+  bool _listShallowEquals(List<Asset>? a, List<Asset>? b) {           // CHANGED
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final ai = a[i];
+      final bi = b[i];
+      if (ai.id != bi.id) return false;
+      // Optional: deeper comparison if needed (hash or toJson string compare)
+    }
+    return true;
+  }
+
+  Future<List<Asset>> _fetchAssetsForUser(String userId) {
+    if (_inFlightAssets != null) return _inFlightAssets!;
+    final uri = _buildUri('/assets'); // CHANGED
+
+    _inFlightAssets = () async {
+      try {
+        final res = await _client
+            .get(
+              uri,
+              headers: {
+                'Accept': 'application/json',
+                'X-User-Id': userId,
+              },
+            )
+            .timeout(const Duration(seconds: 8));
+
+        if (res.statusCode == 200) {
+          final decoded = jsonDecode(res.body);
+          if (decoded is List) {
+            final list = decoded
+                .map<Asset>((e) => Asset.fromJson(
+                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>)))
+                .toList();
+            final changed = !_listShallowEquals(_cachedAssets, list);
+            _cachedAssets = list;
+            _assetsFetchedAt = DateTime.now();
+            if (changed) _emitAssets();
+          } else {
+            debugPrint('DataHandler: Assets payload not a list (${res.body})');
+          }
+        } else if (res.statusCode == 401 || res.statusCode == 403) {
+          debugPrint('DataHandler: Unauthorized assets fetch (${res.statusCode})');
+          // Do not clear cache; rethrow only if no cache
+          if (_cachedAssets == null) {
+            throw Exception('Unauthorized');
+          }
+        } else {
+          debugPrint('DataHandler: Assets fetch failed ${res.statusCode}');
+          if (_cachedAssets == null) {
+            throw Exception('Failed to fetch assets: ${res.statusCode}');
+          }
+        }
+      } catch (e) {
+        debugPrint('DataHandler: Assets fetch error $e (uri=$uri)');
+        if (_cachedAssets == null) rethrow;
+      } finally {
+        _inFlightAssets = null;
+      }
+      return _cachedAssets ?? <Asset>[];
+    }();
+    return _inFlightAssets!;
+  }
+
+  Future<List<Asset>> getAssets({                                   // CHANGED
+    bool force = false,
+    bool staleOk = true,
+  }) async {
+    markActivity();
+    final uid = user?.id;
+    if (uid == null) throw Exception('User not authenticated');
+
+    if (!force && _cachedAssets != null) {
+      final softExpired = _assetsSoftExpired();
+      final hardExpired = _assetsHardExpired();
+
+      if (!softExpired) {
+        return _cachedAssets!;
+      }
+      if (softExpired && !hardExpired && staleOk) {
+        _fetchAssetsForUser(uid); // background refresh
+        return _cachedAssets!;
+      }
+    }
+    return await _fetchAssetsForUser(uid);
+  }
+
+  void _mergeOrInsertAsset(Map<String, dynamic> assetJson) {          // CHANGED
+    final asset = Asset.fromJson(assetJson);
+    final list = (_cachedAssets ?? <Asset>[]).toList();
+    final idx = list.indexWhere((e) => e.id == asset.id);
+    if (idx >= 0) {
+      list[idx] = asset;
+    } else {
+      list.insert(0, asset);
+    }
+    _cachedAssets = list;
+    _assetsFetchedAt = DateTime.now();
+    _emitAssets();
+  }
+
+  // ================== Activity / Context ==================
   void markActivity() {
     _lastActivity = DateTime.now();
   }
@@ -75,18 +246,18 @@ class DataHandler {
     _profileActive = false;
   }
 
+  // ================== Backend Profile (public) ==================
   Future<Map<String, dynamic>> getProfile({bool preferCache = true, bool forceNetwork = false}) async {
     markActivity();
-
     final uid = user?.id;
     if (uid == null) {
       throw Exception("User not found");
     }
-
     if (preferCache && !forceNetwork && _cachedBackendProfile != null) {
-      return _cachedBackendProfile!;
+      final fresh = _backendCachedAt != null &&
+          DateTime.now().difference(_backendCachedAt!) < _backendTtl;
+      if (fresh) return _cachedBackendProfile!;
     }
-
     return await _refreshBackendProfileForUser(uid);
   }
 
@@ -94,7 +265,7 @@ class DataHandler {
     return getProfile(preferCache: !force, forceNetwork: force);
   }
 
-  // ===== Clerk methods =====
+  // ================== Clerk Profile ==================
   Future<Map<String, dynamic>> clerkFetchProfile({bool force = false}) async {
     final now = DateTime.now();
     final fresh = _clerkCachedAt != null && now.difference(_clerkCachedAt!) < _clerkTtl;
@@ -122,63 +293,54 @@ class DataHandler {
     final changed = _didClerkProfileChange(_cachedClerkProfile, map);
     _cachedClerkProfile = map;
     _clerkCachedAt = DateTime.now();
-
-    if (changed) {
-      _emitClerk();
-    }
-
+    if (changed) _emitClerk();
     return map;
   }
 
   Future<void> clerkRefreshUserData() async {
     final now = DateTime.now();
-    if (now.difference(_lastRefreshAttemptTime) < _refreshThreshold) {
-      return;
-    }
+    if (now.difference(_lastRefreshAttemptTime) < _refreshThreshold) return;
     try {
       _lastRefreshAttemptTime = now;
       await auth.refreshClient();
       await auth.refreshEnvironment();
-      debugPrint('DataHandler: Refreshed client and environment');
+      debugPrint('DataHandler: Refreshed clerk client/environment');
     } catch (e) {
-      debugPrint('DataHandler: Error refreshing user data: $e');
+      debugPrint('DataHandler: Clerk refresh error: $e');
     }
   }
 
-  // ===== Backend fetch (uses global base URL) =====
+  // ================== Backend Profile Fetch ==================
   static Future<Map<String, dynamic>> _refreshBackendProfileForUser(String userId) async {
-    if (_ongoingBackendFetch != null) {
-      return await _ongoingBackendFetch!;
-    }
+    if (_ongoingBackendFetch != null) return await _ongoingBackendFetch!;
+
+    final uri = _buildUri('/users/$userId'); // CHANGED
 
     _ongoingBackendFetch = () async {
       try {
-        final response = await http.get(
-          Uri.parse("$_globalBaseUrl/users/$userId"),
-          headers: {
-            'Accept': 'application/json',
-            'X-User-Id': userId, // required by backend
-          },
-        );
+        final response = await http
+            .get(
+              uri,
+              headers: {
+                'Accept': 'application/json',
+                'X-User-Id': userId,
+              },
+            )
+            .timeout(const Duration(seconds: 8));
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> data = jsonDecode(response.body);
           _updateBackendCacheIfChanged(data);
-          debugPrint('DataHandler: Backend profile fetched successfully');
           return _cachedBackendProfile!;
         } else {
-          debugPrint('DataHandler: Backend request failed with status: ${response.statusCode}');
-          debugPrint('DataHandler: Response body: ${response.body}');
-          if (_cachedBackendProfile != null) {
-            return _cachedBackendProfile!;
-          }
-          throw Exception('Failed to fetch profile: ${response.statusCode}');
+          debugPrint(
+              'DataHandler: Backend status ${response.statusCode} (uri=$uri)');
+          if (_cachedBackendProfile != null) return _cachedBackendProfile!;
+          throw Exception('Failed profile fetch: ${response.statusCode}');
         }
       } catch (e) {
-        debugPrint('DataHandler: Error fetching backend profile for user $userId: $e');
-        if (_cachedBackendProfile != null) {
-          return _cachedBackendProfile!;
-        }
+        debugPrint('DataHandler: Backend profile error $userId -> $e (uri=$uri)');
+        if (_cachedBackendProfile != null) return _cachedBackendProfile!;
         rethrow;
       } finally {
         _ongoingBackendFetch = null;
@@ -192,9 +354,7 @@ class DataHandler {
     final changed = _cachedBackendProfile == null || !mapEquals(_cachedBackendProfile!, newData);
     _cachedBackendProfile = newData;
     _backendCachedAt = DateTime.now();
-    if (changed) {
-      _emitBackend();
-    }
+    if (changed) _emitBackend();
   }
 
   static void _mergeBackendPatch(Map<String, dynamic> patch) {
@@ -209,7 +369,7 @@ class DataHandler {
     }
   }
 
-  // ===== Combined helpers =====
+  // ================== Combined Helpers ==================
   Future<Map<String, Map<String, dynamic>>> fetchBothDataSources({bool force = false}) async {
     try {
       final backendData = await backendFetchProfile(force: force);
@@ -218,7 +378,7 @@ class DataHandler {
         'backend': backendData,
       };
     } catch (e) {
-      debugPrint('DataHandler: Error fetching backend data: $e');
+      debugPrint('DataHandler: Combined fetch error: $e');
       return {
         'clerk': <String, dynamic>{},
         'backend': _cachedBackendProfile ?? <String, dynamic>{},
@@ -234,7 +394,7 @@ class DataHandler {
     return separatedData['backend'] ?? <String, dynamic>{};
   }
 
-  // ===== Clerk subscription =====
+  // ================== Clerk Subscription ==================
   static ClerkAuthState? _subscribedAuth;
 
   static void _ensureClerkSubscription(ClerkAuthState auth) {
@@ -247,15 +407,13 @@ class DataHandler {
   static void _onClerkAuthChanged() {
     final auth = _subscribedAuth;
     if (auth == null) return;
-
     final u = auth.user;
+
     if (u == null) {
       _cachedClerkProfile = <String, dynamic>{};
       _clerkCachedAt = DateTime.now();
-
       _cachedBackendProfile = null;
       _backendCachedAt = null;
-
       _emitClerk();
       return;
     }
@@ -280,8 +438,8 @@ class DataHandler {
   static bool _didClerkProfileChange(Map<String, dynamic>? oldMap, Map<String, dynamic> newMap) {
     if (oldMap == null) return true;
     return oldMap['imageUrl'] != newMap['imageUrl'] ||
-           oldMap['username'] != newMap['username'] ||
-           oldMap['email']    != newMap['email'];
+        oldMap['username'] != newMap['username'] ||
+        oldMap['email'] != newMap['email'];
   }
 
   static void _emitClerk() {
@@ -296,7 +454,7 @@ class DataHandler {
     return DateTime.now().difference(at) > _clerkTtl;
   }
 
-  // ===== Polling =====
+  // ================== Polling ==================
   static void _ensurePollingStarted() {
     if (_pollTimer != null) return;
     _pollTimer = Timer.periodic(_pollInterval, (_) => _onPollTick());
@@ -306,18 +464,15 @@ class DataHandler {
     final auth = _subscribedAuth;
     final u = auth?.user;
     if (u == null) return;
-
     if (!_profileActive) return;
-
     final inactive = DateTime.now().difference(_lastActivity) > _activityWindow;
     if (inactive) return;
-
     try {
       await _refreshBackendProfileForUser(u.id);
     } catch (_) {}
   }
 
-  // ===== Priming (unchanged) =====
+  // ================== Priming ==================
   static Timer? _primeTimer;
   static bool _isPriming = false;
   static int _primeIndex = 0;
@@ -339,14 +494,11 @@ class DataHandler {
       _stopPriming();
       return;
     }
-
     if (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty) {
       _stopPriming();
       return;
     }
-
     if (_isPriming && _primingUserId == u.id) return;
-
     if (_lastPrimeStop != null &&
         DateTime.now().difference(_lastPrimeStop!) < _primeCooldown) {
       return;
@@ -394,13 +546,12 @@ class DataHandler {
     _lastPrimeStop = DateTime.now();
   }
 
-  // ===== Write API =====
+  // ================== Write API ==================
   Future<void> updateUserProfile({
     required String clerkId,
     String? firstName,
     String? lastName,
     String? phoneNumber,
-    // TODO Remove Username and Email from backend and transition to clerk
     String? username,
     String? email,
   }) async {
@@ -408,10 +559,8 @@ class DataHandler {
     if (firstName != null) body['firstName'] = firstName;
     if (lastName != null) body['lastName'] = lastName;
     if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
-    // TODO Remove Username and Email from backend and transition to clerk
     if (username != null) body['username'] = username;
     if (email != null) body['email'] = email;
-
     if (body.isEmpty) return;
 
     final uri = Uri.parse('$baseUrl/users/$clerkId');
@@ -420,7 +569,7 @@ class DataHandler {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-User-Id': clerkId, // required by backend
+        'X-User-Id': clerkId,
       },
       body: jsonEncode(body),
     );
@@ -429,63 +578,66 @@ class DataHandler {
       throw Exception('Backend update failed (${res.statusCode}): ${res.body}');
     }
 
-    // Optimistically update cache and notify listeners
     _mergeBackendPatch(body);
   }
 
-  // Api call to add an asset
   Future<void> addAsset({
-  required String itemName,
-  required String brandName,
-  required String category,
-  required DateTime purchaseDate,
-  required double purchaseCost,
-  required String currentLocation,
-  required List<String> images,
-  required String conditionDescription,
-  required String status,
-  required bool favorite,
-}) async {
-  final clerkId = user?.id;
-  if (clerkId == null) {
-    throw Exception("User not authenticated");
+    required String itemName,
+    required String brandName,
+    required String category,
+    required DateTime purchaseDate,
+    required double purchaseCost,
+    required String currentLocation,
+    required List<String> images,
+    required String conditionDescription,
+    required String status,
+    required bool favorite,
+  }) async {
+    final clerkId = user?.id;
+    if (clerkId == null) {
+      throw Exception("User not authenticated");
+    }
+
+    final uri = Uri.parse('$baseUrl/assets');
+    final body = {
+      "itemName": itemName,
+      "brandName": brandName,
+      "category": category,
+      "purchaseDate": purchaseDate.toIso8601String(),
+      "purchaseCost": purchaseCost,
+      "currentLocation": currentLocation,
+      "images": images,
+      "conditionDescription": conditionDescription,
+      "ownerUserId": clerkId,
+      "status": status,
+      "favorite": favorite,
+    };
+
+    final res = await _client.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-User-Id': clerkId,
+      },
+      body: jsonEncode(body),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      debugPrint('AddAsset failed: ${res.statusCode} - ${res.body}');
+      throw Exception('Failed to add asset: ${res.statusCode}');
+    }
+
+    debugPrint('Asset added successfully: ${res.body}');
+
+    try {
+      final decoded = jsonDecode(res.body);
+      if (decoded is Map<String, dynamic>) {
+        _mergeOrInsertAsset(decoded); // now uses Asset
+      }
+    } catch (_) {}
+
+    // Optionally refresh related profile data (if backend updates counts, etc.)
+    await _refreshBackendProfileForUser(clerkId);
   }
-
-  final uri = Uri.parse('$baseUrl/assets');
-
-  final body = {
-    "itemName": itemName,
-    "brandName": brandName,
-    "category": category,
-    "purchaseDate": purchaseDate.toIso8601String(),
-    "purchaseCost": purchaseCost,
-    "currentLocation": currentLocation,
-    "images": images,
-    "conditionDescription": conditionDescription,
-    "ownerUserId": clerkId,
-    "status": status,
-    "favorite": favorite,
-  };
-
-  final res = await _client.post(
-    uri,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-User-Id': clerkId,
-    },
-    body: jsonEncode(body),
-  );
-
-  if (res.statusCode < 200 || res.statusCode >= 300) {
-    debugPrint('AddAsset failed: ${res.statusCode} - ${res.body}');
-    throw Exception('Failed to add asset: ${res.statusCode}');
-  }
-
-  debugPrint('Asset added successfully: ${res.body}');
-
-  // Optionally refresh profile or assets list here
-  await _refreshBackendProfileForUser(clerkId);
-}
-
 }

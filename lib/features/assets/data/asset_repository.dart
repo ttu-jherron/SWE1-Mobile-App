@@ -17,7 +17,7 @@ class AssetRepository {
       
       // FIX: Added required fields (condition, store, price) and imagePath
       condition: 'New', // Default hardcoded condition
-      store: 'Harbor Freight Tools', // Default hardcoded store
+      //store: 'Harbor Freight Tools', // Default hardcoded store
       price: 349.99, // Default hardcoded price
       imagePath: 'assets/images/PredatorHippo.png',
       
@@ -29,7 +29,7 @@ class AssetRepository {
         MaterialRow(tool: 'power supply cord', location: 'cord box'),
         MaterialRow(tool: 'solar panels', location: 'bottom garage shelf'),
       ],
-      favorite: true,
+      favorite: true, currentLocation: '',
     ),
     //ADDED: Additional dummy assets for the list view
     'asset_002': Asset(
@@ -38,14 +38,14 @@ class AssetRepository {
       title: 'Model 4020 Tractor',
       name: 'John Deere 4020',
       condition: 'Used - Good',
-      store: 'Local Farm Auction',
+      //store: 'Local Farm Auction',
       price: 15000.00,
       imagePath: 'assets/images/Tractor.png',
       completionDate: DateTime(2024, 1, 1),
       shortDescription: 'Engine Oil Change',
       notes: 'Need to replace hydraulic lines soon.',
       requiredMaterials: [],
-      favorite: true,
+      favorite: true, currentLocation: '',
     ),
     'asset_003': Asset(
       id: 'asset_003',
@@ -53,14 +53,14 @@ class AssetRepository {
       title: 'V15 Detect',
       name: 'Dyson V15',
       condition: 'Used - Like New',
-      store: 'Amazon',
+      //store: 'Amazon',
       price: 699.00,
       imagePath: 'assets/images/HippoVacuumV2.png',
       completionDate: DateTime(2026, 6, 15),
       shortDescription: 'Filter cleaning',
       notes: 'Annual filter cleaning required.',
       requiredMaterials: [],
-      favorite: true,
+      favorite: true, currentLocation: '',
       //currentLocation: "Living Room",
     ),
   };
