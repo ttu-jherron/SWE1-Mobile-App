@@ -1,3 +1,5 @@
+import 'package:mobile_app/features/maintenance/data/maintenance_store.dart';
+import '../../maintenance/data/maintenance_store.dart'; // where your burner assets live
 import 'asset.dart';
 
 // I added two more dummy assets and a required getAll() method to simulate fetching all 

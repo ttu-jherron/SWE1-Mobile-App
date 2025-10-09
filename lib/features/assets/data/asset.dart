@@ -63,6 +63,7 @@ class Asset {
     required this.notes,
     required this.requiredMaterials,
 
+
     // Favorites
     this.favorite = false,
     //this.currentLocation,
