@@ -98,9 +98,41 @@ class _AssetCardState extends State<AssetCard> {
     if (path == null || path.isEmpty) {
       return Image.asset('assets/images/bob.jpg', fit: BoxFit.cover);
     }
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        (loadingProgress.expectedTotalBytes!)
+                    : null,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (_, __, ___) =>
+            Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+      );
+    }
     if (path.startsWith('assets/')) {
       return Image.asset(
         path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+      );
+    }
+    if (path.startsWith('file://')) {
+      return Image.file(
+        File(Uri.parse(path).toFilePath()),
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
             Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
