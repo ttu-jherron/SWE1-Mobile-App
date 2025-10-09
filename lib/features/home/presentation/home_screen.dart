@@ -7,7 +7,6 @@ import '../../maintenance/data/maintenance_item.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/maintenance_card.dart';
 import 'widgets/asset_card.dart';
-import '../../assets/data/asset_repository.dart';
 import '../../assets/data/asset_store.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -45,136 +44,125 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
   // ---------------------------------------------------
 
-  // REPLACE: repository-driven assets
-  List<Asset> _assets = [];
-
   @override
-  void initState() {
-    super.initState();
-    _loadAssets();
-  }
-
-  void _loadAssets() {
-    try {
-      final assets = assetRepository.getAll(); // in-memory, sync
-      debugPrint('HomeScreen: loaded ${assets.length} assets');
-      for (final a in assets) {
-        debugPrint(' - ${a.title} | imagePath=${a.imagePath}');
-      }
-      setState(() => _assets = assets);
-    } catch (e) {
-      debugPrint('HomeScreen: failed to load assets: $e');
-    }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Bind to DataHandler via AssetStore (subscribes and fetches once)
+    assetStore.bind(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Compute favorites from repository assets where favorite == true
-    final List<Asset> favorites = _assets
-        .where((a) => a.favorite)
-        .toList(growable: false);
+    return AnimatedBuilder(
+      animation: assetStore,
+      builder: (context, _) {
+        final assets = assetStore.all();
+        final List<Asset> favorites =
+            assets.where((a) => a.favorite == true).toList(growable: false);
 
-    return AppLayout(
-      currentIndex: 0, // Home tab
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          Spacing.xl,
-          Spacing.lg,
-          Spacing.xl,
-          Spacing.xl,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showAlert)
-              AlertBanner(
-                title: 'Important',
-                message:
-                    'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
-                onClose: () => setState(() => showAlert = false),
-              ),
-            const SizedBox(height: Spacing.xl),
-
-            const _SectionTitle('Upcoming Maintenance'),
-            const SizedBox(height: Spacing.md),
-            SizedBox(
-              height: 92,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: upcoming.length,
-                separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-                itemBuilder: (ctx, i) => MaintenanceCard(
-                  item: upcoming[i],
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.maintenance,
-                      arguments: upcoming[i].id,
-                    );
-                  },
-                ),
-              ),
+        return AppLayout(
+          currentIndex: 0, // Home tab
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.xl,
+              Spacing.lg,
+              Spacing.xl,
+              Spacing.xl,
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showAlert)
+                  AlertBanner(
+                    title: 'Important',
+                    message:
+                        'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
+                    onClose: () => setState(() => showAlert = false),
+                  ),
+                const SizedBox(height: Spacing.xl),
 
-            const SizedBox(height: Spacing.xl),
-            const _SectionTitle('Favorite Assets'),
-            const SizedBox(height: Spacing.md),
-            SizedBox(
-              height: 200,
-              child: favorites.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(
-                            Icons.star_border,
-                            size: 36,
-                            color: Color(0xFF9AA3AD),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'You currently have not favorited any assets.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFF3C4652),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Go to My Assets to favorite your assets.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Color(0xFF3C4652)),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: favorites.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(width: Spacing.md),
-                      itemBuilder: (ctx, i) {
-                        final asset = favorites[i];
-                        return AssetCard(
-                          titleTop: asset.brand,
-                          titleBottom: asset.title,
-                          imageAsset:
-                              asset.imagePath ?? 'assets/images/bob.jpg',
-                          onTap: () {
-                            Navigator.pushNamed(
-                              context,
-                              AppRoutes.viewAssets,
-                              arguments: asset,
-                            );
-                          },
+                const _SectionTitle('Upcoming Maintenance'),
+                const SizedBox(height: Spacing.md),
+                SizedBox(
+                  height: 92,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: upcoming.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                    itemBuilder: (ctx, i) => MaintenanceCard(
+                      item: upcoming[i],
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.maintenance,
+                          arguments: upcoming[i].id,
                         );
                       },
                     ),
+                  ),
+                ),
+
+                const SizedBox(height: Spacing.xl),
+                const _SectionTitle('Favorite Assets'),
+                const SizedBox(height: Spacing.md),
+                SizedBox(
+                  height: 200,
+                  child: favorites.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(
+                                Icons.star_border,
+                                size: 36,
+                                color: Color(0xFF9AA3AD),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'You currently have not favorited any assets.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF3C4652),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Go to My Assets to favorite your assets.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Color(0xFF3C4652)),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: favorites.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: Spacing.md),
+                          itemBuilder: (ctx, i) {
+                            final asset = favorites[i];
+                            return AssetCard(
+                              titleTop: asset.brand,
+                              titleBottom: asset.title,
+                              imageAsset:
+                                  asset.imagePath ?? 'assets/images/bob.jpg',
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.viewAssets,
+                                  arguments: asset,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
