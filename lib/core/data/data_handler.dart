@@ -15,8 +15,8 @@ class DataHandler {
   final http.Client _client;
 
   // Global base URL (kept in sync by latest instance)
-  static String _globalDevUrl = 'http://10.0.2.2:8080';
-  static String _globalProdUrl = 'https://api.thehippoexchange.com';
+  static final String _globalDevUrl = 'http://10.0.2.2:8080';
+  static final String _globalProdUrl = 'https://api.thehippoexchange.com';
   static String _globalBaseUrl = "";
   static bool _useProd = true; // environment flag
 

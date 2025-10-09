@@ -23,8 +23,7 @@ class ViewAssetPage extends StatelessWidget {
       return Image.asset('assets/images/bob.jpg', fit: fit);
     }
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      // If later you switch to network image widget, handle here.
-      // Using File for now only for local paths.
+      // TODO Display network image
     }
     if (path.startsWith('assets/')) {
       return Image.asset(
