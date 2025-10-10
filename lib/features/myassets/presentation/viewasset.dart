@@ -23,7 +23,19 @@ class ViewAssetPage extends StatelessWidget {
       return Image.asset('assets/images/bob.jpg', fit: fit);
     }
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      // TODO Display network image
+      final uri = Uri.parse(path);
+      final fullPath = uri.hasScheme ? path : 'https://$path';
+
+      return Image.network(
+        fullPath,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator(strokeWidth: 2.5));
+        },
+        errorBuilder: (_, __, ___) =>
+            Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+      );
     }
     if (path.startsWith('assets/')) {
       return Image.asset(
