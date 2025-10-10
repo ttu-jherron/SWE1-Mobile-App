@@ -6,7 +6,7 @@ import '../../../core/routing.dart';
 import '../../maintenance/data/maintenance_item.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/maintenance_card.dart';
-import 'widgets/asset_card.dart';
+import '../../myassets/widgets/asset_card.dart';
 import '../../assets/data/asset_store.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -143,10 +143,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           itemBuilder: (ctx, i) {
                             final asset = favorites[i];
                             return AssetCard(
-                              titleTop: asset.brand,
-                              titleBottom: asset.title,
-                              imageAsset:
-                                  asset.imagePath ?? 'assets/images/bob.jpg',
+                              asset: asset,
+                              style: AssetCardStyle.home,
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
