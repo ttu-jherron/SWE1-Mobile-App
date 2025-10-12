@@ -7,7 +7,7 @@ import '../../../core/constants.dart';
 
 class EditAssetPage extends StatefulWidget {
   final Asset asset;
-  
+
   const EditAssetPage({super.key, required this.asset});
 
   @override
@@ -26,7 +26,6 @@ class _EditAssetPageState extends State<EditAssetPage> {
   String? _imagePath;
   final ImagePicker _picker = ImagePicker();
 
-
   final List<String> _conditions = [
     'New',
     'Used - Like New',
@@ -41,12 +40,16 @@ class _EditAssetPageState extends State<EditAssetPage> {
     _brandController = TextEditingController(text: widget.asset.brand);
     _nameController = TextEditingController(text: widget.asset.title);
     _selectedCondition = widget.asset.condition;
-    //_storeController = TextEditingController(text: widget.asset.store);
-    _priceController =
-        TextEditingController(text: widget.asset.price.toStringAsFixed(2));
+    // Initialize store controller using the asset's currentLocation
+    _storeController = TextEditingController(
+      text: widget.asset.currentLocation,
+    );
+    _priceController = TextEditingController(
+      text: widget.asset.price.toStringAsFixed(2),
+    );
     _imagePath = widget.asset.imagePath;
   }
-  
+
   @override
   void dispose() {
     _brandController.dispose();
@@ -81,8 +84,14 @@ class _EditAssetPageState extends State<EditAssetPage> {
             children: <Widget>[
               // Option 1: Photo Library
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppColors.nearWhite),
-                title: const Text('Photo Library', style: TextStyle(color: AppColors.nearWhite)),
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: AppColors.nearWhite,
+                ),
+                title: const Text(
+                  'Photo Library',
+                  style: TextStyle(color: AppColors.nearWhite),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromSource(ImageSource.gallery);
@@ -90,8 +99,14 @@ class _EditAssetPageState extends State<EditAssetPage> {
               ),
               // Option 2: Camera
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppColors.nearWhite),
-                title: const Text('Camera', style: TextStyle(color: AppColors.nearWhite)),
+                leading: const Icon(
+                  Icons.camera_alt,
+                  color: AppColors.nearWhite,
+                ),
+                title: const Text(
+                  'Camera',
+                  style: TextStyle(color: AppColors.nearWhite),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromSource(ImageSource.camera);
@@ -104,18 +119,20 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 
-
   //---------------------------------------
-  
+
   // --- Custom Dialog to show the list of missing fields ---
-  void _showValidationErrorDialog(BuildContext context, List<String> missingFields) {
+  void _showValidationErrorDialog(
+    BuildContext context,
+    List<String> missingFields,
+  ) {
     // Generate a comma-separated list with "and" before the last item
     final String fieldsList = missingFields.length > 1
-      ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
-      : missingFields.first;
+        ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
+        : missingFields.first;
 
     final String contentMessage =
-      'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
+        'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
 
     showDialog(
       context: context,
@@ -169,9 +186,10 @@ class _EditAssetPageState extends State<EditAssetPage> {
     } else if (priceValue == null) {
       missingFields.add('Price (must be a valid number)');
     } else if (priceValue < minPrice || priceValue > maxPrice) {
-      missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
+      missingFields.add(
+        'Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})',
+      );
     }
-
 
     if (missingFields.isNotEmpty) {
       _showValidationErrorDialog(context, missingFields);
@@ -188,12 +206,13 @@ class _EditAssetPageState extends State<EditAssetPage> {
       condition: _selectedCondition, // Already validated not null
       //store: _storeController.text,
       price: priceValue, // Use the safely parsed and validated value
-
       // NEW: Include the image path
       imagePath: () => _imagePath, // Use ValueGetter for nullable update
     );
 
-    debugPrint('Asset data captured (Passed via routing): ${updatedAsset.toJson()}');
+    debugPrint(
+      'Asset data captured (Passed via routing): ${updatedAsset.toJson()}',
+    );
 
     // Pass the updated Asset object back to the previous screen
     Navigator.pop(context, updatedAsset);
@@ -207,7 +226,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 
-//-----------------------------------------
+  //-----------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,7 +278,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
                       onTap: _pickImage, // Calls the modal selection
                       // FIX: Added horizontal padding here to match field padding
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.lg,
+                        ),
                         child: Container(
                           height: 150,
                           decoration: BoxDecoration(
@@ -280,12 +301,18 @@ class _EditAssetPageState extends State<EditAssetPage> {
                               ? Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: const [
-                                    Icon(Icons.add_a_photo,
-                                        color: AppColors.ebonyClay, size: 40),
+                                    Icon(
+                                      Icons.add_a_photo,
+                                      color: AppColors.ebonyClay,
+                                      size: 40,
+                                    ),
                                     SizedBox(height: Spacing.sm),
-                                    Text('Tap to Change Image',
-                                        style: TextStyle(
-                                            color: AppColors.ebonyClay)),
+                                    Text(
+                                      'Tap to Change Image',
+                                      style: TextStyle(
+                                        color: AppColors.ebonyClay,
+                                      ),
+                                    ),
                                   ],
                                 )
                               : null,
@@ -296,9 +323,11 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
                     // Text Fields
                     _buildTextField(
-                        label: 'Brand', controller: _brandController),
+                      label: 'Brand',
+                      controller: _brandController,
+                    ),
                     _buildTextField(label: 'Name', controller: _nameController),
-                    
+
                     // Condition Dropdown
                     _buildDropdownField(
                       label: 'Condition',
@@ -310,12 +339,16 @@ class _EditAssetPageState extends State<EditAssetPage> {
                       },
                     ),
 
-                    _buildTextField(label: 'Store', controller: _storeController),
+                    _buildTextField(
+                      label: 'Store',
+                      controller: _storeController,
+                    ),
                     _buildTextField(
                       label: 'Price',
                       controller: _priceController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
 
                     const SizedBox(height: Spacing.lg),
@@ -323,7 +356,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
                     // Button
                     // FIX: Added horizontal padding to the button to align with fields
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.lg,
+                      ),
                       child: Center(
                         child: ElevatedButton(
                           onPressed: _saveChanges,
@@ -331,7 +366,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
                             backgroundColor: AppColors.ebonyClay,
                             foregroundColor: AppColors.sandyYellow,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: Spacing.xl, vertical: Spacing.md),
+                              horizontal: Spacing.xl,
+                              vertical: Spacing.md,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(Radii.md),
                             ),
@@ -352,10 +389,11 @@ class _EditAssetPageState extends State<EditAssetPage> {
   }
 
   // Helper method for the text fields
-  Widget _buildTextField(
-      {required String label,
-      required TextEditingController controller,
-      TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Padding(
       // FIX: Added horizontal padding (20px on left/right) to contain the field
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
@@ -379,7 +417,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
-                  vertical: Spacing.xs, horizontal: Spacing.sm),
+                vertical: Spacing.xs,
+                horizontal: Spacing.sm,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
                 borderSide: BorderSide.none,
@@ -390,8 +430,10 @@ class _EditAssetPageState extends State<EditAssetPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
-                borderSide:
-                    const BorderSide(color: AppColors.sandyYellow, width: 2.0),
+                borderSide: const BorderSide(
+                  color: AppColors.sandyYellow,
+                  width: 2.0,
+                ),
               ),
             ),
           ),
@@ -423,9 +465,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
           const SizedBox(height: Spacing.xs),
           DropdownButtonFormField<String>(
             // Use `value` for dynamic state tracking
-            value: currentValue, 
+            value: currentValue,
             // Removed top-level style as it was being ignored.
-            
+
             // NEW: Use selectedItemBuilder to explicitly style the selected value text
             selectedItemBuilder: (BuildContext context) {
               return _conditions.map<Widget>((String condition) {
@@ -435,7 +477,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
                     condition,
                     style: const TextStyle(
                       // IMPORTANT FIX: Force dark text color for the field value
-                      color: AppColors.ebonyClay, 
+                      color: AppColors.ebonyClay,
                       fontSize: TypographyScale.field,
                     ),
                   ),
@@ -446,7 +488,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
-                  vertical: Spacing.xs, horizontal: Spacing.sm),
+                vertical: Spacing.xs,
+                horizontal: Spacing.sm,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
                 borderSide: BorderSide.none,
@@ -457,17 +501,22 @@ class _EditAssetPageState extends State<EditAssetPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
-                borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2.0),
+                borderSide: const BorderSide(
+                  color: AppColors.sandyYellow,
+                  width: 2.0,
+                ),
               ),
             ),
-            items: _conditions.map<DropdownMenuItem<String>>((String condition) {
+            items: _conditions.map<DropdownMenuItem<String>>((
+              String condition,
+            ) {
               return DropdownMenuItem<String>(
                 value: condition,
                 // FIX: Set text color for the options *in the dropdown menu* (Near White)
                 child: Text(
-                  condition, 
+                  condition,
                   style: const TextStyle(color: AppColors.nearWhite),
-                ), 
+                ),
               );
             }).toList(),
             onChanged: onChanged,
@@ -477,14 +526,3 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
