@@ -7,6 +7,7 @@ import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:http/http.dart' as http;
 import 'package:mobile_app/features/assets/data/asset.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class DataHandler {
   // Instance deps
@@ -85,6 +86,32 @@ class DataHandler {
   Stream<Map<String, dynamic>> get backendProfileStream => _backendProfileController.stream;
   Map<String, dynamic>? get cachedBackendProfile => _cachedBackendProfile;
   static Future<Map<String, dynamic>>? _ongoingBackendFetch;
+
+  Future<void> clearAllCache() async {
+    // 1. Clear in-memory static caches
+    _cachedClerkProfile = null;
+    _clerkCachedAt = null;
+    _cachedBackendProfile = null;
+    _backendCachedAt = null;
+    _cachedAssets = null;
+    _assetsFetchedAt = null;
+
+    // 2. Clear image cache from CachedNetworkImage
+    await DefaultCacheManager().emptyCache();
+
+    // 3. Notify stream listeners that data is gone
+    if (!_clerkProfileController.isClosed) {
+      _clerkProfileController.add(<String, dynamic>{});
+    }
+    if (!_backendProfileController.isClosed) {
+      _backendProfileController.add(<String, dynamic>{});
+    }
+    if (!_assetsController.isClosed) {
+      _assetsController.add(<Asset>[]);
+    }
+
+    debugPrint('DataHandler: All caches cleared.');
+  }
 
   // Activity / polling
   static const Duration _pollInterval = Duration(seconds: 30);
