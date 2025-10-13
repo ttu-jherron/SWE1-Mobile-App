@@ -165,6 +165,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
+    if (mounted) {
+      String? message = _auth.checkPassword(passwordCtrl.text, confirmCtrl.text, context);
+      if(message != null) {
+        _showErrorSnackbar(message);
+      }
+    }
+
     if (passwordCtrl.text != confirmCtrl.text) {
       if (mounted) {
         _showErrorSnackbar('Passwords do not match');

@@ -33,6 +33,12 @@ class _LoginScreenState extends State<LoginScreen> {
   void _navigateHomeOnce() {
     if (_navigated || !mounted) return;
     _navigated = true;
+    final jwt = ClerkAuth.of(context).session?.lastActiveToken?.jwt;
+    if (jwt == null || jwt.isEmpty) {
+      throw Exception('No Clerk session JWT');
+    }
+    //debugPrint("jwt: $jwt");
+    
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
   }
 

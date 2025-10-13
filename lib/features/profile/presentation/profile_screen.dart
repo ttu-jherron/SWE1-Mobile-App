@@ -304,8 +304,10 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                           height: 48,
                           child: ElevatedButton(
                             onPressed: () async {
+                              await dataHandler.clearAllCache();
                               await auth.signOut();
                               if (context.mounted) {
+                                
                                 Navigator.of(context).pushReplacementNamed(AppRoutes.login);
                               }
                             },
