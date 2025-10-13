@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' show DateFormat; // add intl in pubspec if not present
-import '../../assets/data/asset.dart';            // your existing Asset model
-import '../../assets/data/asset_repository.dart'; // where your burner assets live
+import 'package:intl/intl.dart' show DateFormat;
+import 'package:mobile_app/core/data/data_handler.dart';
+import 'package:mobile_app/features/assets/data/asset_store.dart';
+import '../../assets/data/asset.dart';
+import '../../assets/data/asset_repository.dart';
 import '../data/maintenance_entry.dart';
 import '../data/maintenance_store.dart';
 import '../../../core/constants.dart';
@@ -14,23 +16,43 @@ class AddMaintenanceSheet extends StatefulWidget {
   State<AddMaintenanceSheet> createState() => _AddMaintenanceSheetState();
 }
 
-
 class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
   final _formKey = GlobalKey<FormState>();
 
+  // State variables
   String? _assetId;
-  DateTime? _date = DateTime.now().add(const Duration(days: 7));
+  DateTime? _date = DateTime.now();
   final _summaryCtrl = TextEditingController();
-  final _notesCtrl   = TextEditingController();
+  final _notesCtrl = TextEditingController();
 
-  late final List<Asset> _assets;
+  List<Asset> _assets = [];
+  bool _isLoadingAssets = true;
+
+  // Helper: truncate long labels to 100 chars with ellipsis
+  String _assetLabel(Asset a) {
+    final s = '${a.brand} — ${a.title}';
+    return s.length <= 100 ? s : '${s.substring(0, 100)}…';
+  }
 
   @override
   void initState() {
     super.initState();
-    // Burner: pull from your in-memory asset repo
-    _assets = assetRepository.getAll(); // implement .all() if you don't have it yet
-    if (_assets.isNotEmpty) _assetId = _assets.first.id; // default selection
+    _fetchAssets();
+  }
+
+  Future<void> _fetchAssets() async {
+    // Use the assetStore to get the cached list of assets
+    final fetchedAssets = assetStore.all();
+    if (mounted) {
+      setState(() {
+        _assets = fetchedAssets;
+        // Set a default selection if the list is not empty
+        if (_assets.isNotEmpty) {
+          _assetId = _assets.first.id;
+        }
+        _isLoadingAssets = false;
+      });
+    }
   }
 
   @override
@@ -105,26 +127,47 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
               const SizedBox(height: Spacing.md),
 
               // Asset picker
-              DropdownButtonFormField<String>(
-                value: _assetId,
-                items: _assets
-                    .map((a) => DropdownMenuItem(
-                          value: a.id,
-                          child: Text('${a.brand} — ${a.title}'),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() => _assetId = v),
-                decoration: const InputDecoration(
-                  labelText: 'Asset',
-                  border: OutlineInputBorder(),
+              if (_isLoadingAssets)
+                const Center(child: CircularProgressIndicator())
+              else
+                DropdownButtonFormField<String>(
+                  value: _assetId,
+                  isExpanded: true,
+                  menuMaxHeight: kMinInteractiveDimension * 4, // show 4 items, then scroll
+                  items: _assets.map((a) {
+                    return DropdownMenuItem(
+                      value: a.id,
+                      child: Text(
+                        _assetLabel(a),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  selectedItemBuilder: (BuildContext context) {
+                    return _assets.map<Widget>((a) {
+                      return Text(
+                        _assetLabel(a),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    }).toList();
+                  },
+                  onChanged: (v) => setState(() => _assetId = v),
+                  decoration: const InputDecoration(
+                    labelText: 'Asset',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) => v == null ? 'Select an asset' : null,
                 ),
-                validator: (v) => v == null ? 'Select an asset' : null,
-              ),
               const SizedBox(height: Spacing.md),
 
               // Summary
               TextFormField(
                 controller: _summaryCtrl,
+                minLines: 1,
+                maxLines: null, // grow to fit content
+                textInputAction: TextInputAction.newline,
                 decoration: const InputDecoration(
                   labelText: 'Summary (e.g., “Recharge battery”)',
                   border: OutlineInputBorder(),
@@ -151,7 +194,8 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
               // Notes
               TextFormField(
                 controller: _notesCtrl,
-                maxLines: 3,
+                minLines: 3,
+                maxLines: null, // grow to fit content
                 decoration: const InputDecoration(
                   labelText: 'Notes (optional)',
                   border: OutlineInputBorder(),
