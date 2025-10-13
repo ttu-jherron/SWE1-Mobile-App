@@ -1,3 +1,5 @@
+import 'package:mobile_app/features/maintenance/data/maintenance_store.dart';
+import '../../maintenance/data/maintenance_store.dart'; // where your burner assets live
 import 'asset.dart';
 
 // I added two more dummy assets and a required getAll() method to simulate fetching all 
@@ -15,9 +17,9 @@ class AssetRepository {
       
       // FIX: Added required fields (condition, store, price) and imagePath
       condition: 'New', // Default hardcoded condition
-      store: 'Harbor Freight Tools', // Default hardcoded store
+      //store: 'Harbor Freight Tools', // Default hardcoded store
       price: 349.99, // Default hardcoded price
-      imagePath: null, // Set to null since it's an optional String?
+      imagePath: 'assets/images/PredatorHippo.png',
       
       completionDate: DateTime(2025, 10, 1),
       shortDescription: 'Recharge Station',
@@ -27,6 +29,7 @@ class AssetRepository {
         MaterialRow(tool: 'power supply cord', location: 'cord box'),
         MaterialRow(tool: 'solar panels', location: 'bottom garage shelf'),
       ],
+      favorite: true, currentLocation: '',
     ),
     //ADDED: Additional dummy assets for the list view
     'asset_002': Asset(
@@ -35,13 +38,14 @@ class AssetRepository {
       title: 'Model 4020 Tractor',
       name: 'John Deere 4020',
       condition: 'Used - Good',
-      store: 'Local Farm Auction',
+      //store: 'Local Farm Auction',
       price: 15000.00,
-      imagePath: null,
+      imagePath: 'assets/images/Tractor.png',
       completionDate: DateTime(2024, 1, 1),
       shortDescription: 'Engine Oil Change',
       notes: 'Need to replace hydraulic lines soon.',
       requiredMaterials: [],
+      favorite: true, currentLocation: '',
     ),
     'asset_003': Asset(
       id: 'asset_003',
@@ -49,13 +53,15 @@ class AssetRepository {
       title: 'V15 Detect',
       name: 'Dyson V15',
       condition: 'Used - Like New',
-      store: 'Amazon',
+      //store: 'Amazon',
       price: 699.00,
-      imagePath: null,
+      imagePath: 'assets/images/HippoVacuumV2.png',
       completionDate: DateTime(2026, 6, 15),
       shortDescription: 'Filter cleaning',
       notes: 'Annual filter cleaning required.',
       requiredMaterials: [],
+      favorite: true, currentLocation: '',
+      //currentLocation: "Living Room",
     ),
   };
 
@@ -70,9 +76,9 @@ class AssetRepository {
   }
   
   //ADDED: Method to get all assets for the list page
-  List<Asset> getAll() {
-    return _items.values.toList();
-  }
+  List<Asset> getAll() => List.unmodifiable(_items.values);
+
+  // TODO: (backend) replace with async API call later.
 }
 
 final assetRepository = AssetRepository();

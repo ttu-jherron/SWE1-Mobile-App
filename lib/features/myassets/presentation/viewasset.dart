@@ -1,33 +1,61 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/colors.dart';
+import '../../../core/constants.dart';
 import '../widgets/add_favorite.dart';
 import '../widgets/add_maintenance.dart';
-// 1. IMPORT: Add the necessary import for the destination page
 import '../../asset_inventory/presentation/edit_asset.dart';
-//IMPORT: Import Asset data structure
 import '../../assets/data/asset.dart';
-//IMPORT: Import AppLayout to wrap the next page
+import '../../maintenance/data/maintenance_store.dart';
+import '../../maintenance/data/maintenance_entry.dart';
 import '../../../core/layout/app_layout.dart';
+import '../../../core/routing.dart'; // add
 
-//Updated to accept a single Asset object, use its data for details, and enable navigation 
-//to EditAssetPage.
+final DateFormat _df = DateFormat('MMM dd, yyyy');
 
 class ViewAssetPage extends StatelessWidget {
-  // CHANGE: Replace multiple String parameters with a single Asset object
   final Asset asset;
+  const ViewAssetPage({super.key, required this.asset});
 
-  const ViewAssetPage({
-    super.key,
-    required this.asset,
-    // Removed all individual string parameters
-  });
-  
-  // Helper to format currency
-  String _formatCurrency(double price) {
-    return '\$${price.toStringAsFixed(2)}';
+  Widget _buildAssetImage(String? path, {BoxFit fit = BoxFit.fitWidth}) {
+    if (path == null || path.isEmpty) {
+      return Image.asset('assets/images/bob.jpg', fit: fit);
+    }
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      final uri = Uri.parse(path);
+      final fullPath = uri.hasScheme ? path : 'https://$path';
+
+      return Image.network(
+        fullPath,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator(strokeWidth: 2.5));
+        },
+        errorBuilder: (_, __, ___) =>
+            Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
+      );
+    }
+    if (path.startsWith('assets/')) {
+      return Image.asset(
+        path,
+        fit: fit,
+        errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: fit),
+      );
+    }
+    return Image.file(
+      File(path),
+      fit: fit,
+      errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: fit),
+    );
   }
 
-  // Helper to build a detail row
+  String _formatCurrency(double price) => '\$${price.toStringAsFixed(2)}';
+
+  String _formatEntry(MaintenanceEntry e) =>
+      '${_df.format(e.date)} — ${e.summary}';
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0),
@@ -61,284 +89,328 @@ class ViewAssetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxImageHeight = MediaQuery.of(context).size.height * 0.33;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    // Extra bottom padding so content clears the bottom nav (prevents overflow)
+    final extraBottom = bottomInset + kBottomNavigationBarHeight + 24;
+
     return Scaffold(
-      // The body uses a Column to structure content vertically
-      body: Column(
-        children: [
-          // Header Row (Top of the page)
-          Container(
-            height: MediaQuery.of(context).size.height * 0.13,
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(30, 30, 4, 10),
-            alignment: Alignment.topLeft,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    // ⬅️ CHANGE: Use asset.title
-                    asset.title,
-                    style: const TextStyle(
-                      color: AppColors.ebonyClay,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+      body: SafeArea( // added bottom safe area handling
+        top: false,
+        bottom: false, // we add custom padding instead
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            SafeArea(
+              bottom: false,
+              child: Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(30, 24, 8, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        asset.title, // updated (was itemName)
+                        maxLines: 3,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        style: const TextStyle(
+                          color: AppColors.ebonyClay,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: EdgeInsets.only(right: 6.0),
+                      child: AddFavorite(intSize: 32, assetId: asset.id),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.ebonyClay,
+                        size: 32,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(right: 10.0),
-                  child: AddFavorite(intSize: 32),
-                ),
-                // Back button
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(
-                    Icons.close,
-                    color: AppColors.ebonyClay,
-                    size: 32,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
+              ),
             ),
-          ),
-          
-          // Scrollable middle section that expands to fill available space
-          Expanded(
-            child: Stack(
-              children: [
-                Container(
-                  // Background color for the scrollable content area
-                  color: const Color(0xFFF5F5F5),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
+
+            // Content
+            Expanded(
+              child: Container(
+                color: const Color(0xFFF5F5F5),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- 1. Top Image/Gallery Area (Placeholder) ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                          child: Container(
-                            height: 200,
-                            decoration: BoxDecoration(
-                              color: AppColors.nearWhite,
-                              borderRadius: BorderRadius.circular(12),
+                        // Image
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: maxImageHeight,
+                              minWidth: double.infinity,
                             ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.image,
-                                size: 80,
-                                color: AppColors.ebonyClay,
+                            child: Center(
+                              child: _buildAssetImage(
+                                asset.imagePath, // updated
+                                fit: BoxFit.contain,
                               ),
                             ),
                           ),
                         ),
-                        
                         const SizedBox(height: 30),
-                        
-                        // --- 2. Details Section ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Asset Details",
-                                style: TextStyle(
-                                  color: AppColors.ebonyClay,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 15),
 
-                              // Name
-                              // ⬅️ CHANGE: Use asset.name
-                              _buildDetailRow("Asset Name", asset.name),
-                              
-                              // Condition
-                              // ⬅️ CHANGE: Use asset.condition
-                              _buildDetailRow("Condition", asset.condition),
-                              
-                              // Location (Using store as location placeholder)
-                              // ⬅️ CHANGE: Use asset.store
-                              _buildDetailRow("Location", asset.store),
-                              
-                              // Bought From (Using store as boughtFrom placeholder)
-                              // ⬅️ CHANGE: Use asset.store
-                              _buildDetailRow("Bought From", asset.store),
-                              
-                              // Price
-                              // ⬅️ CHANGE: Use asset.price
-                              _buildDetailRow("Price", _formatCurrency(asset.price)),
-                              
-                              // Brand
-                              // ⬅️ CHANGE: Use asset.brand
-                              _buildDetailRow("Brand", asset.brand),
-
-                              // Asset ID
-                              // ⬅️ CHANGE: Use asset.id
-                              _buildDetailRow("ID", asset.id), 
-                            ],
+                        const Text(
+                          "Asset Details",
+                          style: TextStyle(
+                            color: AppColors.ebonyClay,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        
-                        const SizedBox(height: 30),
-                        
-                        // --- 3. Maintenance Section (Hardcoded Placeholder) ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Next Maintenance",
-                                style: TextStyle(
-                                  color: AppColors.ebonyClay,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              
-                              // Maintenance Cards Row
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: const [
-                                    MaintenanceCard(),
-                                    MaintenanceCard(),
-                                    MaintenanceCard(),
-                                    MaintenanceCard(),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(height: 15),
+                        _buildDetailRow("Brand Name", asset.brand), // updated
+                        _buildDetailRow("Display Title", asset.title),
+                        _buildDetailRow("Condition", asset.condition), // updated
+                        _buildDetailRow("Location", asset.currentLocation), // mapped from currentLocation
+                        //_buildDetailRow("Bought From", asset.store), // no separate field; re-using
+                        _buildDetailRow("Price", _formatCurrency(asset.price)), // updated
+                        _buildDetailRow("Brand", asset.brand), // updated
+                        _buildDetailRow("ID", asset.id),
+                        _buildDetailRow(
+                          "Purchased",
+                          _df.format(asset.completionDate),
                         ),
+                        _buildDetailRow("Category", asset.shortDescription),
+                        _buildDetailRow("Favorite", asset.favorite ? "Yes" : "No"),
 
                         const SizedBox(height: 30),
-                        
-                        // --- 4. Notes Section ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Notes",
-                                style: TextStyle(
-                                  color: AppColors.ebonyClay,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              Text(
-                                // ⬅️ CHANGE: Use asset.notes
-                                asset.notes, 
-                                style: const TextStyle(
-                                  color: AppColors.ebonyClay,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
+                        const Text(
+                          "Next Maintenance",
+                          style: TextStyle(
+                            color: AppColors.ebonyClay,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        
-                        const SizedBox(height: 150), // Extra space for scrolling past the floating button
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // --- 9. Floating Action Button Container (Bottom Right) ---
-                Positioned(
-                  right: 30,
-                  bottom: 30,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.sandyYellow,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Edit Asset Button
-                        SizedBox(
-                          height: 40,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              debugPrint("Edit Asset Button Pressed for ID: ${asset.id}");
-                              // ⬅️ CHANGE: Navigation to EditAssetPage, passing the Asset object
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => AppLayout(
-                                    currentIndex: 1, // Stay on the Assets tab
-                                    body: EditAssetPage(asset: asset), // Pass the current asset object
+                        const SizedBox(height: 12),
+
+                        AnimatedBuilder(
+                          animation: maintenanceStore,
+                          builder: (context, _) {
+                            final List<MaintenanceEntry> entries =
+                                [...maintenanceStore.allFor(asset.id)]
+                                  ..sort((a, b) => a.date.compareTo(b.date));
+                            final MaintenanceEntry? next =
+                                entries.isEmpty ? null : entries.first;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  next == null ? '—' : _formatEntry(next),
+                                  style: const TextStyle(
+                                    color: AppColors.ebonyClay,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.ebonyClay,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              "Edit Asset",
-                              style: TextStyle(
-                                fontSize: 14,
-                              ),
-                            ),
+                                const SizedBox(height: 12),
+                                if (entries.isNotEmpty)
+                                  SizedBox(
+                                    height: 96,
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: entries.length,
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(width: 12),
+                                      itemBuilder: (ctx, i) {
+                                        final e = entries[i];
+                                        return _MaintChip(
+                                          dateLabel: _df.format(e.date),
+                                          title: e.summary,
+                                          onTap: () {
+                                            Navigator.pushNamed(
+                                              context,
+                                              AppRoutes.maintenanceDetail,
+                                              arguments: asset.id,
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 30),
+                        const Text(
+                          "Notes",
+                          style: TextStyle(
+                            color: AppColors.ebonyClay,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 15),
+                        Text(
+                          asset.notes,
+                          style: const TextStyle(
+                            color: AppColors.ebonyClay,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+
+                        Center(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 12,
+                            runSpacing: 8,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => AppLayout(
+                                        currentIndex: 1,
+                                        body: EditAssetPage(asset: asset),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.ebonyClay,
+                                  foregroundColor: AppColors.sandyYellow,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: Spacing.xl,
+                                    vertical: Spacing.md,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(Radii.md),
+                                  ),
+                                ),
+                                child: const Text('Edit Asset'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.maintenanceDetail,
+                                    arguments: asset.id,
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.ebonyClay,
+                                  foregroundColor: AppColors.sandyYellow,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: Spacing.xl,
+                                    vertical: Spacing.md,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(Radii.md),
+                                  ),
+                                ),
+                                child: const Text('View Maintenance'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        SizedBox(height: extraBottom), // CHANGED
                       ],
                     ),
                   ),
                 ),
-                // --- 10. Left and Right Vertical Wall Padding (for visual effect) ---\n
-                // Left Wall
-                Positioned(
-                  left: 0,
-                  top: 250,
-                  bottom: 0,
-                  width: 60, // width of wall, same as horizontal padding
-                  child: Container(
-                    color: const Color(0xFFF5F5F5),
-                  ),
-                ),
-                // Right Wall
-                Positioned(
-                  right: 0,
-                  top: 250,
-                  bottom: 0,
-                  width: 60, // same as horizontal padding
-                  child: Container(
-                    color: const Color(0xFFF5F5F5),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
+class _MaintChip extends StatelessWidget {
+  final String dateLabel;
+  final String title;
+  final VoidCallback onTap;
+
+  const _MaintChip({
+    required this.dateLabel,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.black12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.build, color: AppColors.ebonyClay),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(dateLabel, style: const TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.ebonyClay,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: AppColors.ebonyClay),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 

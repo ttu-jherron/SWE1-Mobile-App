@@ -10,6 +10,7 @@ import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:mobile_app/core/data/data_handler.dart'; // ADD
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,6 +28,13 @@ class _LoginScreenState extends State<LoginScreen> {
   late final StreamSubscription _errorSub;
   bool _loading = false;
   bool _errorShown = false;
+  bool _navigated = false;
+
+  void _navigateHomeOnce() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+  }
 
   @override
   void initState() {
@@ -44,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       });
       if (_auth.user != null) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        _navigateHomeOnce();
       }
     });
   }
@@ -52,11 +60,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onAuthChanged() {
     if (!mounted) return;
     if (_auth.user != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login Successful')));
+      // Start bounded backend priming if no cache yet
+      final dh = DataHandler(auth: _auth);
+      dh.startPrimingIfNeeded();
 
-      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
+      _navigateHomeOnce();
     }
   }
 
@@ -142,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: Spacing.xs),
                               SizedBox(
-                                height: 40,
+                                height: 50,
                                 child: AppTextField(
                                   controller: usernameCtrl,
                                   label: 'Email/Username',
@@ -173,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: Spacing.xs),
                               SizedBox(
-                                height: 40,
+                                height: 50,
                                 child: AppTextField(
                                   controller: passwordCtrl,
                                   label: 'Password',

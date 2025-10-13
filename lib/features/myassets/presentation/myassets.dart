@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/colors.dart';
-// import '../../../core/routing.dart';
 import '../widgets/asset_card.dart';
 import '../presentation/viewasset.dart';
 import '../../../core/layout/app_layout.dart';
-//IMPORT: Import Asset and AssetRepository
 import '../../assets/data/asset.dart';
-import '../../assets/data/asset_repository.dart';
-//ADDED: Import the AddAssetPage
 import '../../asset_inventory/presentation/add_asset.dart';
+import '../../assets/data/asset_store.dart';
 
 class MyAssetsPage extends StatefulWidget {
   const MyAssetsPage({super.key});
@@ -18,25 +15,50 @@ class MyAssetsPage extends StatefulWidget {
 }
 
 class _MyAssetsPageState extends State<MyAssetsPage> {
-  //CHANGE: State to hold the list of assets
-  List<Asset> _assetList = [];
-  
+  bool _bound = false;
+  bool _loading = true;
+  bool _error = false;
+
   @override
-  void initState() {
-    super.initState();
-    //ADDED: Load assets from the repository on initialization
-    _loadAssets();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_bound) return;
+    _bound = true;
+
+    // Bind store once and kick an initial (cached-or-network) fetch
+    assetStore.bind(context);
+    _initialFetch();
   }
-  
-  void _loadAssets() {
-    // In a real app, this would be an async call, but for the in-memory repo, it's fine
+
+  Future<void> _initialFetch() async {
+    setState(() {
+      _loading = true;
+      _error = false;
+    });
     try {
-      final assets = assetRepository.getAll();
+      await assetStore.refresh(force: false);
+      if (!mounted) return;
       setState(() {
-        _assetList = assets;
+        _loading = false;
+        _error = false;
       });
-    } catch (e) {
-      debugPrint("Error loading assets: $e");
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    try {
+      await assetStore.refresh(force: true);
+      if (!mounted) return;
+      setState(() => _error = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = true);
     }
   }
 
@@ -45,7 +67,6 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
     return Scaffold(
       body: Column(
         children: [
-          // Header row
           Container(
             height: MediaQuery.of(context).size.height * 0.13,
             color: Colors.white,
@@ -63,14 +84,12 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                   ),
                 ),
                 IconButton(
-                  //CHANGE: Implement navigation to AddAssetPage
                   onPressed: () {
-                    debugPrint("Add Asset was pressed!");
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const AppLayout(
-                          currentIndex: 1, // Stay on the Assets tab
+                          currentIndex: 1,
                           body: AddAssetPage(),
                         ),
                       ),
@@ -84,38 +103,77 @@ class _MyAssetsPageState extends State<MyAssetsPage> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Refresh',
+                  onPressed: _refresh,
+                  icon: const Icon(Icons.refresh, color: AppColors.ebonyClay),
+                ),
               ],
             ),
           ),
-
-          // Scrollable section
           Expanded(
-            child: Container(
-              color: Colors.white,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                  child: Wrap(
-                    children: _assetList.map((asset) {
-                      return AssetCard(
-                        asset: asset, 
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AppLayout(
-                                currentIndex: 1,
-                                body: ViewAssetPage(
-                                  asset: asset,
-                                ),
-                              ),
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              child: Container(
+                color: Colors.white,
+                child: AnimatedBuilder(
+                  animation: assetStore,
+                  builder: (context, _) {
+                    final List<Asset> assets = assetStore.all();
+
+                    if (_loading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (_error) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Failed to load assets'),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                _initialFetch();
+                              },
+                              child: const Text('Retry'),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       );
-                    }).toList(),
-                  ),
+                    }
+
+                    if (assets.isEmpty) {
+                      return const Center(child: Text('No assets yet'));
+                    }
+
+                    return SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                        child: Wrap(
+                          children: assets.map((asset) {
+                            return AssetCard(
+                              asset: asset,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AppLayout(
+                                      currentIndex: 1,
+                                      body: ViewAssetPage(asset: asset),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

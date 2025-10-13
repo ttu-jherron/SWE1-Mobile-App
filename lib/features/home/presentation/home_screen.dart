@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/assets/data/asset.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../maintenance/data/maintenance_item.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/maintenance_card.dart';
-import 'widgets/asset_card.dart';
+import '../../myassets/widgets/asset_card.dart';
+import '../../assets/data/asset_store.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,97 +42,125 @@ class _HomeScreenState extends State<HomeScreen> {
       thumbAsset: 'assets/images/bob.jpg',
     ),
   ];
-
-  final List<_FavAsset> favorites = [
-    _FavAsset(
-      brand: 'Predator',
-      name: '350W Power Station',
-      img: 'assets/images/Predator.jpg',
-      idForDetail: 'asset_001',
-    ),
-    _FavAsset(
-      brand: 'Niagara',
-      name: '4 Gal Backpack Chemical Sprayer',
-      img: 'assets/images/Niagara.jpg',
-      idForDetail: 'asset_002',
-    ),
-    _FavAsset(
-      brand: 'Derwent',
-      name: 'Graphic Design',
-      img: 'assets/images/bob.jpg',
-      idForDetail: 'asset_003',
-    ),
-  ];
   // ---------------------------------------------------
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Bind to DataHandler via AssetStore (subscribes and fetches once)
+    assetStore.bind(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AppLayout(
-      currentIndex: 0, // Home tab
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(Spacing.xl, Spacing.lg, Spacing.xl, Spacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showAlert)
-              AlertBanner(
-                title: 'Important',
-                message:
-                    'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
-                onClose: () => setState(() => showAlert = false),
-              ),
-            const SizedBox(height: Spacing.xl),
+    return AnimatedBuilder(
+      animation: assetStore,
+      builder: (context, _) {
+        final assets = assetStore.all();
+        final List<Asset> favorites =
+            assets.where((a) => a.favorite == true).toList(growable: false);
 
-            const _SectionTitle('Upcoming Maintenance'),
-            const SizedBox(height: Spacing.md),
-            SizedBox(
-              height: 92,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: upcoming.length,
-                separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-                itemBuilder: (ctx, i) => MaintenanceCard(
-                  item: upcoming[i],
-                  onTap: () {
-                    // Navigate to detail
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.maintenance,
-                      //AppRoutes.maintenanceDetail,
-                      arguments: favorites.first.idForDetail, // demo id
-                    );
-                  },
-                ),
-              ),
+        return AppLayout(
+          currentIndex: 0, // Home tab
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              Spacing.xl,
+              Spacing.lg,
+              Spacing.xl,
+              Spacing.xl,
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showAlert)
+                  AlertBanner(
+                    title: 'Important',
+                    message:
+                        'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
+                    onClose: () => setState(() => showAlert = false),
+                  ),
+                const SizedBox(height: Spacing.xl),
 
-            const SizedBox(height: Spacing.xl),
-            const _SectionTitle('Favorite Assets'),
-            const SizedBox(height: Spacing.md),
-            SizedBox(
-              height: 200,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: favorites.length,
-                separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-                itemBuilder: (ctx, i) => AssetCard(
-                  titleTop: favorites[i].brand,
-                  titleBottom: favorites[i].name,
-                  imageAsset: favorites[i].img,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.maintenance,
-                      //AppRoutes.maintenanceDetail,
-                      arguments: favorites[i].idForDetail,
-                    );
-                  },
+                const _SectionTitle('Upcoming Maintenance'),
+                const SizedBox(height: Spacing.md),
+                SizedBox(
+                  height: 92,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: upcoming.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                    itemBuilder: (ctx, i) => MaintenanceCard(
+                      item: upcoming[i],
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.maintenance,
+                          arguments: upcoming[i].id,
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: Spacing.xl),
+                const _SectionTitle('Favorite Assets'),
+                const SizedBox(height: Spacing.md),
+                SizedBox(
+                  height: 200,
+                  child: favorites.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(
+                                Icons.star_border,
+                                size: 36,
+                                color: Color(0xFF9AA3AD),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'You currently have not favorited any assets.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF3C4652),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Go to My Assets to favorite your assets.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Color(0xFF3C4652)),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: favorites.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: Spacing.md),
+                          itemBuilder: (ctx, i) {
+                            final asset = favorites[i];
+                            return AssetCard(
+                              asset: asset,
+                              style: AssetCardStyle.home,
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.viewAssets,
+                                  arguments: asset,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -149,17 +179,4 @@ class _SectionTitle extends StatelessWidget {
       ),
     );
   }
-}
-
-class _FavAsset {
-  final String brand;
-  final String name;
-  final String img;
-  final String idForDetail;
-  _FavAsset({
-    required this.brand,
-    required this.name,
-    required this.img,
-    required this.idForDetail,
-  });
 }
