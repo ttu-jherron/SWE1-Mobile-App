@@ -477,14 +477,3 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

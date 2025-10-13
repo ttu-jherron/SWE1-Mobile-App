@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // Import the package
+import 'package:intl/intl.dart' show DateFormat; // add intl in pubspec if not present
 import 'package:mobile_app/app.dart';
 import 'package:mobile_app/core/colors.dart';
-//import 'package:mobile_app/features/profile/presentation/clerk_data_handler.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
-import 'package:clerk_flutter/clerk_flutter.dart';
-import '../../assets/data/asset.dart'; // change to maintenance page
+import '../../assets/data/asset.dart';
 import 'package:mobile_app/features/assets/data/asset_repository.dart';
+import '../data/maintenance_entry.dart';
+import 'package:mobile_app/features/maintenance/data/maintenance_store.dart';
+
 
 //DROP DOWN ASSET NAMES
 //ADD TABLE
@@ -22,23 +23,19 @@ class AddMaintenancePage extends StatefulWidget {
 
 class _EditMaintenancePageState extends State<AddMaintenancePage> {
   // Controllers
-  final _completionDate = TextEditingController();
-  final _shortDescription = TextEditingController();
-  String? _selectedCondition;
-  final _notes = TextEditingController();
-  final _requiredTools = TextEditingController();
-  final _toolLocations = TextEditingController();
+  final _completionDateCtrl = TextEditingController();
+  final _shortDescriptionCtrl = TextEditingController();
+  String? _assetName;
+  final _notesCtrl = TextEditingController();
+  final _requiredToolsCtrl = TextEditingController();
+  final _toolLocationsCtrl = TextEditingController();
   final List<TextEditingController> controllers1 = [];
   final List<TextEditingController> controllers2 = [];
+  late final List<Asset> _currentAssets;
+  
+  DateTime? _date = DateTime.now().add(const Duration(days: 7));
 
-  final List<String> _currentAssets = [
-    //  CHANGE TO LOGIC WHEN BACKEND
-    // CHANGE COLOR FOR WHEN IN TEXTBOX
-    'New',
-    'Used - Like New',
-    'Used - Good',
-    'Used - Poor',
-  ];
+  String? _assetId;
   //ADDING DYNAMIC DATA
   
   @override
@@ -49,15 +46,18 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
       controllers1.add(TextEditingController());
       controllers2.add(TextEditingController());
     }
+
+    _currentAssets = assetRepository.getAll(); // implement .all() if you don't have it yet
+    if (_currentAssets.isNotEmpty) _assetId = _currentAssets.first.id; // default selection
   }
 
   @override
   void dispose() {
-    _completionDate.dispose();
-    _shortDescription.dispose();
-    _notes.dispose();
-    _requiredTools.dispose();
-    _toolLocations.dispose();
+    _completionDateCtrl.dispose();
+    _shortDescriptionCtrl.dispose();
+    _notesCtrl.dispose();
+    _requiredToolsCtrl.dispose();
+    _toolLocationsCtrl.dispose();
     super.dispose();
     for (final c in controllers1) {
       c.dispose();
@@ -66,10 +66,36 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
       c.dispose();
     }
   }
+  //for the date picker
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final initial = _date ?? now;
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 3),
+      initialDate: initial,
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  // void _submit() {
+  //   if (!_formKey.currentState!.validate()) return;
+  //   if (_assetId == null || _date == null) return;
+
+  //   final id = 'm_${DateTime.now().millisecondsSinceEpoch}';
+  //   final entry = MaintenanceEntry(
+  //     id: id,
+  //     assetId: _assetId!,
+  //     date: _date!,
+  //     summary: _summaryCtrl.text.trim(),
+  //     notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+  // // Local in-memory save
+  //   maintenanceStore.add(entry);
+  //   );
 
 
   // VALIDTION USING ASTERICKS (*)
-  //--- Custom Dialog to show the list of missing fields ---
   void _showValidationErrorDialog(BuildContext context) {
     final String contentMessage = 'The field(s) with an asterick (*) must be filled out in order to save the asset.';
     showDialog(
@@ -95,18 +121,19 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
 
   // --- LOGIC: Pass the data back to the calling screen (My Assets Page) ---
   void _addMaintenance() {
+    //validation + error message
     final List<String> missingFields = [];
     // 1. Asset Name
-    if (_selectedCondition == null) {
-      missingFields.add('Condition');
+    if (_assetName == null) {
+      missingFields.add('Asset Name');
     }
     // 2. Completion Date
-    if (_completionDate.text.isEmpty) {
+    if (_completionDateCtrl.text.isEmpty) {
       missingFields.add('Completion Date');
     }
     // 2. Short Description
-    if (_shortDescription.text.isEmpty) {
-      missingFields.add('Task');
+    if (_shortDescriptionCtrl.text.isEmpty) {
+      missingFields.add('Description');
     }
 
     if (missingFields.isNotEmpty) {
@@ -115,31 +142,25 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
     }
     debugPrint('missing fields: ): $missingFields');
     
+      //GOT THIS FROM JOHN
+      final id = 'm_${DateTime.now().millisecondsSinceEpoch}';
+        final entry = MaintenanceEntry(
+          id: id,
+          assetId: _assetId!,
+          date: _date!,
+          summary: _shortDescriptionCtrl.text.trim(),
+          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+    );
 
-
-    // Create the full new Asset object
-    // final newMaintenance = Asset(
-    //   id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-    //   brand: _completionDate.text,
-    //   title: _shortDescription.text, // Using name as title for simplicity
-    //   name: '${_completionDate.text} ${_shortDescription.text}',
-      
-    //   // Purchase fields
-    //   condition: _selectedCondition!,
-    //   store: _notes.text,
-    //   price: priceValue!, // Use the safely parsed and validated value
-      
-    //   // Default/placeholder values for Maintenance fields
-    //   completionDate: DateTime.now().add(const Duration(days: 365)),
-    //   shortDescription: 'Newly added asset.',
-    //   notes: '',
-    //   requiredMaterials: [],
-    // );
+    maintenanceStore.add(entry);
 
     //debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
-    
+
+    //Navigator.pop(context);
+
     // Pass the new Asset object back to the previous screen
   Navigator.pop(context, AppRoutes.maintenance); 
+    //);
   }
   // --------------------------------------------------------------------------
 
@@ -158,45 +179,62 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
       }
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white, 
-      body: SingleChildScrollView(
-        child: Padding( 
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Edit Maintenance",
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w800,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-              const SizedBox(height: Spacing.lg), 
-              Text(
-                "* - Must be filled out",
-                style: const TextStyle(
-                  color: AppColors.ebonyClay,
-                  fontSize: TypographyScale.field,
-                  fontWeight: FontWeight.normal,
+    return AppLayout(
+      currentIndex: 2,
+        body: Scaffold(
+        backgroundColor: Colors.white, 
+        body: SingleChildScrollView(
+          child: Padding( 
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Edit Maintenance",
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w800,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(), 
+                      icon: const Icon(Icons.close, color: AppColors.ebonyClay, size:28),
+                      tooltip: 'Close',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    )
+                  ],
                 ),
-              ),
-              const SizedBox(height: Spacing.md), 
-      
-              if (a == null)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('Asset not found', style: TextStyle(color: Colors.black87)),
-                )
-              else
-              // Form Fields
-                _buildConditionDropdown("Asset Name *", _selectedCondition, (newValue) {
-                  setState(() => _selectedCondition = newValue);
+                const SizedBox(height: Spacing.lg), 
+                Text(
+                  "* - Must be filled out",
+                  style: const TextStyle(
+                    color: AppColors.ebonyClay,
+                    fontSize: TypographyScale.field,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+                const SizedBox(height: Spacing.md),
+                
+                if (a == null)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('Asset not found', style: TextStyle(color: Colors.black87)),
+                  )
+                else
+
+                // Form Fields
+                _buildConditionDropdown("Asset Name *", _assetName, (newValue) {
+                  setState(() => _assetName = newValue);
                 }),
-                _buildTextField("Completion Date (MM/DD/YYYY) *", _completionDate, TextInputType.datetime),
-                _buildTextField("Short Description *", _shortDescription, TextInputType.text),
-                _buildTextField("Notes", _notes, TextInputType.text),
+
+                _buildDatePicker("Completion Date (MM/DD/YYYY) *", _completionDateCtrl, TextInputType.datetime),
+                
+                _buildTextField("Short Description *", _shortDescriptionCtrl, TextInputType.text),
+                _buildTextField("Notes", _notesCtrl, TextInputType.text),
                 _buildTextTable(context, "Needed Materials", controllers1, controllers2, TextInputType.text),
                 TextButton.icon(
                   onPressed: () {
@@ -224,7 +262,7 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
                 Center(
                   child: ElevatedButton(
                     onPressed: (){
-                      Navigator.of(context).pop();
+                      _addMaintenance();
                       },
                     style: TextButton.styleFrom(
                       backgroundColor: AppColors.ebonyClay,
@@ -239,12 +277,62 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
                   ),
                 ),
                 const SizedBox(height: Spacing.lg),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    );
+      );
   }
+
+  //CUSTOM COMPONENTS ------------------------------------------------------
+
+  final df = DateFormat('MM dd, yyyy');
+  //Custom Date Picker widget
+  Widget _buildDatePicker(
+    String label, TextEditingController controller, TextInputType type, {bool readOnly = false}){
+    return Padding(
+      padding:  const EdgeInsets.only(top: Spacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.ebonyClay,
+              fontSize: TypographyScale.field,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: Spacing.xs),
+          InkWell(
+            onTap: _pickDate,
+            child: InputDecorator(
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: readOnly ? Colors.white : AppColors.lightGrey,
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: Spacing.xs, horizontal: Spacing.sm),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(Radii.sm),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(Radii.sm),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(Radii.sm),
+                  borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                ),
+              ),
+              child: Text(df.format(_date ?? DateTime.now())),
+            ),
+          ),
+        ],
+      ),
+    );
+    }
 
   // Custom text field component 
   Widget _buildTextField(
@@ -312,7 +400,7 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
           const SizedBox(height: Spacing.xs),
 
           DropdownButtonFormField<String>(
-            initialValue: _selectedCondition,
+            initialValue: _assetName,
             //selected text style
             style: const TextStyle(
               color: AppColors.ebonyClay, // text color inside the box
@@ -340,20 +428,15 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
                 borderSide: const BorderSide(color: AppColors.lightGrey, width: 2.0),
               ),
             ),
-            //builds the dropdown
-            items: _currentAssets.map<DropdownMenuItem<String>>((String condition) {
-              return DropdownMenuItem<String>(
-                value: condition,
-                child: 
-                  Text(
-                    condition,
-                    style: TextStyle(
-                      color: AppColors.ebonyClay,
-                    )),
-              );
-
-            }).toList(),
-            onChanged: onChanged,
+            value: _assetId,
+                items: _currentAssets
+                    .map((a) => DropdownMenuItem(
+                          value: a.id,
+                          child: Text('${a.brand} — ${a.title}'),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => _assetId = v),
+                validator: (v) => v == null ? 'Select an asset' : null,
           ),
         ],
       ),
@@ -457,6 +540,7 @@ Widget _buildTextTable(
                                 controller: controllers1[index],
                                 type: type,
                                 readOnly: readOnly,
+                                currentValue: ' '//MAKE CONDITIONAL
                               ),
                             ),
 
@@ -469,6 +553,7 @@ Widget _buildTextTable(
                                 controller: controllers2[index],
                                 type: type,
                                 readOnly: readOnly,
+                                currentValue: ' ' //MAKE CONDITIONAL
                               ),
                             ),
                           ],
@@ -487,13 +572,14 @@ Widget _buildTextTable(
 }
 
 
-Widget _buildTextInput({required TextEditingController controller,required TextInputType type,required bool readOnly,}) {
+Widget _buildTextInput({required TextEditingController controller,required TextInputType type, required currentValue, required bool readOnly,}) {
   return TextField(
     controller: controller,
     keyboardType: type, 
     readOnly: readOnly,
     style: const TextStyle(color: AppColors.ebonyClay),
     decoration: InputDecoration(
+      hintText: currentValue,
       filled: true,
       fillColor: readOnly ? Colors.white : AppColors.lightGrey,
       contentPadding: const EdgeInsets.symmetric(
