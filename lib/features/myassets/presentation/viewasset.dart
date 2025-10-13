@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
 import '../widgets/add_favorite.dart';
-import '../widgets/add_maintenance.dart';
 import '../../asset_inventory/presentation/edit_asset.dart';
 import '../../assets/data/asset.dart';
 import '../../maintenance/data/maintenance_store.dart';
@@ -14,9 +13,22 @@ import '../../../core/routing.dart'; // add
 
 final DateFormat _df = DateFormat('MMM dd, yyyy');
 
-class ViewAssetPage extends StatelessWidget {
+class ViewAssetPage extends StatefulWidget {
   final Asset asset;
   const ViewAssetPage({super.key, required this.asset});
+
+  @override
+  State<ViewAssetPage> createState() => _ViewAssetPageState();
+}
+
+class _ViewAssetPageState extends State<ViewAssetPage> {
+  late Asset _asset;
+
+  @override
+  void initState() {
+    super.initState();
+    _asset = widget.asset;
+  }
 
   Widget _buildAssetImage(String? path, {BoxFit fit = BoxFit.fitWidth}) {
     if (path == null || path.isEmpty) {
@@ -31,7 +43,9 @@ class ViewAssetPage extends StatelessWidget {
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
-          return const Center(child: CircularProgressIndicator(strokeWidth: 2.5));
+          return const Center(
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          );
         },
         errorBuilder: (_, __, ___) =>
             Image.asset('assets/images/bob.jpg', fit: BoxFit.cover),
@@ -41,13 +55,15 @@ class ViewAssetPage extends StatelessWidget {
       return Image.asset(
         path,
         fit: fit,
-        errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: fit),
+        errorBuilder: (_, __, ___) =>
+            Image.asset('assets/images/bob.jpg', fit: fit),
       );
     }
     return Image.file(
       File(path),
       fit: fit,
-      errorBuilder: (_, __, ___) => Image.asset('assets/images/bob.jpg', fit: fit),
+      errorBuilder: (_, __, ___) =>
+          Image.asset('assets/images/bob.jpg', fit: fit),
     );
   }
 
@@ -76,10 +92,7 @@ class ViewAssetPage extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: AppColors.ebonyClay,
-                fontSize: 16,
-              ),
+              style: const TextStyle(color: AppColors.ebonyClay, fontSize: 16),
             ),
           ),
         ],
@@ -95,7 +108,8 @@ class ViewAssetPage extends StatelessWidget {
     final extraBottom = bottomInset + kBottomNavigationBarHeight + 24;
 
     return Scaffold(
-      body: SafeArea( // added bottom safe area handling
+      body: SafeArea(
+        // added bottom safe area handling
         top: false,
         bottom: false, // we add custom padding instead
         child: Column(
@@ -112,7 +126,7 @@ class ViewAssetPage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        asset.title, // updated (was itemName)
+                        _asset.title, // updated (was itemName)
                         maxLines: 3,
                         softWrap: true,
                         overflow: TextOverflow.visible,
@@ -126,7 +140,7 @@ class ViewAssetPage extends StatelessWidget {
                     const SizedBox(width: 8),
                     Padding(
                       padding: EdgeInsets.only(right: 6.0),
-                      child: AddFavorite(intSize: 32, assetId: asset.id),
+                      child: AddFavorite(intSize: 32, assetId: _asset.id),
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
@@ -164,7 +178,7 @@ class ViewAssetPage extends StatelessWidget {
                             ),
                             child: Center(
                               child: _buildAssetImage(
-                                asset.imagePath, // updated
+                                _asset.imagePath, // updated
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -181,20 +195,30 @@ class ViewAssetPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 15),
-                        _buildDetailRow("Brand Name", asset.brand), // updated
-                        _buildDetailRow("Display Title", asset.title),
-                        _buildDetailRow("Condition", asset.condition), // updated
-                        _buildDetailRow("Location", asset.currentLocation), // mapped from currentLocation
+                        _buildDetailRow("Brand Name", _asset.brand), // updated
+                        _buildDetailRow("Display Title", _asset.title),
+                        _buildDetailRow(
+                          "Condition",
+                          _asset.condition,
+                        ), // updated
+                        _buildDetailRow(
+                          "Location",
+                          _asset.currentLocation,
+                        ), // mapped from currentLocation
                         //_buildDetailRow("Bought From", asset.store), // no separate field; re-using
-                        _buildDetailRow("Price", _formatCurrency(asset.price)), // updated
-                        _buildDetailRow("Brand", asset.brand), // updated
-                        _buildDetailRow("ID", asset.id),
+                        _buildDetailRow(
+                          "Price",
+                          _formatCurrency(_asset.price),
+                        ), // updated
                         _buildDetailRow(
                           "Purchased",
-                          _df.format(asset.completionDate),
+                          _df.format(_asset.completionDate),
                         ),
-                        _buildDetailRow("Category", asset.shortDescription),
-                        _buildDetailRow("Favorite", asset.favorite ? "Yes" : "No"),
+                        _buildDetailRow("Category", _asset.shortDescription),
+                        _buildDetailRow(
+                          "Favorite",
+                          _asset.favorite ? "Yes" : "No",
+                        ),
 
                         const SizedBox(height: 30),
                         const Text(
@@ -210,11 +234,12 @@ class ViewAssetPage extends StatelessWidget {
                         AnimatedBuilder(
                           animation: maintenanceStore,
                           builder: (context, _) {
-                            final List<MaintenanceEntry> entries =
-                                [...maintenanceStore.allFor(asset.id)]
-                                  ..sort((a, b) => a.date.compareTo(b.date));
-                            final MaintenanceEntry? next =
-                                entries.isEmpty ? null : entries.first;
+                            final List<MaintenanceEntry> entries = [
+                              ...maintenanceStore.allFor(_asset.id),
+                            ]..sort((a, b) => a.date.compareTo(b.date));
+                            final MaintenanceEntry? next = entries.isEmpty
+                                ? null
+                                : entries.first;
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +270,7 @@ class ViewAssetPage extends StatelessWidget {
                                             Navigator.pushNamed(
                                               context,
                                               AppRoutes.maintenanceDetail,
-                                              arguments: asset.id,
+                                              arguments: _asset.id,
                                             );
                                           },
                                         );
@@ -268,7 +293,7 @@ class ViewAssetPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 15),
                         Text(
-                          asset.notes,
+                          _asset.notes,
                           style: const TextStyle(
                             color: AppColors.ebonyClay,
                             fontSize: 16,
@@ -283,16 +308,21 @@ class ViewAssetPage extends StatelessWidget {
                             runSpacing: 8,
                             children: [
                               ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
+                                onPressed: () async {
+                                  final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => AppLayout(
                                         currentIndex: 1,
-                                        body: EditAssetPage(asset: asset),
+                                        body: EditAssetPage(asset: _asset),
                                       ),
                                     ),
                                   );
+                                  if (result is Asset) {
+                                    setState(() {
+                                      _asset = result;
+                                    });
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.ebonyClay,
@@ -302,8 +332,9 @@ class ViewAssetPage extends StatelessWidget {
                                     vertical: Spacing.md,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(Radii.md),
+                                    borderRadius: BorderRadius.circular(
+                                      Radii.md,
+                                    ),
                                   ),
                                 ),
                                 child: const Text('Edit Asset'),
@@ -313,7 +344,7 @@ class ViewAssetPage extends StatelessWidget {
                                   Navigator.pushNamed(
                                     context,
                                     AppRoutes.maintenanceDetail,
-                                    arguments: asset.id,
+                                    arguments: _asset.id,
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -324,8 +355,9 @@ class ViewAssetPage extends StatelessWidget {
                                     vertical: Spacing.md,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(Radii.md),
+                                    borderRadius: BorderRadius.circular(
+                                      Radii.md,
+                                    ),
                                   ),
                                 ),
                                 child: const Text('View Maintenance'),
@@ -389,7 +421,10 @@ class _MaintChip extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(dateLabel, style: const TextStyle(color: Colors.black54)),
+                  Text(
+                    dateLabel,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     title,
@@ -411,6 +446,3 @@ class _MaintChip extends StatelessWidget {
     );
   }
 }
-
-
-

@@ -21,7 +21,8 @@ class DataHandler {
   static String _globalBaseUrl = "";
   static bool _useProd = true; // environment flag
 
-  static String get _defaultBaseUrl => _useProd ? _globalProdUrl : _globalDevUrl;
+  static String get _defaultBaseUrl =>
+      _useProd ? _globalProdUrl : _globalDevUrl;
 
   // NEW: normalize helper (ensures scheme + strips trailing slash)
   static String _normalizeBase(String raw) {
@@ -36,16 +37,17 @@ class DataHandler {
 
   static void setEnvironment({required bool production}) {
     _useProd = production;
-    _globalBaseUrl = _normalizeBase(production ? _globalProdUrl : _globalDevUrl);
+    _globalBaseUrl = _normalizeBase(
+      production ? _globalProdUrl : _globalDevUrl,
+    );
   }
 
   DataHandler({required this.auth, String? baseUrl, http.Client? client})
-      : baseUrl = _normalizeBase(
-            baseUrl ??
-                (_globalBaseUrl.isNotEmpty
-                    ? _globalBaseUrl
-                    : _defaultBaseUrl)),
-        _client = client ?? http.Client() {
+    : baseUrl = _normalizeBase(
+        baseUrl ??
+            (_globalBaseUrl.isNotEmpty ? _globalBaseUrl : _defaultBaseUrl),
+      ),
+      _client = client ?? http.Client() {
     // Keep global in sync & normalized
     _globalBaseUrl = this.baseUrl;
     _ensureClerkSubscription(auth);
@@ -55,9 +57,11 @@ class DataHandler {
   // Convenience to build a full Uri safely
   static Uri _buildUri(String path) {
     final base = _normalizeBase(
-        _globalBaseUrl.isNotEmpty ? _globalBaseUrl : _defaultBaseUrl);
-    final cleanPath =
-        path.startsWith('/') ? path : '/$path'; // ensure single slash join
+      _globalBaseUrl.isNotEmpty ? _globalBaseUrl : _defaultBaseUrl,
+    );
+    final cleanPath = path.startsWith('/')
+        ? path
+        : '/$path'; // ensure single slash join
     return Uri.parse('$base$cleanPath');
   }
 
@@ -67,23 +71,29 @@ class DataHandler {
   }
 
   // ================== Profile Caches / Streams ==================
-  static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(0);
+  static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(
+    0,
+  );
   static const Duration _refreshThreshold = Duration(minutes: 1);
 
   // Clerk
   static const Duration _clerkTtl = Duration(seconds: 30);
   static Map<String, dynamic>? _cachedClerkProfile;
   static DateTime? _clerkCachedAt;
-  static final _clerkProfileController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get clerkProfileStream => _clerkProfileController.stream;
+  static final _clerkProfileController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get clerkProfileStream =>
+      _clerkProfileController.stream;
   Map<String, dynamic>? get cachedClerkProfile => _cachedClerkProfile;
 
   // Backend profile
   static const Duration _backendTtl = Duration(seconds: 30);
   static Map<String, dynamic>? _cachedBackendProfile;
   static DateTime? _backendCachedAt;
-  static final _backendProfileController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get backendProfileStream => _backendProfileController.stream;
+  static final _backendProfileController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get backendProfileStream =>
+      _backendProfileController.stream;
   Map<String, dynamic>? get cachedBackendProfile => _cachedBackendProfile;
   static Future<Map<String, dynamic>>? _ongoingBackendFetch;
 
@@ -127,13 +137,14 @@ class DataHandler {
   // ================== Assets Cache ==================
   static const Duration _assetsSoftTtl = Duration(seconds: 60);
   static const Duration _assetsHardTtl = Duration(minutes: 10);
-  static List<Asset>? _cachedAssets;                                  // CHANGED
+  static List<Asset>? _cachedAssets; // CHANGED
   static DateTime? _assetsFetchedAt;
-  static Future<List<Asset>>? _inFlightAssets;                        // CHANGED
-  static final _assetsController = StreamController<List<Asset>>.broadcast(); // CHANGED
+  static Future<List<Asset>>? _inFlightAssets; // CHANGED
+  static final _assetsController =
+      StreamController<List<Asset>>.broadcast(); // CHANGED
 
-  Stream<List<Asset>> get assetsStream => _assetsController.stream;   // CHANGED
-  List<Asset>? get cachedAssets => _cachedAssets;                     // CHANGED
+  Stream<List<Asset>> get assetsStream => _assetsController.stream; // CHANGED
+  List<Asset>? get cachedAssets => _cachedAssets; // CHANGED
 
   bool _assetsSoftExpired() {
     if (_assetsFetchedAt == null) return true;
@@ -151,11 +162,14 @@ class DataHandler {
 
   void _emitAssets() {
     if (_cachedAssets != null) {
-      _assetsController.add(List<Asset>.unmodifiable(_cachedAssets!)); // CHANGED
+      _assetsController.add(
+        List<Asset>.unmodifiable(_cachedAssets!),
+      ); // CHANGED
     }
   }
 
-  bool _listShallowEquals(List<Asset>? a, List<Asset>? b) {           // CHANGED
+  bool _listShallowEquals(List<Asset>? a, List<Asset>? b) {
+    // CHANGED
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
     if (identical(a, b)) return true;
@@ -178,10 +192,7 @@ class DataHandler {
         final res = await _client
             .get(
               uri,
-              headers: {
-                'Accept': 'application/json',
-                'X-User-Id': userId,
-              },
+              headers: {'Accept': 'application/json', 'X-User-Id': userId},
             )
             .timeout(const Duration(seconds: 8));
 
@@ -189,8 +200,11 @@ class DataHandler {
           final decoded = jsonDecode(res.body);
           if (decoded is List) {
             final list = decoded
-                .map<Asset>((e) => Asset.fromJson(
-                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>)))
+                .map<Asset>(
+                  (e) => Asset.fromJson(
+                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>),
+                  ),
+                )
                 .toList();
             final changed = !_listShallowEquals(_cachedAssets, list);
             _cachedAssets = list;
@@ -200,7 +214,9 @@ class DataHandler {
             debugPrint('DataHandler: Assets payload not a list (${res.body})');
           }
         } else if (res.statusCode == 401 || res.statusCode == 403) {
-          debugPrint('DataHandler: Unauthorized assets fetch (${res.statusCode})');
+          debugPrint(
+            'DataHandler: Unauthorized assets fetch (${res.statusCode})',
+          );
           // Do not clear cache; rethrow only if no cache
           if (_cachedAssets == null) {
             throw Exception('Unauthorized');
@@ -222,7 +238,8 @@ class DataHandler {
     return _inFlightAssets!;
   }
 
-  Future<List<Asset>> getAssets({                                   // CHANGED
+  Future<List<Asset>> getAssets({
+    // CHANGED
     bool force = false,
     bool staleOk = true,
   }) async {
@@ -245,7 +262,8 @@ class DataHandler {
     return await _fetchAssetsForUser(uid);
   }
 
-  void _mergeOrInsertAsset(Map<String, dynamic> assetJson) {          // CHANGED
+  void _mergeOrInsertAsset(Map<String, dynamic> assetJson) {
+    // CHANGED
     final asset = Asset.fromJson(assetJson);
     final list = (_cachedAssets ?? <Asset>[]).toList();
     final idx = list.indexWhere((e) => e.id == asset.id);
@@ -274,14 +292,18 @@ class DataHandler {
   }
 
   // ================== Backend Profile (public) ==================
-  Future<Map<String, dynamic>> getProfile({bool preferCache = true, bool forceNetwork = false}) async {
+  Future<Map<String, dynamic>> getProfile({
+    bool preferCache = true,
+    bool forceNetwork = false,
+  }) async {
     markActivity();
     final uid = user?.id;
     if (uid == null) {
       throw Exception("User not found");
     }
     if (preferCache && !forceNetwork && _cachedBackendProfile != null) {
-      final fresh = _backendCachedAt != null &&
+      final fresh =
+          _backendCachedAt != null &&
           DateTime.now().difference(_backendCachedAt!) < _backendTtl;
       if (fresh) return _cachedBackendProfile!;
     }
@@ -295,7 +317,8 @@ class DataHandler {
   // ================== Clerk Profile ==================
   Future<Map<String, dynamic>> clerkFetchProfile({bool force = false}) async {
     final now = DateTime.now();
-    final fresh = _clerkCachedAt != null && now.difference(_clerkCachedAt!) < _clerkTtl;
+    final fresh =
+        _clerkCachedAt != null && now.difference(_clerkCachedAt!) < _clerkTtl;
     if (!force && _cachedClerkProfile != null && fresh) {
       return _cachedClerkProfile!;
     }
@@ -338,7 +361,9 @@ class DataHandler {
   }
 
   // ================== Backend Profile Fetch ==================
-  static Future<Map<String, dynamic>> _refreshBackendProfileForUser(String userId) async {
+  static Future<Map<String, dynamic>> _refreshBackendProfileForUser(
+    String userId,
+  ) async {
     if (_ongoingBackendFetch != null) return await _ongoingBackendFetch!;
 
     final uri = _buildUri('/users/$userId'); // CHANGED
@@ -348,10 +373,7 @@ class DataHandler {
         final response = await http
             .get(
               uri,
-              headers: {
-                'Accept': 'application/json',
-                'X-User-Id': userId,
-              },
+              headers: {'Accept': 'application/json', 'X-User-Id': userId},
             )
             .timeout(const Duration(seconds: 8));
 
@@ -361,12 +383,15 @@ class DataHandler {
           return _cachedBackendProfile!;
         } else {
           debugPrint(
-              'DataHandler: Backend status ${response.statusCode} (uri=$uri)');
+            'DataHandler: Backend status ${response.statusCode} (uri=$uri)',
+          );
           if (_cachedBackendProfile != null) return _cachedBackendProfile!;
           throw Exception('Failed profile fetch: ${response.statusCode}');
         }
       } catch (e) {
-        debugPrint('DataHandler: Backend profile error $userId -> $e (uri=$uri)');
+        debugPrint(
+          'DataHandler: Backend profile error $userId -> $e (uri=$uri)',
+        );
         if (_cachedBackendProfile != null) return _cachedBackendProfile!;
         rethrow;
       } finally {
@@ -378,7 +403,9 @@ class DataHandler {
   }
 
   static void _updateBackendCacheIfChanged(Map<String, dynamic> newData) {
-    final changed = _cachedBackendProfile == null || !mapEquals(_cachedBackendProfile!, newData);
+    final changed =
+        _cachedBackendProfile == null ||
+        !mapEquals(_cachedBackendProfile!, newData);
     _cachedBackendProfile = newData;
     _backendCachedAt = DateTime.now();
     if (changed) _emitBackend();
@@ -397,13 +424,12 @@ class DataHandler {
   }
 
   // ================== Combined Helpers ==================
-  Future<Map<String, Map<String, dynamic>>> fetchBothDataSources({bool force = false}) async {
+  Future<Map<String, Map<String, dynamic>>> fetchBothDataSources({
+    bool force = false,
+  }) async {
     try {
       final backendData = await backendFetchProfile(force: force);
-      return {
-        'clerk': <String, dynamic>{},
-        'backend': backendData,
-      };
+      return {'clerk': <String, dynamic>{}, 'backend': backendData};
     } catch (e) {
       debugPrint('DataHandler: Combined fetch error: $e');
       return {
@@ -413,11 +439,15 @@ class DataHandler {
     }
   }
 
-  Map<String, dynamic> getClerkData(Map<String, Map<String, dynamic>> separatedData) {
+  Map<String, dynamic> getClerkData(
+    Map<String, Map<String, dynamic>> separatedData,
+  ) {
     return separatedData['clerk'] ?? <String, dynamic>{};
   }
 
-  Map<String, dynamic> getBackendData(Map<String, Map<String, dynamic>> separatedData) {
+  Map<String, dynamic> getBackendData(
+    Map<String, Map<String, dynamic>> separatedData,
+  ) {
     return separatedData['backend'] ?? <String, dynamic>{};
   }
 
@@ -462,7 +492,10 @@ class DataHandler {
     }
   }
 
-  static bool _didClerkProfileChange(Map<String, dynamic>? oldMap, Map<String, dynamic> newMap) {
+  static bool _didClerkProfileChange(
+    Map<String, dynamic>? oldMap,
+    Map<String, dynamic> newMap,
+  ) {
     if (oldMap == null) return true;
     return oldMap['imageUrl'] != newMap['imageUrl'] ||
         oldMap['username'] != newMap['username'] ||
@@ -546,8 +579,10 @@ class DataHandler {
     }
 
     try {
-      final result = await backendFetchProfile(force: true)
-          .timeout(const Duration(seconds: 5), onTimeout: () => <String, dynamic>{});
+      final result = await backendFetchProfile(force: true).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => <String, dynamic>{},
+      );
 
       if (result.isNotEmpty ||
           (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty)) {
@@ -665,6 +700,105 @@ class DataHandler {
     } catch (_) {}
 
     // Optionally refresh related profile data (if backend updates counts, etc.)
-    await _refreshBackendProfileForUser(clerkId);
+    try {
+      await _refreshBackendProfileForUser(clerkId);
+    } catch (e) {
+      // Don't treat profile refresh failures as a hard error for asset creation.
+      debugPrint(
+        'DataHandler: Ignored profile refresh error after addAsset: $e',
+      );
+    }
+  }
+
+  Future<void> updateAsset({
+    required String id,
+    required String itemName,
+    required String brandName,
+    required String category,
+    required DateTime purchaseDate,
+    required double purchaseCost,
+    required String currentLocation,
+    required List<String> images,
+    required String conditionDescription,
+    required String status,
+    required bool favorite,
+  }) async {
+    final clerkId = user?.id;
+    if (clerkId == null) {
+      throw Exception("User not authenticated");
+    }
+
+    final uri = Uri.parse('$baseUrl/assets/$id');
+    final body = {
+      "itemName": itemName,
+      "brandName": brandName,
+      "category": category,
+      "purchaseDate": purchaseDate.toIso8601String(),
+      "purchaseCost": purchaseCost,
+      "currentLocation": currentLocation,
+      "images": images,
+      "conditionDescription": conditionDescription,
+      "ownerUserId": clerkId,
+      "status": status,
+      "favorite": favorite,
+    };
+
+    http.Response res;
+    try {
+      res = await _client.put(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-User-Id': clerkId,
+        },
+        body: jsonEncode(body),
+      );
+    } catch (e) {
+      debugPrint('UpdateAsset network error: $e');
+      throw Exception('Network error while updating asset: $e');
+    }
+
+    if (res.statusCode == 404) {
+      // Try a PATCH fallback for servers that prefer PATCH for updates
+      try {
+        final patchRes = await _client.patch(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-User-Id': clerkId,
+          },
+          body: jsonEncode(body),
+        );
+        res = patchRes;
+      } catch (e) {
+        debugPrint('UpdateAsset PATCH fallback network error: $e');
+      }
+    }
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      debugPrint('UpdateAsset failed: ${res.statusCode} - ${res.body}');
+      throw Exception(
+        'Failed to update asset: ${res.statusCode} - ${res.body}',
+      );
+    }
+
+    try {
+      final decoded = jsonDecode(res.body);
+      if (decoded is Map<String, dynamic>) {
+        _mergeOrInsertAsset(decoded);
+      }
+    } catch (_) {}
+
+    // Optionally refresh related profile data
+    try {
+      await _refreshBackendProfileForUser(clerkId);
+    } catch (e) {
+      // Don't surface profile refresh failures as an update failure.
+      debugPrint(
+        'DataHandler: Ignored profile refresh error after updateAsset: $e',
+      );
+    }
   }
 }

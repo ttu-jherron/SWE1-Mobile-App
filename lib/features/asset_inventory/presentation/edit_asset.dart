@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../assets/data/asset.dart';
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
+import '../../../core/data/data_handler.dart';
 
 class EditAssetPage extends StatefulWidget {
   final Asset asset;
@@ -21,6 +22,13 @@ class _EditAssetPageState extends State<EditAssetPage> {
   String? _selectedCondition;
   late final TextEditingController _storeController;
   late final TextEditingController _priceController;
+  final _categoryController = TextEditingController();
+
+  // Purchase date & status & favorite
+  DateTime _purchaseDate = DateTime.now();
+  String _selectedStatus = 'Active';
+  bool _favorite = false;
+  List<String> _locationSuggestions = <String>[];
 
   // State for the selected image file path
   String? _imagePath;
@@ -31,6 +39,12 @@ class _EditAssetPageState extends State<EditAssetPage> {
     'Used - Like New',
     'Used - Good',
     'Used - Poor',
+  ];
+  final List<String> _statusOptions = [
+    'Active',
+    'Inactive',
+    'Maintenance',
+    'Retired',
   ];
 
   @override
@@ -48,6 +62,30 @@ class _EditAssetPageState extends State<EditAssetPage> {
       text: widget.asset.price.toStringAsFixed(2),
     );
     _imagePath = widget.asset.imagePath;
+    // Prefill category/status/favorite where possible
+    _categoryController.text = '';
+    _purchaseDate = widget.asset.completionDate;
+    _selectedStatus = 'Active';
+    _favorite = widget.asset.favorite;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadLocationSuggestions(),
+    );
+  }
+
+  Future<void> _loadLocationSuggestions() async {
+    try {
+      final handler = DataHandler.fromContext(context);
+      final assets = await handler.getAssets(staleOk: true);
+      final set = assets
+          .map((a) => a.currentLocation)
+          .where((s) => s.trim().isNotEmpty)
+          .toSet();
+      setState(() {
+        _locationSuggestions = set.toList();
+      });
+    } catch (e) {
+      debugPrint('Failed to load location suggestions: $e');
+    }
   }
 
   @override
@@ -155,7 +193,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
   //-----------------------------
   // --- LOGIC: Validate fields and save asset ---
-  void _saveChanges() {
+  Future<void> _saveChanges() async {
     final List<String> missingFields = [];
     const double minPrice = 1.00;
     const double maxPrice = 300000.00;
@@ -172,9 +210,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
     if (_selectedCondition == null) {
       missingFields.add('Condition');
     }
-    // 4. Store
+    // 4. Location (currentLocation)
     if (_storeController.text.isEmpty) {
-      missingFields.add('Store');
+      missingFields.add('Location');
     }
 
     // 5. Price (empty, invalid number, or out of range)
@@ -196,34 +234,52 @@ class _EditAssetPageState extends State<EditAssetPage> {
       return;
     }
 
-    // Create the full updated Asset object (using copyWith for edits)
-    final updatedAsset = widget.asset.copyWith(
-      brand: _brandController.text,
-      title: _nameController.text, // Using name as title for simplicity
-      name: '${_brandController.text} ${_nameController.text}',
+    // Call backend update and return updated asset on success
+    try {
+      final handler = DataHandler.fromContext(context);
+      await handler.updateAsset(
+        id: widget.asset.id,
+        itemName: _nameController.text,
+        brandName: _brandController.text,
+        category: _categoryController.text.isNotEmpty
+            ? _categoryController.text
+            : 'Uncategorized',
+        purchaseDate: _purchaseDate,
+        purchaseCost: priceValue!,
+        currentLocation: _storeController.text,
+        images: _imagePath != null ? [_imagePath!] : [],
+        conditionDescription: _selectedCondition!,
+        status: _selectedStatus,
+        favorite: _favorite,
+      );
 
-      // Purchase fields
-      condition: _selectedCondition, // Already validated not null
-      //store: _storeController.text,
-      price: priceValue, // Use the safely parsed and validated value
-      // NEW: Include the image path
-      imagePath: () => _imagePath, // Use ValueGetter for nullable update
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Asset Updated Successfully!'),
+          backgroundColor: AppColors.sandyYellow,
+        ),
+      );
 
-    debugPrint(
-      'Asset data captured (Passed via routing): ${updatedAsset.toJson()}',
-    );
+      // Return updated local copy as well
+      final updatedAsset = widget.asset.copyWith(
+        brand: _brandController.text,
+        title: _nameController.text,
+        name: '${_brandController.text} ${_nameController.text}',
+        condition: _selectedCondition,
+        currentLocation: _storeController.text,
+        price: priceValue,
+        imagePath: () => _imagePath,
+      );
 
-    // Pass the updated Asset object back to the previous screen
-    Navigator.pop(context, updatedAsset);
-
-    // Optional: Show a simple success snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Asset Updated Successfully!'),
-        backgroundColor: AppColors.sandyYellow,
-      ),
-    );
+      Navigator.pop(context, updatedAsset);
+    } catch (e) {
+      debugPrint('Error updating asset: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update asset: $e')));
+    }
   }
 
   //-----------------------------------------
@@ -339,9 +395,150 @@ class _EditAssetPageState extends State<EditAssetPage> {
                       },
                     ),
 
+                    // Category (optional)
                     _buildTextField(
-                      label: 'Store',
-                      controller: _storeController,
+                      label: 'Category',
+                      controller: _categoryController,
+                    ),
+
+                    // Location with autocomplete suggestions and helper hint
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Location',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          Autocomplete<String>(
+                            optionsBuilder:
+                                (TextEditingValue textEditingValue) {
+                                  if (textEditingValue.text == '') {
+                                    return _locationSuggestions;
+                                  }
+                                  return _locationSuggestions.where((
+                                    String option,
+                                  ) {
+                                    return option.toLowerCase().contains(
+                                      textEditingValue.text.toLowerCase(),
+                                    );
+                                  });
+                                },
+                            onSelected: (String selection) {
+                              _storeController.text = selection;
+                            },
+                            fieldViewBuilder:
+                                (
+                                  context,
+                                  controller,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  controller.text = _storeController.text;
+                                  return TextFormField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    onFieldSubmitted: (_) => onFieldSubmitted(),
+                                    decoration: const InputDecoration(
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                    ),
+                                    style: const TextStyle(
+                                      color: AppColors.ebonyClay,
+                                    ),
+                                    onChanged: (v) => _storeController.text = v,
+                                  );
+                                },
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          const Text(
+                            'Where is this item stored? e.g., Garage, Warehouse B, Toolshed',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Status Dropdown
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Status',
+                            style: const TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          DropdownButtonFormField<String>(
+                            value: _selectedStatus,
+                            selectedItemBuilder: (BuildContext context) {
+                              return _statusOptions.map<Widget>((
+                                String status,
+                              ) {
+                                return Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    status,
+                                    style: const TextStyle(
+                                      color: AppColors.ebonyClay,
+                                      fontSize: TypographyScale.field,
+                                    ),
+                                  ),
+                                );
+                              }).toList();
+                            },
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: Spacing.xs,
+                                horizontal: Spacing.sm,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(Radii.sm),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            items: _statusOptions
+                                .map(
+                                  (s) => DropdownMenuItem(
+                                    value: s,
+                                    child: Text(s),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (String? v) {
+                              setState(() {
+                                if (v != null) _selectedStatus = v;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     _buildTextField(
                       label: 'Price',
