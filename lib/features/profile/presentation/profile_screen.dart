@@ -272,13 +272,11 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // EDITABLE: Full Name
-                                _InlineEditableField(
-                                  label: 'Full Name',
-                                  initialValue: displayFullName,
+                                // EDITABLE: Full Name (now split into First / Last when editing)
+                                _InlineEditableFullName(
+                                  firstName: firstName,
+                                  lastName: lastName,
                                   underline: false,
-                                  keyboardType: TextInputType.name,
-                                  saveKey: 'full_name', // used in TODO
                                 ),
                                 const SizedBox(height: Spacing.lg),
                                 // EDITABLE: Phone Number
@@ -314,23 +312,9 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                       
                         SizedBox(
-                          width: 160,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
-                            style: ButtonStyle(
-                              padding: MaterialStateProperty.all(
-                                const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                            ),
-                            child: const Center(child: Text('Edit Profile')),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: 120,
+                          width: 128,
                           height: 48,
                           child: ElevatedButton(
                             onPressed: () async {
@@ -761,6 +745,220 @@ class _InlineEditablePasswordState extends State<_InlineEditablePassword> {
                 ),
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Save'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: _cancel,
+                icon: const Icon(Icons.close, size: 18),
+                label: const Text('Cancel'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineEditableFullName extends StatefulWidget {
+  final String firstName;
+  final String lastName;
+  final bool underline;
+
+  const _InlineEditableFullName({
+    required this.firstName,
+    required this.lastName,
+    this.underline = false,
+  });
+
+  @override
+  State<_InlineEditableFullName> createState() => _InlineEditableFullNameState();
+}
+
+class _InlineEditableFullNameState extends State<_InlineEditableFullName> {
+  late String _first;
+  late String _last;
+  bool _editing = false;
+
+  final _firstCtrl = TextEditingController();
+  final _lastCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _first = widget.firstName;
+    _last = widget.lastName;
+    _firstCtrl.text = _first;
+    _lastCtrl.text = _last;
+  }
+
+  @override
+  void didUpdateWidget(covariant _InlineEditableFullName oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_editing &&
+        (oldWidget.firstName != widget.firstName || oldWidget.lastName != widget.lastName)) {
+      _first = widget.firstName;
+      _last = widget.lastName;
+      _firstCtrl.text = _first;
+      _lastCtrl.text = _last;
+    }
+  }
+
+  @override
+  void dispose() {
+    _firstCtrl.dispose();
+    _lastCtrl.dispose();
+    super.dispose();
+  }
+
+  void _startEdit() {
+    setState(() {
+      _firstCtrl.text = _first;
+      _lastCtrl.text = _last;
+      _editing = true;
+    });
+  }
+
+  void _cancel() {
+    setState(() {
+      _firstCtrl.text = _first;
+      _lastCtrl.text = _last;
+      _editing = false;
+    });
+  }
+
+  void _save() {
+    final newFirst = _firstCtrl.text.trim();
+    final newLast = _lastCtrl.text.trim();
+    final changed = newFirst != _first || newLast != _last;
+    if (!changed) {
+      setState(() => _editing = false);
+      return;
+    }
+    setState(() {
+      _first = newFirst;
+      _last = newLast;
+      _editing = false;
+    });
+
+    // TODO: Persist both fields via DataHandler:
+    // final dh = DataHandler.fromContext(context);
+    // await dh.updateProfileFields({'first_name': _first, 'last_name': _last});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = const TextStyle(
+      fontWeight: FontWeight.w800,
+      color: Colors.black87,
+    );
+
+    final combined = '$_first $_last'.trim().isEmpty ? 'No access to backend' : '$_first $_last'.trim();
+
+    if (!_editing) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Full Name', style: labelStyle),
+            const SizedBox(height: Spacing.xs),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    combined,
+                    style: TextStyle(
+                      color: AppColors.ebonyClay,
+                      decoration: widget.underline ? TextDecoration.underline : TextDecoration.none,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
+                  tooltip: 'Edit',
+                  onPressed: _startEdit,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    InputDecoration _dec(String label) => InputDecoration(
+          isDense: true,
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.black54),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.black26, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.black26, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2),
+          ),
+        );
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Full Name', style: labelStyle),
+            const SizedBox(height: Spacing.xs),
+          Row(
+            children: [
+              Expanded(
+                child: TextSelectionTheme(
+                  data: TextSelectionThemeData(
+                    selectionColor: AppColors.ebonyClay.withOpacity(0.25),
+                    selectionHandleColor: AppColors.ebonyClay,
+                  ),
+                  child: TextField(
+                    controller: _firstCtrl,
+                    cursorColor: AppColors.ebonyClay,
+                    style: const TextStyle(color: Colors.black87),
+                    textCapitalization: TextCapitalization.words,
+                    decoration: _dec('First'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextSelectionTheme(
+                  data: TextSelectionThemeData(
+                    selectionColor: AppColors.ebonyClay.withOpacity(0.25),
+                    selectionHandleColor: AppColors.ebonyClay,
+                  ),
+                  child: TextField(
+                    controller: _lastCtrl,
+                    cursorColor: AppColors.ebonyClay,
+                    style: const TextStyle(color: Colors.black87),
+                    textCapitalization: TextCapitalization.words,
+                    decoration: _dec('Last'),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Row(
