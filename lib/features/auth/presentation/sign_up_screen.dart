@@ -293,6 +293,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           label: 'Username',
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          curserColor: AppColors.sandyYellow,
                           isRequired: true,
                         ),
                         const SizedBox(height: Spacing.md),
@@ -311,6 +312,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          curserColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
                         const Text(
@@ -328,6 +330,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          curserColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
                         const Text(
@@ -344,6 +347,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          curserColor: AppColors.sandyYellow,
                         ),
                     
                     // --- ADDRESS FIELDS (COMMENTED OUT) ---
