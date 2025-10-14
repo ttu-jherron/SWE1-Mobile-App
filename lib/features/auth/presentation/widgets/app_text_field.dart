@@ -6,6 +6,7 @@ class AppTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final String? hint;
+  final Color? curserColor;
   final bool obscure;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
@@ -17,6 +18,7 @@ class AppTextField extends StatefulWidget {
     super.key,
     required this.controller,
     required this.label,
+    required this.curserColor,
     this.hint,
     this.obscure = false,
     this.validator,
@@ -46,17 +48,17 @@ class _AppTextFieldState extends State<AppTextField> {
       color: widget.labelColor, // Use the specified label color
       fontSize: TypographyScale.field,
     );
-
+    final fieldColor = widget.curserColor;
     return TextFormField(
       controller: widget.controller,
-      cursorColor: Colors.black,
+      cursorColor: fieldColor,
       obscureText: _obscureText,
       validator: widget.validator,
       keyboardType: widget.keyboardType,
       textInputAction: TextInputAction.done,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: TypographyScale.field,
-        color: Colors.black,
+        color: fieldColor,
       ),
       decoration: InputDecoration(
         // Use the custom label style with the specified color
@@ -99,7 +101,7 @@ class _AppTextFieldState extends State<AppTextField> {
             ? IconButton(
                 icon: Icon(
                   _obscureText ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.black,
+                  color: fieldColor,
                 ),
                 onPressed: () {
                   setState(() {

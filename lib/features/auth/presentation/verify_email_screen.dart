@@ -90,6 +90,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   label: 'Verification Code',
                   hint: 'Enter 6-digit code',
                   borderColor: AppColors.sandyYellow,
+                  curserColor: AppColors.sandyYellow,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: Spacing.xl),

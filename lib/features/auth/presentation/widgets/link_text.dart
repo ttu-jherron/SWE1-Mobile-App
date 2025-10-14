@@ -22,7 +22,7 @@ class LinkText extends StatelessWidget {
         style: TextStyle(
           color: color,
           decoration: TextDecoration.underline,
-          decorationColor: AppColors.ebonyClay,
+          decorationColor: color,
           fontWeight: FontWeight.w600,
         ),
       ),
