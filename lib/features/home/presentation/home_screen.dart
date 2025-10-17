@@ -18,6 +18,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool showAlert = true;
 
+  @override
+  void initState() {
+    super.initState();
+    // Clear any snackbar that might still be queued from the previous screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      messenger?.hideCurrentSnackBar(reason: SnackBarClosedReason.remove);
+    });
+  }
+
   // --- PLACEHOLDER DATA (swap with backend later) ---
   final List<MaintenanceItem> upcoming = [
     MaintenanceItem(

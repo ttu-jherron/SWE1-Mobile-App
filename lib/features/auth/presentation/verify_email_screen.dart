@@ -67,7 +67,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     }
     setState(() => _loading = true);
     try {
-      // Verify using emailCode (no resend here)
+      // Verify using emailCode
       await _auth.attemptSignUp(
         strategy: clerk.Strategy.emailCode,
         emailAddress: widget.email,
@@ -75,18 +75,37 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       );
 
       if (!mounted) return;
+      
+      // Check if user is now authenticated after verification
       if (_auth.user != null) {
+        // User is successfully signed up and signed in
+        ScaffoldMessenger.of(context).hideCurrentSnackBar(reason: SnackBarClosedReason.remove); // clear any pending snackbars
         Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
-        // Also try to pop true if still on stack
-        Navigator.of(context).maybePop(true);
       } else {
-        Navigator.of(context).pop(true);
+        // If verification succeeded but user is still null, try signing in
+        try {
+          await _auth.attemptSignIn(
+            strategy: clerk.Strategy.password,
+            identifier: widget.email,
+            password: widget.password,
+          );
+          if (!mounted) return;
+          if (_auth.user != null) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar(reason: SnackBarClosedReason.remove); // clear any pending snackbars
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+          } else {
+            _snack('Email verified! Please sign in with your credentials.');
+            Navigator.of(context).pop(true);
+          }
+        } catch (signInError) {
+          if (!mounted) return;
+          _snack('Email verified! Please sign in with your credentials.');
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (!mounted) return;
-      // Show only here (no errorStream), then return to Sign Up as requested
-      _snack(e.toString());
-      Navigator.of(context).pop(false);
+      _snack('Verification failed: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
