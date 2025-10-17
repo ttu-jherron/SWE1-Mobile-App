@@ -13,6 +13,14 @@ class AppTextField extends StatefulWidget {
   final Color borderColor;
   final bool isRequired;
   final Color labelColor;
+  final Color? textColor;
+  final Color? cursorColor;
+
+  // NEW: control IME composing underline + selection colors
+  final bool enableSuggestions;
+  final bool autocorrect;
+  final Color? selectionColor;
+  final Color? selectionHandleColor;
 
   const AppTextField({
     super.key,
@@ -26,6 +34,12 @@ class AppTextField extends StatefulWidget {
     this.borderColor = Colors.black,
     this.isRequired = false,
     this.labelColor = AppColors.darkText, // Default color
+    this.textColor = AppColors.darkText,     // default: dark for Sign In
+    this.cursorColor = AppColors.darkText,   // default: dark for Sign In
+    this.enableSuggestions = false, // disable to avoid composing underline
+    this.autocorrect = false,       // disable to avoid composing underline
+    this.selectionColor,
+    this.selectionHandleColor,
   });
 
   @override
@@ -34,6 +48,11 @@ class AppTextField extends StatefulWidget {
 
 class _AppTextFieldState extends State<AppTextField> {
   late bool _obscureText;
+
+  OutlineInputBorder _outline(Color color) => OutlineInputBorder(
+        borderSide: BorderSide(color: color, width: 2.0),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+      );
 
   @override
   void initState() {
@@ -45,71 +64,79 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget build(BuildContext context) {
     // Create a label style using the provided color
     final TextStyle labelStyle = TextStyle(
-      color: widget.labelColor, // Use the specified label color
+      color: widget.labelColor,
       fontSize: TypographyScale.field,
     );
-    final fieldColor = widget.curserColor;
-    return TextFormField(
-      controller: widget.controller,
-      cursorColor: fieldColor,
-      obscureText: _obscureText,
-      validator: widget.validator,
-      keyboardType: widget.keyboardType,
-      textInputAction: TextInputAction.done,
-      style: TextStyle(
-        fontSize: TypographyScale.field,
-        color: fieldColor,
+
+    final cursor = widget.cursorColor ?? AppColors.darkText;
+    final txtColor = widget.textColor ?? AppColors.darkText;
+
+    // Selection colors (the highlight and the draggable handle “blob”)
+    final selColor = widget.selectionColor ?? txtColor.withOpacity(0.35);
+    final handleColor = widget.selectionHandleColor ?? cursor;
+
+    return TextSelectionTheme(
+      data: TextSelectionThemeData(
+        cursorColor: cursor,
+        selectionColor: selColor,
+        selectionHandleColor: handleColor,
       ),
-      decoration: InputDecoration(
-        // Use the custom label style with the specified color
-        label: widget.isRequired
-            ? RichText(
-                text: TextSpan(
-                  text: widget.label,
-                  style: labelStyle, // Use the custom style
-                  children: const [
-                    TextSpan(
-                      text: '*',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: TypographyScale.field,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : Text(
-                widget.label,
-                style: labelStyle, // Use the custom style
-              ),
-        hintText: widget.hint,
-        hintStyle: const TextStyle(
-          color: Colors.grey,
+      child: TextFormField(
+        controller: widget.controller,
+        cursorColor: cursor,
+        obscureText: _obscureText,
+        validator: widget.validator,
+        keyboardType: widget.keyboardType,
+        textInputAction: TextInputAction.done,
+        enableSuggestions: widget.enableSuggestions, // removes composing underline
+        autocorrect: widget.autocorrect,             // removes composing underline
+        style: TextStyle(
           fontSize: TypographyScale.field,
+          color: txtColor,
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: widget.borderColor, width: 2.0),
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
+        decoration: InputDecoration(
+          // Force outlined borders in all states (prevents underline)
+          border: _outline(widget.borderColor),
+          enabledBorder: _outline(widget.borderColor),
+          focusedBorder: _outline(widget.borderColor),
+          disabledBorder: _outline(widget.borderColor),
+          errorBorder: _outline(Colors.red),
+          focusedErrorBorder: _outline(Colors.red),
+
+          label: widget.isRequired
+              ? RichText(
+                  text: TextSpan(
+                    text: widget.label,
+                    style: labelStyle,
+                    children: const [
+                      TextSpan(
+                        text: '*',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: TypographyScale.field,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(widget.label, style: labelStyle),
+          hintText: widget.hint,
+          hintStyle: const TextStyle(
+            color: Colors.grey,
+            fontSize: TypographyScale.field,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
+
+          suffixIcon: widget.obscure
+              ? IconButton(
+                  icon: Icon(
+                    _obscureText ? Icons.visibility_off : Icons.visibility,
+                    color: widget.labelColor,
+                  ),
+                  onPressed: () => setState(() => _obscureText = !_obscureText),
+                )
+              : null,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: widget.borderColor, width: 2.0),
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
-        ),
-        // Add visibility toggle button if this is a password field
-        suffixIcon: widget.obscure
-            ? IconButton(
-                icon: Icon(
-                  _obscureText ? Icons.visibility_off : Icons.visibility,
-                  color: fieldColor,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscureText = !_obscureText;
-                  });
-                },
-              )
-            : null,
       ),
     );
   }
