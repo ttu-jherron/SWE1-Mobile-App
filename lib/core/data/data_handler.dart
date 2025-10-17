@@ -7,6 +7,7 @@ import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:http/http.dart' as http;
 import 'package:mobile_app/features/assets/data/asset.dart';
+import 'package:mobile_app/features/maintenance/data/maintenance_entry.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class DataHandler {
@@ -800,5 +801,184 @@ class DataHandler {
         'DataHandler: Ignored profile refresh error after updateAsset: $e',
       );
     }
+  }
+
+  // ================== Maintenance Cache ==================
+  static const Duration _maintenanceSoftTtl = Duration(seconds: 60);
+  static const Duration _maintenanceHardTtl = Duration(minutes: 10);
+  static List<MaintenanceEntry>? _cachedMaintenance;
+  static DateTime? _maintenanceFetchedAt;
+  static Future<List<MaintenanceEntry>>? _inFlightMaintenance;
+  static final _maintenanceController =
+      StreamController<List<MaintenanceEntry>>.broadcast();
+
+  Stream<List<MaintenanceEntry>> get maintenanceStream => _maintenanceController.stream;
+  List<MaintenanceEntry>? get cachedMaintenance => _cachedMaintenance;
+
+  bool _maintenanceSoftExpired() {
+    if (_maintenanceFetchedAt == null) return true;
+    return DateTime.now().difference(_maintenanceFetchedAt!) > _maintenanceSoftTtl;
+  }
+
+  bool _maintenanceHardExpired() {
+    if (_maintenanceFetchedAt == null) return true;
+    return DateTime.now().difference(_maintenanceFetchedAt!) > _maintenanceHardTtl;
+  }
+
+  void invalidateMaintenance() {
+    _maintenanceFetchedAt = null;
+  }
+
+  void _emitMaintenance() {
+    if (_cachedMaintenance != null) {
+      _maintenanceController.add(
+        List<MaintenanceEntry>.unmodifiable(_cachedMaintenance!),
+      );
+    }
+  }
+
+  Future<List<MaintenanceEntry>> _fetchMaintenanceForUser(String userId) {
+    if (_inFlightMaintenance != null) return _inFlightMaintenance!;
+    final uri = _buildUri('/maintenance');
+
+    _inFlightMaintenance = () async {
+      try {
+        final res = await _client
+            .get(
+              uri,
+              headers: {'Accept': 'application/json', 'X-User-Id': userId},
+            )
+            .timeout(const Duration(seconds: 8));
+
+        if (res.statusCode == 200) {
+          final decoded = jsonDecode(res.body);
+          if (decoded is List) {
+            final list = decoded
+                .map<MaintenanceEntry>(
+                  (e) => MaintenanceEntry.fromJson(
+                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>),
+                  ),
+                )
+                .toList();
+            final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
+            _cachedMaintenance = list;
+            _maintenanceFetchedAt = DateTime.now();
+            if (changed) _emitMaintenance();
+          } else {
+            debugPrint('DataHandler: Maintenance payload not a list (${res.body})');
+          }
+        } else if (res.statusCode == 401 || res.statusCode == 403) {
+          debugPrint(
+            'DataHandler: Unauthorized maintenance fetch (${res.statusCode})',
+          );
+          if (_cachedMaintenance == null) {
+            throw Exception('Unauthorized');
+          }
+        } else {
+          debugPrint('DataHandler: Maintenance fetch failed ${res.statusCode}');
+          if (_cachedMaintenance == null) {
+            throw Exception('Failed to fetch maintenance: ${res.statusCode}');
+          }
+        }
+      } catch (e) {
+        debugPrint('DataHandler: Maintenance fetch error $e (uri=$uri)');
+        if (_cachedMaintenance == null) rethrow;
+      } finally {
+        _inFlightMaintenance = null;
+      }
+      return _cachedMaintenance ?? <MaintenanceEntry>[];
+    }();
+    return _inFlightMaintenance!;
+  }
+
+  bool _listShallowEqualsMaintenance(List<MaintenanceEntry>? a, List<MaintenanceEntry>? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final ai = a[i];
+      final bi = b[i];
+      if (ai.id != bi.id) return false;
+    }
+    return true;
+  }
+
+  Future<List<MaintenanceEntry>> getMaintenance({
+    bool force = false,
+    bool staleOk = true,
+  }) async {
+    markActivity();
+    final uid = user?.id;
+    if (uid == null) throw Exception('User not authenticated');
+
+    if (!force && _cachedMaintenance != null) {
+      final softExpired = _maintenanceSoftExpired();
+      final hardExpired = _maintenanceHardExpired();
+
+      if (!softExpired) {
+        return _cachedMaintenance!;
+      }
+      if (softExpired && !hardExpired && staleOk) {
+        _fetchMaintenanceForUser(uid);
+        return _cachedMaintenance!;
+      }
+    }
+    return await _fetchMaintenanceForUser(uid);
+  }
+
+  Future<void> addMaintenance(MaintenanceEntry entry) async {
+    final clerkId = user?.id;
+    if (clerkId == null) {
+      throw Exception("User not authenticated");
+    }
+
+    final uri = _buildUri('/maintenance');
+    final body = entry.toJson();
+
+    final res = await _client.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-User-Id': clerkId,
+      },
+      body: jsonEncode(body),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      debugPrint('AddMaintenance failed: ${res.statusCode} - ${res.body}');
+      throw Exception('Failed to add maintenance: ${res.statusCode}');
+    }
+
+    debugPrint('Maintenance added successfully: ${res.body}');
+
+    try {
+      final decoded = jsonDecode(res.body);
+      if (decoded is Map<String, dynamic>) {
+        _mergeOrInsertMaintenance(MaintenanceEntry.fromJson(decoded));
+      }
+    } catch (_) {}
+
+    try {
+      await _refreshBackendProfileForUser(clerkId);
+    } catch (e) {
+      debugPrint(
+        'DataHandler: Ignored profile refresh error after addMaintenance: $e',
+      );
+    }
+  }
+
+  void _mergeOrInsertMaintenance(MaintenanceEntry entry) {
+    final list = (_cachedMaintenance ?? <MaintenanceEntry>[]).toList();
+    final idx = list.indexWhere((e) => e.id == entry.id);
+    if (idx >= 0) {
+      list[idx] = entry;
+    } else {
+      list.insert(0, entry);
+    }
+    _cachedMaintenance = list;
+    _maintenanceFetchedAt = DateTime.now();
+    _emitMaintenance();
   }
 }
