@@ -8,15 +8,12 @@ class MaterialRow {
 
   MaterialRow({required this.tool, required this.location});
 
-  Map<String, dynamic> toJson() => {
-        'tool': tool,
-        'location': location,
-      };
+  Map<String, dynamic> toJson() => {'tool': tool, 'location': location};
 
   factory MaterialRow.fromJson(Map<String, dynamic> json) => MaterialRow(
-        tool: json['tool'] as String,
-        location: json['location'] as String,
-      );
+    tool: json['tool'] as String,
+    location: json['location'] as String,
+  );
 
   @override
   String toString() => 'MaterialRow(tool: $tool, location: $location)';
@@ -29,13 +26,14 @@ class Asset {
   final String brand;
   final String title; // e.g., “350 W Power Station”
   final String name; // e.g., “Predator 350 W Power Station”
-  
+
   // --- Purchase/Identity Fields ---
   final String condition;
   final String currentLocation;
   final double price;
   final String? imagePath; // Path to the image file
-  
+  final String category; // NEW: category field
+
   // --- Maintenance Fields (Placeholders) ---
   final DateTime completionDate;
   final String shortDescription;
@@ -50,19 +48,19 @@ class Asset {
     required this.brand,
     required this.title,
     required this.name,
-    
+
     // Purchase fields
     required this.condition,
     required this.currentLocation,
     required this.price,
+    required this.category, // Changed to required
     this.imagePath,
-    
+
     // Maintenance fields
     required this.completionDate,
     required this.shortDescription,
     required this.notes,
     required this.requiredMaterials,
-
 
     // Favorites
     this.favorite = false,
@@ -105,8 +103,9 @@ class Asset {
     final status = _readString(json['status']);
     final conditionDescription = _readString(json['conditionDescription']);
     final location = _readString(json['currentLocation']);
-    final shortDesc =
-        category.isNotEmpty ? category : (status.isNotEmpty ? status : itemName);
+    final shortDesc = category.isNotEmpty
+        ? category
+        : (status.isNotEmpty ? status : itemName);
 
     final notesComposed = [
       if (status.isNotEmpty) status.toUpperCase(),
@@ -123,6 +122,7 @@ class Asset {
       currentLocation: location,
       price: _readDouble(json['purchaseCost']),
       imagePath: firstImage,
+      category: category, // Store category from backend
       completionDate: _readDate(json['purchaseDate']),
       shortDescription: shortDesc,
       notes: notesComposed,
@@ -133,27 +133,26 @@ class Asset {
 
   // Method to convert Asset object to JSON
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'brand': brand,
-        'title': title,
-        'name': name,
-        
-        // Purchase fields
-        'condition': condition,
-        'currentLocation': currentLocation,
-        'price': price,
-        'imagePath': imagePath,
-        
-        // Maintenance fields
-        'completionDate': completionDate.toIso8601String(),
-        'shortDescription': shortDescription,
-        'notes': notes,
-        'requiredMaterials':
-            requiredMaterials.map((e) => e.toJson()).toList(),
+    'id': id,
+    'brand': brand,
+    'title': title,
+    'name': name,
 
-        // Favorites
-        'favorite': favorite,
-      };
+    // Purchase fields
+    'condition': condition,
+    'currentLocation': currentLocation,
+    'price': price,
+    'imagePath': imagePath,
+    'category': category, // Include category in JSON
+    // Maintenance fields
+    'completionDate': completionDate.toIso8601String(),
+    'shortDescription': shortDescription,
+    'notes': notes,
+    'requiredMaterials': requiredMaterials.map((e) => e.toJson()).toList(),
+
+    // Favorites
+    'favorite': favorite,
+  };
 
   // Method to create a copy of the asset with optional updates
   Asset copyWith({
@@ -165,6 +164,7 @@ class Asset {
     String? currentLocation,
     double? price,
     ValueGetter<String?>? imagePath, // Use ValueGetter for nullable updates
+    String? category, // NEW: copy category
     DateTime? completionDate,
     String? shortDescription,
     String? notes,
@@ -180,6 +180,7 @@ class Asset {
       currentLocation: currentLocation ?? this.currentLocation,
       price: price ?? this.price,
       imagePath: imagePath != null ? imagePath() : this.imagePath,
+      category: category ?? this.category, // Include category in copyWith
       completionDate: completionDate ?? this.completionDate,
       shortDescription: shortDescription ?? this.shortDescription,
       notes: notes ?? this.notes,
@@ -193,4 +194,3 @@ class Asset {
     return 'Asset(id: $id, brand: $brand, title: $title, price: $price, imagePath: $imagePath, favorite: $favorite)';
   }
 }
-

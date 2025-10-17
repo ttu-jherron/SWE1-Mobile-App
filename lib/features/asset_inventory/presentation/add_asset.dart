@@ -1,5 +1,6 @@
 import 'dart:io'; // Required for Image Picker
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; //Image Picker
 import '../../assets/data/asset.dart';
 import '../../../core/colors.dart';
@@ -21,6 +22,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
   final _storeController = TextEditingController();
   final _priceController = TextEditingController();
   final _categoryController = TextEditingController();
+  final _purchaseDateController = TextEditingController();
+
+  final DateFormat _df = DateFormat('MMM dd, yyyy');
 
   // Location suggestions (prefilled from existing assets)
   List<String> _locationSuggestions = <String>[];
@@ -114,6 +118,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _loadLocationSuggestions(),
     );
+    _purchaseDateController.text = _df.format(_purchaseDate);
   }
 
   Future<void> _loadLocationSuggestions() async {
@@ -129,6 +134,22 @@ class _AddAssetPageState extends State<AddAssetPage> {
       });
     } catch (e) {
       debugPrint('Failed to load location suggestions: $e');
+    }
+  }
+
+  Future<void> _pickPurchaseDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _purchaseDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Select purchase date',
+    );
+    if (picked != null) {
+      setState(() {
+        _purchaseDate = picked;
+        _purchaseDateController.text = _df.format(picked);
+      });
     }
   }
 
@@ -253,6 +274,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
         //store: _storeController.text,
         price: priceValue!, // Use the safely parsed and validated value
         imagePath: _imagePath, // NEW: Include the image path
+        category: _categoryController.text.isNotEmpty
+            ? _categoryController.text
+            : 'Uncategorized', // Include category
         // Category / status / favorite
         // NOTE: Asset model does not store category/status separately; we include them in notes via shortDescription
 
@@ -532,6 +556,49 @@ class _AddAssetPageState extends State<AddAssetPage> {
                         ],
                       ),
                     ),
+
+                    // Purchase Date (calendar picker)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Purchase Date',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          TextFormField(
+                            controller: _purchaseDateController,
+                            readOnly: true,
+                            onTap: _pickPurchaseDate,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: Spacing.xs,
+                                horizontal: Spacing.sm,
+                              ),
+                              suffixIcon: const Icon(Icons.calendar_today),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(Radii.sm),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: const TextStyle(color: AppColors.ebonyClay),
+                          ),
+                        ],
+                      ),
+                    ),
                     _buildTextField(
                       label: 'Price',
                       controller: _priceController,
@@ -575,6 +642,17 @@ class _AddAssetPageState extends State<AddAssetPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _brandController.dispose();
+    _nameController.dispose();
+    _storeController.dispose();
+    _priceController.dispose();
+    _categoryController.dispose();
+    _purchaseDateController.dispose();
+    super.dispose();
   }
 
   // Helper method for the text fields

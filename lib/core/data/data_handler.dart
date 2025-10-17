@@ -661,6 +661,26 @@ class DataHandler {
       throw Exception("User not authenticated");
     }
 
+    // Convert status string to integer enum for backend
+    // Backend expects: 0=Active, 1=Inactive, 2=Maintenance, 3=Retired
+    int statusCode;
+    switch (status.toLowerCase()) {
+      case 'active':
+        statusCode = 0;
+        break;
+      case 'inactive':
+        statusCode = 1;
+        break;
+      case 'maintenance':
+        statusCode = 2;
+        break;
+      case 'retired':
+        statusCode = 3;
+        break;
+      default:
+        statusCode = 0; // Default to Active
+    }
+
     final uri = Uri.parse('$baseUrl/assets');
     final body = {
       "itemName": itemName,
@@ -672,7 +692,7 @@ class DataHandler {
       "images": images,
       "conditionDescription": conditionDescription,
       "ownerUserId": clerkId,
-      "status": status,
+      "status": statusCode, // Changed from status string to integer
       "favorite": favorite,
     };
 
@@ -687,8 +707,11 @@ class DataHandler {
     );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      debugPrint('AddAsset failed: ${res.statusCode} - ${res.body}');
-      throw Exception('Failed to add asset: ${res.statusCode}');
+      final errorBody = res.body.isNotEmpty ? res.body : 'No error message';
+      debugPrint('AddAsset failed: ${res.statusCode}');
+      debugPrint('Request body: ${jsonEncode(body)}');
+      debugPrint('Response body: $errorBody');
+      throw Exception('Failed to add asset: ${res.statusCode} - $errorBody');
     }
 
     debugPrint('Asset added successfully: ${res.body}');
@@ -729,6 +752,26 @@ class DataHandler {
       throw Exception("User not authenticated");
     }
 
+    // Convert status string to integer enum for backend
+    // Backend expects: 0=Active, 1=Inactive, 2=Maintenance, 3=Retired
+    int statusCode;
+    switch (status.toLowerCase()) {
+      case 'active':
+        statusCode = 0;
+        break;
+      case 'inactive':
+        statusCode = 1;
+        break;
+      case 'maintenance':
+        statusCode = 2;
+        break;
+      case 'retired':
+        statusCode = 3;
+        break;
+      default:
+        statusCode = 0; // Default to Active
+    }
+
     final uri = Uri.parse('$baseUrl/assets/$id');
     final body = {
       "itemName": itemName,
@@ -740,7 +783,7 @@ class DataHandler {
       "images": images,
       "conditionDescription": conditionDescription,
       "ownerUserId": clerkId,
-      "status": status,
+      "status": statusCode, // Changed from status string to integer
       "favorite": favorite,
     };
 
@@ -779,10 +822,11 @@ class DataHandler {
     }
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      debugPrint('UpdateAsset failed: ${res.statusCode} - ${res.body}');
-      throw Exception(
-        'Failed to update asset: ${res.statusCode} - ${res.body}',
-      );
+      final errorBody = res.body.isNotEmpty ? res.body : 'No error message';
+      debugPrint('UpdateAsset failed: ${res.statusCode}');
+      debugPrint('Request body: ${jsonEncode(body)}');
+      debugPrint('Response body: $errorBody');
+      throw Exception('Failed to update asset: ${res.statusCode} - $errorBody');
     }
 
     try {
@@ -812,17 +856,20 @@ class DataHandler {
   static final _maintenanceController =
       StreamController<List<MaintenanceEntry>>.broadcast();
 
-  Stream<List<MaintenanceEntry>> get maintenanceStream => _maintenanceController.stream;
+  Stream<List<MaintenanceEntry>> get maintenanceStream =>
+      _maintenanceController.stream;
   List<MaintenanceEntry>? get cachedMaintenance => _cachedMaintenance;
 
   bool _maintenanceSoftExpired() {
     if (_maintenanceFetchedAt == null) return true;
-    return DateTime.now().difference(_maintenanceFetchedAt!) > _maintenanceSoftTtl;
+    return DateTime.now().difference(_maintenanceFetchedAt!) >
+        _maintenanceSoftTtl;
   }
 
   bool _maintenanceHardExpired() {
     if (_maintenanceFetchedAt == null) return true;
-    return DateTime.now().difference(_maintenanceFetchedAt!) > _maintenanceHardTtl;
+    return DateTime.now().difference(_maintenanceFetchedAt!) >
+        _maintenanceHardTtl;
   }
 
   void invalidateMaintenance() {
@@ -860,12 +907,17 @@ class DataHandler {
                   ),
                 )
                 .toList();
-            final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
+            final changed = !_listShallowEqualsMaintenance(
+              _cachedMaintenance,
+              list,
+            );
             _cachedMaintenance = list;
             _maintenanceFetchedAt = DateTime.now();
             if (changed) _emitMaintenance();
           } else {
-            debugPrint('DataHandler: Maintenance payload not a list (${res.body})');
+            debugPrint(
+              'DataHandler: Maintenance payload not a list (${res.body})',
+            );
           }
         } else if (res.statusCode == 401 || res.statusCode == 403) {
           debugPrint(
@@ -891,7 +943,10 @@ class DataHandler {
     return _inFlightMaintenance!;
   }
 
-  bool _listShallowEqualsMaintenance(List<MaintenanceEntry>? a, List<MaintenanceEntry>? b) {
+  bool _listShallowEqualsMaintenance(
+    List<MaintenanceEntry>? a,
+    List<MaintenanceEntry>? b,
+  ) {
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
     if (identical(a, b)) return true;

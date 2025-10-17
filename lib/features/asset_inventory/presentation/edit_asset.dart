@@ -5,6 +5,7 @@ import '../../assets/data/asset.dart';
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
 import '../../../core/data/data_handler.dart';
+import 'package:intl/intl.dart';
 
 class EditAssetPage extends StatefulWidget {
   final Asset asset;
@@ -23,6 +24,8 @@ class _EditAssetPageState extends State<EditAssetPage> {
   late final TextEditingController _storeController;
   late final TextEditingController _priceController;
   final _categoryController = TextEditingController();
+  final _purchaseDateController = TextEditingController();
+  final DateFormat _df = DateFormat('MMM dd, yyyy');
 
   // Purchase date & status & favorite
   DateTime _purchaseDate = DateTime.now();
@@ -53,7 +56,10 @@ class _EditAssetPageState extends State<EditAssetPage> {
     // Initialize controllers with existing asset data
     _brandController = TextEditingController(text: widget.asset.brand);
     _nameController = TextEditingController(text: widget.asset.title);
-    _selectedCondition = widget.asset.condition;
+    // FIXED: Only set _selectedCondition if the asset's condition is in the dropdown list
+    _selectedCondition = _conditions.contains(widget.asset.condition)
+        ? widget.asset.condition
+        : null; // default to null (no selection) if not in list
     // Initialize store controller using the asset's currentLocation
     _storeController = TextEditingController(
       text: widget.asset.currentLocation,
@@ -63,13 +69,14 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
     _imagePath = widget.asset.imagePath;
     // Prefill category/status/favorite where possible
-    _categoryController.text = '';
+    _categoryController.text = widget.asset.category; // Load category from asset
     _purchaseDate = widget.asset.completionDate;
     _selectedStatus = 'Active';
     _favorite = widget.asset.favorite;
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _loadLocationSuggestions(),
     );
+    _purchaseDateController.text = _df.format(_purchaseDate);
   }
 
   Future<void> _loadLocationSuggestions() async {
@@ -94,6 +101,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
     _nameController.dispose();
     _storeController.dispose();
     _priceController.dispose();
+    _purchaseDateController.dispose();
     super.dispose();
   }
 
@@ -108,6 +116,22 @@ class _EditAssetPageState extends State<EditAssetPage> {
       }
     } catch (e) {
       debugPrint("Error picking image: $e");
+    }
+  }
+
+  Future<void> _pickPurchaseDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _purchaseDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Select purchase date',
+    );
+    if (picked != null) {
+      setState(() {
+        _purchaseDate = picked;
+        _purchaseDateController.text = _df.format(picked);
+      });
     }
   }
 
@@ -269,6 +293,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
         condition: _selectedCondition,
         currentLocation: _storeController.text,
         price: priceValue,
+        category: _categoryController.text.isNotEmpty
+            ? _categoryController.text
+            : 'Uncategorized', // Include category in update
         imagePath: () => _imagePath,
       );
 
@@ -468,6 +495,49 @@ class _EditAssetPageState extends State<EditAssetPage> {
                               color: AppColors.ebonyClay,
                               fontSize: 12,
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Purchase Date (calendar picker)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Purchase Date',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          TextFormField(
+                            controller: _purchaseDateController,
+                            readOnly: true,
+                            onTap: _pickPurchaseDate,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: Spacing.xs,
+                                horizontal: Spacing.sm,
+                              ),
+                              suffixIcon: const Icon(Icons.calendar_today),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(Radii.sm),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: const TextStyle(color: AppColors.ebonyClay),
                           ),
                         ],
                       ),
