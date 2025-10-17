@@ -4,6 +4,7 @@ import '../../../core/layout/app_layout.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
 import '../../maintenance/data/maintenance_item.dart';
+import '../../maintenance/data/maintenance_store.dart';
 import 'widgets/alert_banner.dart';
 import 'widgets/maintenance_card.dart';
 import '../../myassets/widgets/asset_card.dart';
@@ -18,47 +19,25 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool showAlert = true;
 
-  // --- PLACEHOLDER DATA (swap with backend later) ---
-  final List<MaintenanceItem> upcoming = [
-    MaintenanceItem(
-      id: 'm1',
-      title: 'Pittsburgh Fiberglass Claw Hammer',
-      dueDate: DateTime.now().subtract(const Duration(days: 41)),
-      isLate: true,
-      thumbAsset: 'assets/images/Niagara.jpg',
-    ),
-    MaintenanceItem(
-      id: 'm2',
-      title: 'Predator 350W Power Station — Re-oil',
-      dueDate: DateTime.now().add(const Duration(days: 12)),
-      isLate: false,
-      thumbAsset: 'assets/images/Predator.jpg',
-    ),
-    MaintenanceItem(
-      id: 'm3',
-      title: 'Graphic Design',
-      dueDate: DateTime.now().add(const Duration(days: 12)),
-      isLate: false,
-      thumbAsset: 'assets/images/bob.jpg',
-    ),
-  ];
-  // ---------------------------------------------------
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Bind to DataHandler via AssetStore (subscribes and fetches once)
     assetStore.bind(context);
+    // Initialize maintenance store
+    initializeMaintenanceStore(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: assetStore,
+      animation: Listenable.merge([assetStore, maintenanceStore]),
       builder: (context, _) {
         final assets = assetStore.all();
         final List<Asset> favorites =
             assets.where((a) => a.favorite == true).toList(growable: false);
+        final maintenanceEntries = maintenanceStore.getAll();
+        final maintenanceItems = maintenanceEntries.map((entry) => MaintenanceItem.fromMaintenanceEntry(entry)).toList();
 
         return AppLayout(
           currentIndex: 0, // Home tab
@@ -72,11 +51,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (showAlert)
+                if (showAlert && maintenanceItems.any((item) => item?.maintenanceStatus == 'Overdue'))
                   AlertBanner(
                     title: 'Important',
                     message:
-                        'Overdue maintenance on Pittsburgh Fiberglass Claw Hammer.',
+                        'You have overdue maintenance items.',
                     onClose: () => setState(() => showAlert = false),
                   ),
                 const SizedBox(height: Spacing.xl),
@@ -85,21 +64,49 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: Spacing.md),
                 SizedBox(
                   height: 92,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: upcoming.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-                    itemBuilder: (ctx, i) => MaintenanceCard(
-                      item: upcoming[i],
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.maintenance,
-                          arguments: upcoming[i].id,
-                        );
-                      },
-                    ),
-                  ),
+                  child: maintenanceItems.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(
+                                Icons.build,
+                                size: 36,
+                                color: Color(0xFF9AA3AD),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'No maintenance items yet.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF3C4652),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Add maintenance schedules to your assets.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Color(0xFF3C4652)),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: maintenanceItems.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
+                          itemBuilder: (ctx, i) => MaintenanceCard(
+                            item: maintenanceItems[i],
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.maintenance,
+                                arguments: maintenanceItems[i].id,
+                              );
+                            },
+                          ),
+                        ),
                 ),
 
                 const SizedBox(height: Spacing.xl),
