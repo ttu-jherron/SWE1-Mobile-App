@@ -6,7 +6,6 @@ class AppTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final String? hint;
-  final Color? curserColor;
   final bool obscure;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
@@ -26,7 +25,6 @@ class AppTextField extends StatefulWidget {
     super.key,
     required this.controller,
     required this.label,
-    required this.curserColor,
     this.hint,
     this.obscure = false,
     this.validator,
