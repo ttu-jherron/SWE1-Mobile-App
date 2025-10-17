@@ -31,7 +31,7 @@ class MaintenanceCard extends StatelessWidget {
                 color: Colors.black12,
                 borderRadius: BorderRadius.circular(12),
                 image: DecorationImage(
-                  image: AssetImage(item.thumbAsset), fit: BoxFit.cover),
+                  image: AssetImage('assets/images/bob.jpg'), fit: BoxFit.cover),
               ),
             ),
             const SizedBox(width: Spacing.md),
@@ -39,19 +39,19 @@ class MaintenanceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_formatDate(item.dueDate),
+                  Text(_formatDate(item.maintenanceDueDate),
                       style: const TextStyle(color: Colors.black54)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      if (item.isLate)
+                      if (item.maintenanceStatus == 'Overdue')
                         const Text('! Late  ',
                             style: TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.w700)),
                       Expanded(
                         child: Text(
-                          item.title,
+                          item.maintenanceTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
