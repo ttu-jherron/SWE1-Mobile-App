@@ -70,7 +70,7 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
   String _formatCurrency(double price) => '\$${price.toStringAsFixed(2)}';
 
   String _formatEntry(MaintenanceEntry e) =>
-      '${_df.format(e.date)} — ${e.summary}';
+      '${_df.format(e.maintenanceDueDate)} — ${e.maintenanceTitle}';
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
@@ -236,7 +236,7 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                           builder: (context, _) {
                             final List<MaintenanceEntry> entries = [
                               ...maintenanceStore.allFor(_asset.id),
-                            ]..sort((a, b) => a.date.compareTo(b.date));
+                            ]..sort((a, b) => a.maintenanceDueDate.compareTo(b.maintenanceDueDate));
                             final MaintenanceEntry? next = entries.isEmpty
                                 ? null
                                 : entries.first;
@@ -264,8 +264,8 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                                       itemBuilder: (ctx, i) {
                                         final e = entries[i];
                                         return _MaintChip(
-                                          dateLabel: _df.format(e.date),
-                                          title: e.summary,
+                                          dateLabel: _df.format(e.maintenanceDueDate),
+                                          title: e.maintenanceTitle,
                                           onTap: () {
                                             Navigator.pushNamed(
                                               context,
