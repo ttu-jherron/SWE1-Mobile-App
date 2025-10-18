@@ -411,6 +411,73 @@ class DataHandler {
     }
   }
 
+  Future<void> clerkUpdateProfile({
+    String? firstName,
+    String? lastName,
+    String? username,
+    String? emailAddress,
+    String? password, // optional only
+  }) async {
+    final userId = user?.id;
+    if (userId == null) throw Exception('No user found');
+
+    // Ensure we have current values to fill required fields
+    Map<String, dynamic> prof = _cachedClerkProfile ?? <String, dynamic>{};
+    if (prof.isEmpty) {
+      prof = await clerkFetchProfile(force: true);
+    }
+
+    String _get(Map m, String a, String b) =>
+        (m[a] ?? m[b] ?? '').toString();
+
+    final body = <String, dynamic>{
+      'first_name': (firstName ?? _get(prof, 'firstName', 'first_name')).trim(),
+      'last_name': (lastName ?? _get(prof, 'lastName', 'last_name')).trim(),
+      'username': (username ?? _get(prof, 'username', 'username')).trim(),
+      'email_address': (emailAddress ?? _get(prof, 'email', 'email_address')).trim(),
+      if (password != null && password.trim().isNotEmpty)
+        'password': password.trim(),
+    };
+
+    // Basic validation to avoid sending blanks
+    for (final k in ['first_name','last_name','username','email_address']) {
+      if ((body[k] as String).isEmpty) {
+        throw Exception('Missing required field: $k');
+      }
+    }
+
+    final uri = _buildUri('/update-clerk-user/$userId');
+    http.Response res;
+    try {
+      res = await _client
+          .patch(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-User-Id': userId,
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('clerkUpdateProfileMerge network error: $e');
+      rethrow;
+    }
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      debugPrint('clerkUpdateProfileMerge failed: ${res.statusCode} - ${res.body}');
+      throw Exception('Profile update failed: ${res.statusCode}');
+    }
+
+    try {
+      await clerkRefreshUserData();
+      await clerkFetchProfile(force: true);
+    } catch (e) {
+      debugPrint('clerkUpdateProfileMerge refresh ignore: $e');
+    }
+  }
+
   // ================== Clerk Subscription ==================
   static ClerkAuthState? _subscribedAuth;
 

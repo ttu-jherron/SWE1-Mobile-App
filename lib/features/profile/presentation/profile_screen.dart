@@ -231,8 +231,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
 
                   final String firstName = effective['firstName'] ?? effective['first_name'] ?? '';
                   final String lastName = effective['lastName'] ?? effective['last_name'] ?? '';
-                  final String fullName = "$firstName $lastName".trim();
-                  final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
 
                   final bool avatarLoading =
                       backendSnap.connectionState == ConnectionState.waiting &&
@@ -605,7 +603,7 @@ class _InlineEditableFieldState extends State<_InlineEditableField> {
     });
   }
 
-  void _save() {
+  void _save() async {
     final newVal = _ctrl.text.trim();
     if (widget.validator != null) {
       final err = widget.validator!(newVal);
@@ -623,9 +621,23 @@ class _InlineEditableFieldState extends State<_InlineEditableField> {
       _editing = false;
     });
 
-    // TODO: Persist to backend via DataHandler (example API)
-    // final dh = DataHandler.fromContext(context);
-    // await dh.updateProfileField(widget.saveKey, newVal);
+    try {
+      final dh = DataHandler.fromContext(context);
+      // Decide which field to change; others will auto-fill from cache
+      if (widget.label.toLowerCase() == 'email') {
+        await dh.clerkUpdateProfile(emailAddress: _value);
+      } else if (widget.label.toLowerCase() == 'username') {
+        await dh.clerkUpdateProfile(username: _value);
+      }
+      await dh.clerkFetchProfile(force: true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: $e')));
+      }
+    }
   }
 
   @override
@@ -762,7 +774,7 @@ class _InlineEditablePasswordState extends State<_InlineEditablePassword> {
     setState(() => _editing = false);
   }
 
-  void _save() {
+  void _save() async {
     final p1 = _newCtrl.text;
     final p2 = _confirmCtrl.text;
     if (p1.isEmpty || p2.isEmpty) {
@@ -774,11 +786,21 @@ class _InlineEditablePasswordState extends State<_InlineEditablePassword> {
       return;
     }
 
-    // TODO: Persist to backend via DataHandler (example API)
-    // final dh = DataHandler.fromContext(context);
-    // await dh.updatePassword(p1);
+    try {
+      final dh = DataHandler.fromContext(context);
+      // Sends all required profile fields from cache + new password
+      await dh.clerkUpdateProfile(password: p1);
+      await dh.clerkFetchProfile(force: true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update password: $e')));
+      }
+    }
 
-    _cancel(); // close editor after "saving"
+    _cancel();
   }
 
   @override
@@ -987,7 +1009,7 @@ class _InlineEditableFullNameState extends State<_InlineEditableFullName> {
     });
   }
 
-  void _save() {
+  void _save() async {
     final newFirst = _firstCtrl.text.trim();
     final newLast = _lastCtrl.text.trim();
     final changed = newFirst != _first || newLast != _last;
@@ -1001,9 +1023,18 @@ class _InlineEditableFullNameState extends State<_InlineEditableFullName> {
       _editing = false;
     });
 
-    // TODO: Persist both fields via DataHandler:
-    // final dh = DataHandler.fromContext(context);
-    // await dh.updateProfileFields({'first_name': _first, 'last_name': _last});
+    try {
+      final dh = DataHandler.fromContext(context);
+      await dh.clerkUpdateProfile(firstName: _first, lastName: _last);
+      await dh.clerkFetchProfile(force: true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name updated')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update name: $e')));
+      }
+    }
   }
 
   @override
