@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:http/http.dart' as http;
@@ -191,21 +190,6 @@ class DataHandler {
         List<Asset>.unmodifiable(_cachedAssets!),
       ); // CHANGED
     }
-  }
-
-  bool _listShallowEquals(List<Asset>? a, List<Asset>? b) {
-    // CHANGED
-    if (a == null && b == null) return true;
-    if (a == null || b == null) return false;
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      final ai = a[i];
-      final bi = b[i];
-      if (ai.id != bi.id) return false;
-      // Optional: deeper comparison if needed (hash or toJson string compare)
-    }
-    return true;
   }
 
   Future<List<Asset>> _fetchAssetsForUser(String userId) {
@@ -525,30 +509,6 @@ class DataHandler {
     if (!_profileActive) return;
     final inactive = DateTime.now().difference(_lastActivity) > _activityWindow;
     if (inactive) return;
-  }
-
-  // ================== Priming ==================
-  static Timer? _primeTimer;
-  static bool _isPriming = false;
-  static int _primeIndex = 0;
-  static DateTime? _lastPrimeStop;
-  static String? _primingUserId;
-
-  static const List<Duration> _primeSchedule = <Duration>[
-    Duration(seconds: 0),
-    Duration(seconds: 5),
-    Duration(seconds: 10),
-    Duration(seconds: 20),
-    Duration(seconds: 40),
-  ];
-  static const Duration _primeCooldown = Duration(minutes: 1);
-
-
-  static void _stopPriming() {
-    _primeTimer?.cancel();
-    _primeTimer = null;
-    _isPriming = false;
-    _lastPrimeStop = DateTime.now();
   }
 
   // ================== Write API ==================
