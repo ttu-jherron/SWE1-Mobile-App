@@ -264,7 +264,13 @@ class DataHandler {
   }
 
   void _mergeOrInsertAsset(Map<String, dynamic> assetJson) {
-    // CHANGED
+    // Ignore invalid payloads (prevents a blank asset from being inserted)
+    final rawId = assetJson['id'];
+    if (rawId == null || (rawId is String && rawId.trim().isEmpty)) {
+      debugPrint('DataHandler: Ignoring asset merge without valid id: $assetJson');
+      return;
+    }
+
     final asset = Asset.fromJson(assetJson);
     final list = (_cachedAssets ?? <Asset>[]).toList();
     final idx = list.indexWhere((e) => e.id == asset.id);
@@ -276,6 +282,65 @@ class DataHandler {
     _cachedAssets = list;
     _assetsFetchedAt = DateTime.now();
     _emitAssets();
+  }
+
+  Future<void> markAssetFavorite(Asset asset, bool value) async {
+    markActivity();
+    final userId = user?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    final uri = _buildUri("/assets/${asset.id}");
+    try {
+      final res = await _client
+          .patch(
+            uri,
+            headers: {
+              'Accept': '*/*',
+              'Content-Type': 'application/json',
+              'X-User-Id': userId,
+            },
+            body: value ? 'true' : 'false',
+          )
+          .timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200) {
+        // Try to merge if a valid asset is returned; otherwise refresh
+        try {
+          final decoded = jsonDecode(res.body);
+          Map<String, dynamic>? assetMap;
+
+          if (decoded is Map<String, dynamic>) {
+            if (decoded['id'] != null && decoded['id'].toString().isNotEmpty) {
+              assetMap = decoded;
+            } else if (decoded['asset'] is Map &&
+                (decoded['asset']['id']?.toString().isNotEmpty ?? false)) {
+              assetMap = Map<String, dynamic>.from(decoded['asset']);
+            }
+          }
+
+          if (assetMap != null) {
+            _mergeOrInsertAsset(assetMap);
+          } else {
+            debugPrint('DataHandler: PATCH returned no asset payload, refreshing list...');
+            await _fetchAssetsForUser(userId);
+          }
+        } catch (e) {
+          debugPrint('DataHandler: Favorite decode error $e, refreshing list...');
+          await _fetchAssetsForUser(userId);
+        }
+        debugPrint('DataHandler: Asset Favorite success');
+      } else if (res.statusCode == 204) {
+        // No content: refresh to reflect server state
+        await _fetchAssetsForUser(userId);
+        debugPrint('DataHandler: Asset Favorite success (204)');
+      } else {
+        debugPrint('DataHandler: Favorite patch failed ${res.statusCode} - ${res.body}');
+        throw Exception('Favorite patch failed: ${res.statusCode} - ${res.body}');
+      }
+    } catch (e) {
+      debugPrint('DataHandler: Asset Favorite error $e (uri=$uri)');
+      rethrow;
+    }
   }
 
   // ================== Activity / Context ==================

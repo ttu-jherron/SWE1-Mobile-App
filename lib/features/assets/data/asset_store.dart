@@ -54,7 +54,7 @@ class AssetStore extends ChangeNotifier {
     setFavorite(assetId, newValue);
   }
 
-  void setFavorite(String assetId, bool value) {
+  void setFavorite(String assetId, bool value) async {
     final idx = _assets.indexWhere((a) => a.id == assetId);
     if (idx == -1) {
       unawaited(_dh?.getAssets(force: true));
@@ -62,8 +62,7 @@ class AssetStore extends ChangeNotifier {
     }
     _assets[idx].favorite = value;
     notifyListeners();
-    // TODO: persist favorite to backend via DataHandler when available.
-    // unawaited(_dh?.setFavorite(assetId, value));
+    await _dh?.markAssetFavorite(getById(assetId), value);
   }
 
   @override
