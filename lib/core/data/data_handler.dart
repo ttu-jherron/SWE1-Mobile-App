@@ -854,11 +854,11 @@ class DataHandler {
           final decoded = jsonDecode(res.body);
           if (decoded is List) {
             final list = decoded
-                .map<MaintenanceEntry>(
-                  (e) => MaintenanceEntry.fromJson(
-                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>),
-                  ),
-                )
+                .map<MaintenanceEntry?>((e) {
+                  try { return MaintenanceEntry.fromJson(e as Map<String, dynamic>); }
+                  catch (err) { debugPrint('Skip bad maintenance item: $err'); return null; }
+                })
+                .whereType<MaintenanceEntry>()
                 .toList();
             final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
             _cachedMaintenance = list;
@@ -1086,11 +1086,11 @@ class DataHandler {
           final decoded = jsonDecode(res.body);
           if (decoded is List) {
             final list = decoded
-                .map<MaintenanceEntry>(
-                  (e) => MaintenanceEntry.fromJson(
-                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>),
-                  ),
-                )
+                .map<MaintenanceEntry?>((e) {
+                  try { return MaintenanceEntry.fromJson(e as Map<String, dynamic>); }
+                  catch (err) { debugPrint('Skip bad maintenance item: $err'); return null; }
+                })
+                .whereType<MaintenanceEntry>()
                 .toList();
             final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
             _cachedMaintenance = list;
