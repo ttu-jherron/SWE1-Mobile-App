@@ -233,8 +233,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                   final String lastName = effective['lastName'] ?? effective['last_name'] ?? '';
                   final String fullName = "$firstName $lastName".trim();
                   final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
-                  final String phoneNumber =
-                      effective['phoneNumber'] ?? effective['phone_number'] ?? 'No access to backend';
 
                   final bool avatarLoading =
                       backendSnap.connectionState == ConnectionState.waiting &&
@@ -325,15 +323,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                                   firstName: firstName,
                                   lastName: lastName,
                                   underline: false,
-                                ),
-                                const SizedBox(height: Spacing.lg),
-                                // EDITABLE: Phone Number
-                                _InlineEditableField(
-                                  label: 'Phone Number',
-                                  initialValue: phoneNumber,
-                                  underline: false,
-                                  keyboardType: TextInputType.phone,
-                                  saveKey: 'phone_number',
                                 ),
                                 const SizedBox(height: Spacing.lg),
                                 // EDITABLE: Email
