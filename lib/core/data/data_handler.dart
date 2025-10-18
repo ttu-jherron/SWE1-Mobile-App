@@ -739,44 +739,19 @@ class DataHandler {
       "currentLocation": currentLocation,
       "images": images,
       "conditionDescription": conditionDescription,
-      "ownerUserId": clerkId,
       "status": status,
       "favorite": favorite,
     };
 
-    http.Response res;
-    try {
-      res = await _client.put(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-User-Id': clerkId,
-        },
-        body: jsonEncode(body),
-      );
-    } catch (e) {
-      debugPrint('UpdateAsset network error: $e');
-      throw Exception('Network error while updating asset: $e');
-    }
-
-    if (res.statusCode == 404) {
-      // Try a PATCH fallback for servers that prefer PATCH for updates
-      try {
-        final patchRes = await _client.patch(
-          uri,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-User-Id': clerkId,
-          },
-          body: jsonEncode(body),
-        );
-        res = patchRes;
-      } catch (e) {
-        debugPrint('UpdateAsset PATCH fallback network error: $e');
-      }
-    }
+    final res = await _client.patch(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-User-Id': clerkId,
+      },
+      body: jsonEncode(body),
+    );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
       debugPrint('UpdateAsset failed: ${res.statusCode} - ${res.body}');
@@ -854,11 +829,11 @@ class DataHandler {
           final decoded = jsonDecode(res.body);
           if (decoded is List) {
             final list = decoded
-                .map<MaintenanceEntry>(
-                  (e) => MaintenanceEntry.fromJson(
-                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>),
-                  ),
-                )
+                .map<MaintenanceEntry?>((e) {
+                  try { return MaintenanceEntry.fromJson(e as Map<String, dynamic>); }
+                  catch (err) { debugPrint('Skip bad maintenance item: $err'); return null; }
+                })
+                .whereType<MaintenanceEntry>()
                 .toList();
             final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
             _cachedMaintenance = list;
@@ -1086,11 +1061,11 @@ class DataHandler {
           final decoded = jsonDecode(res.body);
           if (decoded is List) {
             final list = decoded
-                .map<MaintenanceEntry>(
-                  (e) => MaintenanceEntry.fromJson(
-                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>),
-                  ),
-                )
+                .map<MaintenanceEntry?>((e) {
+                  try { return MaintenanceEntry.fromJson(e as Map<String, dynamic>); }
+                  catch (err) { debugPrint('Skip bad maintenance item: $err'); return null; }
+                })
+                .whereType<MaintenanceEntry>()
                 .toList();
             final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
             _cachedMaintenance = list;

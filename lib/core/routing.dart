@@ -5,10 +5,13 @@ import '../features/profile/presentation/edit_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/maintenance/presentation/maintenance_screen.dart';
 import '../features/maintenance/presentation/maintenance_detail_screen.dart';
+import '../features/maintenance/presentation/maintenance_entry_detail_screen.dart';
 import '../features/maintenance/presentation/edit_maintenance.dart';
+import '../features/maintenance/presentation/asset_maintenance_screen.dart';
+import '../features/maintenance/data/maintenance_entry.dart';
 import '../features/myassets/presentation/myassets.dart';
 import 'package:mobile_app/features/myassets/presentation/viewasset.dart';
-import 'package:mobile_app/features/assets/data/asset.dart'; 
+import 'package:mobile_app/features/assets/data/asset.dart';
 
 import 'layout/app_layout.dart';
 
@@ -75,7 +78,9 @@ class AppRoutes {
 
   static const maintenance = '/maintenance';
   static const maintenanceDetail = '/maintenance/detail';
+  static const maintenanceEntryDetail = '/maintenance/entry/detail';
   static const maintenanceEdit = '/maintenance/edit';
+  static const assetMaintenance = '/maintenance/asset';
   
   static Map<String, WidgetBuilder> get routes => {
     login: (_) => const LoginScreen(),
@@ -108,6 +113,14 @@ class AppRoutes {
     maintenanceEdit: (context) {
       // Screen will read ModalRoute.of(context)!.settings.arguments
       return const AddMaintenancePage();
+    },
+    assetMaintenance: (context) {
+      final assetId = ModalRoute.of(context)!.settings.arguments as String;
+      return AssetMaintenanceScreen(assetId: assetId);
+    },
+    maintenanceEntryDetail: (context) {
+      final entry = ModalRoute.of(context)!.settings.arguments as MaintenanceEntry;
+      return MaintenanceEntryDetailScreen(entry: entry);
     },
   };
 }

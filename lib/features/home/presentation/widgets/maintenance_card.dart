@@ -27,11 +27,21 @@ class MaintenanceCard extends StatelessWidget {
             Container(
               width: 56,
               height: 56,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Colors.black12,
                 borderRadius: BorderRadius.circular(12),
-                image: DecorationImage(
-                  image: AssetImage('assets/images/bob.jpg'), fit: BoxFit.cover),
+              ),
+              child: Icon(
+                Icons.build_circle,
+                color: item.maintenanceStatus == 'Overdue'
+                    ? Colors.red
+                    : item.maintenanceStatus == 'Completed'
+                        ? Colors.green
+                        : item.maintenanceStatus == 'Upcoming'
+                        ? AppColors.darkGold
+                        : AppColors.ebonyClay,
+                size: 32,
               ),
             ),
             const SizedBox(width: Spacing.md),
