@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
-import 'package:mobile_app/app.dart';
 
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
@@ -29,11 +28,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordCtrl = TextEditingController();
   final confirmCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  
-  // Controllers for fields to be used later (commented out in UI)
-  // final addressCtrl = TextEditingController();
-  // final stateCtrl = TextEditingController();
-  // final zipCtrl = TextEditingController();
 
   final formKey = GlobalKey<FormState>();
 
@@ -136,7 +130,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // --- REVISED SIGN UP LOGIC ---
   Future<void> _signUp() async {
     // Prevent multiple simultaneous requests
     if (!mounted || _loading || _authSuccess) return;
@@ -269,9 +262,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     passwordCtrl.dispose();
     confirmCtrl.dispose();
     emailCtrl.dispose();
-    // addressCtrl.dispose();
-    // stateCtrl.dispose();
-    // zipCtrl.dispose();
     _auth.removeListener(_onAuthChanged);
     _errorSub?.cancel();
     super.dispose();
@@ -396,49 +386,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           selectionColor: AppColors.sandyYellow.withValues(alpha: 0.35),
                           selectionHandleColor: AppColors.sandyYellow,
                         ),
-                    
-                    // --- ADDRESS FIELDS (COMMENTED OUT) ---
-                    /* const SizedBox(height: Spacing.md),
-                    const Text('Address', style: TextStyle(...)),
-                    AppTextField(
-                      controller: addressCtrl,
-                      label: 'Address',
-                      borderColor: AppColors.sandyYellow,
-                    ),
-                    const SizedBox(height: Spacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('State', style: TextStyle(...)),
-                              AppTextField(
-                                controller: stateCtrl,
-                                label: 'State',
-                                borderColor: AppColors.sandyYellow,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: Spacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Zip Code', style: TextStyle(...)),
-                              AppTextField(
-                                controller: zipCtrl,
-                                label: 'Zip Code',
-                                keyboardType: TextInputType.number,
-                                borderColor: AppColors.sandyYellow,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    */
 
                     const SizedBox(height: Spacing.xl + Spacing.sm),
                     Center(
