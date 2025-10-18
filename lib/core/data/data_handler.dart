@@ -411,19 +411,6 @@ class DataHandler {
     }
   }
 
-
-  Map<String, dynamic> getClerkData(
-    Map<String, Map<String, dynamic>> separatedData,
-  ) {
-    return separatedData['clerk'] ?? <String, dynamic>{};
-  }
-
-  Map<String, dynamic> getBackendData(
-    Map<String, Map<String, dynamic>> separatedData,
-  ) {
-    return separatedData['backend'] ?? <String, dynamic>{};
-  }
-
   // ================== Clerk Subscription ==================
   static ClerkAuthState? _subscribedAuth;
 
