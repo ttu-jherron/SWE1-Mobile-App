@@ -39,7 +39,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     Map<String, dynamic>? backend;
     try {
       final dh = DataHandler.fromContext(context);
-      backend = await dh.backendFetchProfile(force: true);
+      //backend = await dh.backendFetchProfile(force: true);
     } catch (_) {
       // ignore; will fall back to Clerk-only data
     }
@@ -104,6 +104,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       // TODO Remove Username and Email from backend and transition to clerk
       // Backend-managed updates (PATCH users/{clerkId})
       final dh = DataHandler.fromContext(context);
+      /*
       await dh.updateUserProfile(
         clerkId: user.id,
         firstName: _emptyToNull(firstNameCtrl.text),
@@ -113,6 +114,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         username: _emptyToNull(newUsername),
         email: _emptyToNull(newEmail),
       );
+      */
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved!')));

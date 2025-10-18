@@ -71,6 +71,46 @@ class DataHandler {
     return DataHandler(auth: auth);
   }
 
+  // Warm caches right after sign-in
+  static bool _prefetchInFlight = false;
+  static DateTime? _lastPrefetchAt;
+  static const Duration _prefetchCooldown = Duration(seconds: 30);
+
+  static Future<void> _prefetchForCurrentUser() async {
+    final auth = _subscribedAuth;
+    final u = auth?.user;
+    if (auth == null || u == null) return;
+
+    final now = DateTime.now();
+    if (_prefetchInFlight) return;
+    if (_lastPrefetchAt != null &&
+        now.difference(_lastPrefetchAt!) < _prefetchCooldown) {
+      return;
+    }
+
+    _prefetchInFlight = true;
+    try {
+      final dh = DataHandler(auth: auth);
+      final tasks = <Future>[];
+
+      if (_cachedAssets == null) {
+        tasks.add(dh._fetchAssetsForUser(u.id));
+      }
+      if (_cachedMaintenance == null) {
+        tasks.add(dh._fetchMaintenanceForUser(u.id));
+      }
+
+      if (tasks.isNotEmpty) {
+        await Future.wait(tasks).timeout(const Duration(seconds: 8));
+      }
+    } catch (_) {
+      // ignore prefetch errors
+    } finally {
+      _lastPrefetchAt = DateTime.now();
+      _prefetchInFlight = false;
+    }
+  }
+
   // ================== Profile Caches / Streams ==================
   static DateTime _lastRefreshAttemptTime = DateTime.fromMillisecondsSinceEpoch(
     0,
@@ -87,23 +127,10 @@ class DataHandler {
       _clerkProfileController.stream;
   Map<String, dynamic>? get cachedClerkProfile => _cachedClerkProfile;
 
-  // Backend profile
-  static const Duration _backendTtl = Duration(seconds: 30);
-  static Map<String, dynamic>? _cachedBackendProfile;
-  static DateTime? _backendCachedAt;
-  static final _backendProfileController =
-      StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get backendProfileStream =>
-      _backendProfileController.stream;
-  Map<String, dynamic>? get cachedBackendProfile => _cachedBackendProfile;
-  static Future<Map<String, dynamic>>? _ongoingBackendFetch;
-
   Future<void> clearAllCache() async {
     // 1. Clear in-memory static caches
     _cachedClerkProfile = null;
     _clerkCachedAt = null;
-    _cachedBackendProfile = null;
-    _backendCachedAt = null;
     _cachedAssets = null;
     _assetsFetchedAt = null;
 
@@ -113,9 +140,6 @@ class DataHandler {
     // 3. Notify stream listeners that data is gone
     if (!_clerkProfileController.isClosed) {
       _clerkProfileController.add(<String, dynamic>{});
-    }
-    if (!_backendProfileController.isClosed) {
-      _backendProfileController.add(<String, dynamic>{});
     }
     if (!_assetsController.isClosed) {
       _assetsController.add(<Asset>[]);
@@ -357,29 +381,6 @@ class DataHandler {
     _profileActive = false;
   }
 
-  // ================== Backend Profile (public) ==================
-  Future<Map<String, dynamic>> getProfile({
-    bool preferCache = true,
-    bool forceNetwork = false,
-  }) async {
-    markActivity();
-    final uid = user?.id;
-    if (uid == null) {
-      throw Exception("User not found");
-    }
-    if (preferCache && !forceNetwork && _cachedBackendProfile != null) {
-      final fresh =
-          _backendCachedAt != null &&
-          DateTime.now().difference(_backendCachedAt!) < _backendTtl;
-      if (fresh) return _cachedBackendProfile!;
-    }
-    return await _refreshBackendProfileForUser(uid);
-  }
-
-  Future<Map<String, dynamic>> backendFetchProfile({bool force = false}) {
-    return getProfile(preferCache: !force, forceNetwork: force);
-  }
-
   // ================== Clerk Profile ==================
   Future<Map<String, dynamic>> clerkFetchProfile({bool force = false}) async {
     final now = DateTime.now();
@@ -426,84 +427,6 @@ class DataHandler {
     }
   }
 
-  // ================== Backend Profile Fetch ==================
-  static Future<Map<String, dynamic>> _refreshBackendProfileForUser(
-    String userId,
-  ) async {
-    if (_ongoingBackendFetch != null) return await _ongoingBackendFetch!;
-
-    final uri = _buildUri('/users/$userId'); // CHANGED
-
-    _ongoingBackendFetch = () async {
-      try {
-        final response = await http
-            .get(
-              uri,
-              headers: {'Accept': 'application/json', 'X-User-Id': userId},
-            )
-            .timeout(const Duration(seconds: 8));
-
-        if (response.statusCode == 200) {
-          final Map<String, dynamic> data = jsonDecode(response.body);
-          _updateBackendCacheIfChanged(data);
-          return _cachedBackendProfile!;
-        } else {
-          debugPrint(
-            'DataHandler: Backend status ${response.statusCode} (uri=$uri)',
-          );
-          if (_cachedBackendProfile != null) return _cachedBackendProfile!;
-          throw Exception('Failed profile fetch: ${response.statusCode}');
-        }
-      } catch (e) {
-        debugPrint(
-          'DataHandler: Backend profile error $userId -> $e (uri=$uri)',
-        );
-        if (_cachedBackendProfile != null) return _cachedBackendProfile!;
-        rethrow;
-      } finally {
-        _ongoingBackendFetch = null;
-      }
-    }();
-
-    return await _ongoingBackendFetch!;
-  }
-
-  static void _updateBackendCacheIfChanged(Map<String, dynamic> newData) {
-    final changed =
-        _cachedBackendProfile == null ||
-        !mapEquals(_cachedBackendProfile!, newData);
-    _cachedBackendProfile = newData;
-    _backendCachedAt = DateTime.now();
-    if (changed) _emitBackend();
-  }
-
-  static void _mergeBackendPatch(Map<String, dynamic> patch) {
-    final current = _cachedBackendProfile ?? <String, dynamic>{};
-    final merged = Map<String, dynamic>.from(current)..addAll(patch);
-    _updateBackendCacheIfChanged(merged);
-  }
-
-  static void _emitBackend() {
-    if (_cachedBackendProfile != null) {
-      _backendProfileController.add(_cachedBackendProfile!);
-    }
-  }
-
-  // ================== Combined Helpers ==================
-  Future<Map<String, Map<String, dynamic>>> fetchBothDataSources({
-    bool force = false,
-  }) async {
-    try {
-      final backendData = await backendFetchProfile(force: force);
-      return {'clerk': <String, dynamic>{}, 'backend': backendData};
-    } catch (e) {
-      debugPrint('DataHandler: Combined fetch error: $e');
-      return {
-        'clerk': <String, dynamic>{},
-        'backend': _cachedBackendProfile ?? <String, dynamic>{},
-      };
-    }
-  }
 
   Map<String, dynamic> getClerkData(
     Map<String, Map<String, dynamic>> separatedData,
@@ -527,6 +450,7 @@ class DataHandler {
     _onClerkAuthChanged();
   }
 
+
   static void _onClerkAuthChanged() {
     final auth = _subscribedAuth;
     if (auth == null) return;
@@ -535,8 +459,6 @@ class DataHandler {
     if (u == null) {
       _cachedClerkProfile = <String, dynamic>{};
       _clerkCachedAt = DateTime.now();
-      _cachedBackendProfile = null;
-      _backendCachedAt = null;
       _emitClerk();
       return;
     }
@@ -550,15 +472,22 @@ class DataHandler {
       'imageUrl': u.imageUrl,
     };
 
-    final changed = _didClerkProfileChange(
-      _cachedClerkProfile,
-      map,
-    );
+    final changed = _didClerkProfileChange(_cachedClerkProfile, map);
     if (changed) {
       _cachedClerkProfile = map;
       _clerkCachedAt = DateTime.now();
       _emitClerk();
     }
+
+    // Kick off background prefetch to warm caches (assets/maintenance)
+    if (_cachedAssets == null || _cachedMaintenance == null) {
+      Future.microtask(_prefetchForCurrentUser);
+    }
+  }
+
+  // Optional: expose a manual prefetch trigger you can call from Home initState
+  Future<void> prefetchAll() async {
+    await _prefetchForCurrentUser();
   }
 
   static bool _didClerkProfileChange(
@@ -596,9 +525,6 @@ class DataHandler {
     if (!_profileActive) return;
     final inactive = DateTime.now().difference(_lastActivity) > _activityWindow;
     if (inactive) return;
-    try {
-      await _refreshBackendProfileForUser(u.id);
-    } catch (_) {}
   }
 
   // ================== Priming ==================
@@ -617,58 +543,6 @@ class DataHandler {
   ];
   static const Duration _primeCooldown = Duration(minutes: 1);
 
-  void startPrimingIfNeeded() {
-    final u = auth.user;
-    if (u == null) {
-      _stopPriming();
-      return;
-    }
-    if (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty) {
-      _stopPriming();
-      return;
-    }
-    if (_isPriming && _primingUserId == u.id) return;
-    if (_lastPrimeStop != null &&
-        DateTime.now().difference(_lastPrimeStop!) < _primeCooldown) {
-      return;
-    }
-
-    _primingUserId = u.id;
-    _isPriming = true;
-    _primeIndex = 0;
-
-    _primeTimer?.cancel();
-    _primeTimer = Timer(_primeSchedule[_primeIndex], () => _runPrimeTick());
-  }
-
-  void _runPrimeTick() async {
-    if (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty) {
-      _stopPriming();
-      return;
-    }
-
-    try {
-      final result = await backendFetchProfile(force: true).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => <String, dynamic>{},
-      );
-
-      if (result.isNotEmpty ||
-          (cachedBackendProfile != null && cachedBackendProfile!.isNotEmpty)) {
-        _stopPriming();
-        return;
-      }
-    } catch (_) {}
-
-    _primeIndex += 1;
-    if (_primeIndex >= _primeSchedule.length) {
-      _stopPriming();
-      return;
-    }
-
-    _primeTimer?.cancel();
-    _primeTimer = Timer(_primeSchedule[_primeIndex], () => _runPrimeTick());
-  }
 
   static void _stopPriming() {
     _primeTimer?.cancel();
@@ -678,39 +552,6 @@ class DataHandler {
   }
 
   // ================== Write API ==================
-  Future<void> updateUserProfile({
-    required String clerkId,
-    String? firstName,
-    String? lastName,
-    String? phoneNumber,
-    String? username,
-    String? email,
-  }) async {
-    final body = <String, dynamic>{};
-    if (firstName != null) body['firstName'] = firstName;
-    if (lastName != null) body['lastName'] = lastName;
-    if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
-    if (username != null) body['username'] = username;
-    if (email != null) body['email'] = email;
-    if (body.isEmpty) return;
-
-    final uri = Uri.parse('$baseUrl/users/$clerkId');
-    final res = await _client.patch(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-User-Id': clerkId,
-      },
-      body: jsonEncode(body),
-    );
-
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('Backend update failed (${res.statusCode}): ${res.body}');
-    }
-
-    _mergeBackendPatch(body);
-  }
 
   Future<void> addAsset({
     required String itemName,
@@ -790,16 +631,6 @@ class DataHandler {
         _mergeOrInsertAsset(decoded); // now uses Asset
       }
     } catch (_) {}
-
-    // Optionally refresh related profile data (if backend updates counts, etc.)
-    try {
-      await _refreshBackendProfileForUser(clerkId);
-    } catch (e) {
-      // Don't treat profile refresh failures as a hard error for asset creation.
-      debugPrint(
-        'DataHandler: Ignored profile refresh error after addAsset: $e',
-      );
-    }
   }
 
   Future<void> updateAsset({
@@ -921,15 +752,6 @@ class DataHandler {
       await _fetchAssetsForUser(clerkId);
     }
 
-    // Optionally refresh related profile data
-    try {
-      await _refreshBackendProfileForUser(clerkId);
-    } catch (e) {
-      // Don't surface profile refresh failures as an update failure.
-      debugPrint(
-        'DataHandler: Ignored profile refresh error after updateAsset: $e',
-      );
-    }
   }
 
   // ================== Maintenance Cache ==================
@@ -1099,14 +921,6 @@ class DataHandler {
         _mergeOrInsertMaintenance(MaintenanceEntry.fromJson(decoded));
       }
     } catch (_) {}
-
-    try {
-      await _refreshBackendProfileForUser(clerkId);
-    } catch (e) {
-      debugPrint(
-        'DataHandler: Ignored profile refresh error after addMaintenance: $e',
-      );
-    }
   }
 
   void _mergeOrInsertMaintenance(MaintenanceEntry entry) {

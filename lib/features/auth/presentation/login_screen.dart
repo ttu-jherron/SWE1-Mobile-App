@@ -66,9 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onAuthChanged() {
     if (!mounted) return;
     if (_auth.user != null) {
-      // Start bounded backend priming if no cache yet
-      final dh = DataHandler(auth: _auth);
-      dh.startPrimingIfNeeded();
 
       _navigateHomeOnce();
     }

@@ -114,13 +114,13 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     // 100ms splash per navigation
     _splashFuture = Future.delayed(const Duration(milliseconds: 100));
 
-    // Force a backend fetch; fallback to cache on timeout
+    // Force a Clerk fetch; fallback to cache on timeout
     setState(() {
       _backendFuture = dh
-          .backendFetchProfile(force: true)
+          .clerkFetchProfile(force: true) // was: backendFetchProfile
           .timeout(
             const Duration(seconds: 5),
-            onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{},
+            onTimeout: () => dh.cachedClerkProfile ?? <String, dynamic>{}, // was: cachedBackendProfile
           );
     });
   }
@@ -130,14 +130,14 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   void _startRetryLoop() {
     _stopRetryLoop();
     final dh = DataHandler.fromContext(context);
-    final noCache = dh.cachedBackendProfile == null || dh.cachedBackendProfile!.isEmpty;
+    final noCache = dh.cachedClerkProfile == null || dh.cachedClerkProfile!.isEmpty; // was: cachedBackendProfile
     if (!noCache) return;
 
     // Try immediately once and rebuild the future
     setState(() {
       _backendFuture = dh
-          .backendFetchProfile(force: true)
-          .timeout(const Duration(seconds: 5), onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{});
+          .clerkFetchProfile(force: true) // was: backendFetchProfile
+          .timeout(const Duration(seconds: 5), onTimeout: () => dh.cachedClerkProfile ?? <String, dynamic>{}); // was: cachedBackendProfile
     });
 
     _retryAttempts = 0;
@@ -147,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         return;
       }
       final handler = DataHandler.fromContext(context);
-      final hasCache = handler.cachedBackendProfile != null && handler.cachedBackendProfile!.isNotEmpty;
+      final hasCache = handler.cachedClerkProfile != null && handler.cachedClerkProfile!.isNotEmpty; // was: cachedBackendProfile
       if (hasCache) {
         t.cancel();
         return;
@@ -160,8 +160,8 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       // Rebuild the future each attempt
       setState(() {
         _backendFuture = handler
-            .backendFetchProfile(force: true)
-            .timeout(const Duration(seconds: 5), onTimeout: () => handler.cachedBackendProfile ?? <String, dynamic>{});
+            .clerkFetchProfile(force: true) // was: backendFetchProfile
+            .timeout(const Duration(seconds: 5), onTimeout: () => handler.cachedClerkProfile ?? <String, dynamic>{}); // was: cachedBackendProfile
       });
     });
   }
@@ -188,17 +188,17 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     // Ensure builders have futures even on first build
     _splashFuture ??= Future.delayed(const Duration(milliseconds: 100));
     _backendFuture ??= dataHandler
-        .backendFetchProfile(force: true)
+        .clerkFetchProfile(force: true) // was: backendFetchProfile
         .timeout(
           const Duration(seconds: 5),
-          onTimeout: () => dataHandler.cachedBackendProfile ?? <String, dynamic>{},
+          onTimeout: () => dataHandler.cachedClerkProfile ?? <String, dynamic>{}, // was: cachedBackendProfile
         );
 
     return AppLayout(
       currentIndex: 3,
       body: StreamBuilder<Map<String, dynamic>>(
-        stream: dataHandler.backendProfileStream,
-        initialData: dataHandler.cachedBackendProfile,
+        stream: dataHandler.clerkProfileStream, // was: backendProfileStream
+        initialData: dataHandler.cachedClerkProfile, // was: cachedBackendProfile
         builder: (context, streamSnap) {
           final streamData = streamSnap.data ?? <String, dynamic>{};
 
@@ -218,24 +218,25 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                   final effective =
                       streamData.isNotEmpty ? streamData
                       : futureData.isNotEmpty ? futureData
-                      : (dataHandler.cachedBackendProfile ?? <String, dynamic>{});
+                      : (dataHandler.cachedClerkProfile ?? <String, dynamic>{}); // was: cachedBackendProfile
 
-                  final String? profileImageUrl = effective['image_url'] ?? effective['imageUrl'];
+                  // Prefer Clerk (camelCase), fall back to snake_case if present
+                  final String? profileImageUrl = effective['imageUrl'] ?? effective['image_url'];
                   final String email = effective['email'] ?? effective['Email'] ?? 'No Email';
                   final String username = effective['username'] ?? email;
 
-                  final String firstName = effective['first_name'] ?? effective['firstName'] ?? '';
-                  final String lastName = effective['last_name'] ?? effective['lastName'] ?? '';
+                  final String firstName = effective['firstName'] ?? effective['first_name'] ?? '';
+                  final String lastName = effective['lastName'] ?? effective['last_name'] ?? '';
                   final String fullName = "$firstName $lastName".trim();
                   final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
                   final String phoneNumber =
-                      effective['phone_number'] ?? effective['phoneNumber'] ?? 'No access to backend';
+                      effective['phoneNumber'] ?? effective['phone_number'] ?? 'No access to backend';
 
                   final bool avatarLoading =
                       backendSnap.connectionState == ConnectionState.waiting &&
                       streamData.isEmpty &&
-                      (dataHandler.cachedBackendProfile == null ||
-                       dataHandler.cachedBackendProfile!.isEmpty);
+                      (dataHandler.cachedClerkProfile == null || // was: cachedBackendProfile
+                       dataHandler.cachedClerkProfile!.isEmpty);
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(

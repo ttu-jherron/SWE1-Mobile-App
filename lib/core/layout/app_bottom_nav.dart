@@ -66,7 +66,7 @@ class AppBottomNav extends StatelessWidget {
   }
 }
 
-// Backend-driven profile avatar with self-priming (backend only)
+// Clerk-driven profile avatar with self-priming (Clerk only)
 class ProfileAvatarBackend extends StatefulWidget {
   const ProfileAvatarBackend({super.key});
 
@@ -129,8 +129,8 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend>
   bool _hasCache() {
     try {
       final dh = DataHandler.fromContext(context);
-      return dh.cachedBackendProfile != null &&
-          dh.cachedBackendProfile!.isNotEmpty;
+      return dh.cachedClerkProfile != null &&
+          dh.cachedClerkProfile!.isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -143,20 +143,18 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend>
     }
     final auth = ClerkAuth.of(context);
     final dh = DataHandler(auth: auth);
-    if (dh.cachedBackendProfile != null &&
-        dh.cachedBackendProfile!.isNotEmpty) {
+    if (dh.cachedClerkProfile != null && dh.cachedClerkProfile!.isNotEmpty) {
       _stopTimers();
       return;
     }
     try {
       await dh
-          .backendFetchProfile(force: true)
+          .clerkFetchProfile(force: true)
           .timeout(const Duration(seconds: 5));
     } catch (_) {
       // ignore; retry schedule continues
     }
-    if (dh.cachedBackendProfile != null &&
-        dh.cachedBackendProfile!.isNotEmpty) {
+    if (dh.cachedClerkProfile != null && dh.cachedClerkProfile!.isNotEmpty) {
       _stopTimers();
       if (mounted) setState(() {});
     }
@@ -238,20 +236,19 @@ class _ProfileAvatarBackendState extends State<ProfileAvatarBackend>
   Widget build(BuildContext context) {
     final dh = DataHandler.fromContext(context);
     final hasCache =
-        dh.cachedBackendProfile != null && dh.cachedBackendProfile!.isNotEmpty;
+        dh.cachedClerkProfile != null && dh.cachedClerkProfile!.isNotEmpty;
 
     // Keep priming alive as state changes
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensurePriming());
 
     return StreamBuilder<Map<String, dynamic>>(
-      stream: dh.backendProfileStream,
-      initialData: dh.cachedBackendProfile,
+      stream: dh.clerkProfileStream,
+      initialData: dh.cachedClerkProfile,
       builder: (context, snap) {
         final data = snap.data ?? const <String, dynamic>{};
-        final imageUrl = (data['image_url'] ?? data['imageUrl']) as String?;
+        final imageUrl = (data['imageUrl'] ?? data['image_url']) as String?;
 
         if (hasCache || data.isNotEmpty) {
-          // As soon as data appears, stop any timers
           _stopTimers();
 
           if (imageUrl == null || imageUrl.isEmpty) {
