@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_app/core/colors.dart';
 import 'package:mobile_app/core/data/data_handler.dart';
 import '../../../core/constants.dart';
@@ -25,6 +27,8 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   Timer? _retryTimer;
   int _retryAttempts = 0;
   bool _subscribed = false; // avoid double-subscribing RouteObserver
+  bool _uploadingAvatar = false;
+  File? _localAvatarPreview;
 
   @override
   void initState() {
@@ -247,15 +251,58 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const SizedBox(height: Spacing.lg),
-                        CircleAvatar(
-                          radius: 64,
-                          backgroundColor: Colors.grey.shade200,
-                          child: ClipOval(
-                            child: _buildProfileAvatar(
-                              profileImageUrl,
-                              loading: avatarLoading,
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            CircleAvatar(
+                              radius: 64,
+                              backgroundColor: Colors.grey.shade200,
+                              child: ClipOval(
+                                child: _buildProfileAvatar(
+                                  profileImageUrl,
+                                  loading: avatarLoading,
+                                ),
+                              ),
                             ),
-                          ),
+                            // Upload overlay
+                            if (_uploadingAvatar)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.35),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 28,
+                                      height: 28,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Camera button
+                            Positioned(
+                              right: -6,
+                              bottom: -6,
+                              child: Material(
+                                elevation: 2,
+                                shape: const CircleBorder(),
+                                color: Colors.white,
+                                child: IconButton(
+                                  iconSize: 22,
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                                  icon: const Icon(Icons.photo_camera, color: Colors.black87),
+                                  tooltip: 'Change photo',
+                                  onPressed: _uploadingAvatar ? null : _showAvatarSheet,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: Spacing.lg),
                         Text(
@@ -362,6 +409,16 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       );
     }
 
+    // Local preview while user just picked a photo (optimistic UX)
+    if (_localAvatarPreview != null) {
+      return Image.file(
+        _localAvatarPreview!,
+        fit: BoxFit.cover,
+        width: 128,
+        height: 128,
+      );
+    }
+
     // If we have an image URL, load it with a simple grey placeholder
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return CachedNetworkImage(
@@ -390,6 +447,109 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       color: Colors.grey.shade400,
       child: const Icon(Icons.person, size: 48, color: Colors.white),
     );
+  }
+
+  void _showAvatarSheet() async {
+    final action = await showModalBottomSheet<_AvatarAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Take photo'),
+                onTap: () => Navigator.pop(context, _AvatarAction.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.pop(context, _AvatarAction.gallery),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Remove photo', style: TextStyle(color: Colors.red)),
+                onTap: () => Navigator.pop(context, _AvatarAction.remove),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _AvatarAction.camera:
+        _pickAndUpload(ImageSource.camera);
+        break;
+      case _AvatarAction.gallery:
+        _pickAndUpload(ImageSource.gallery);
+        break;
+      case _AvatarAction.remove:
+        _removeAvatar();
+        break;
+    }
+  }
+
+  Future<void> _pickAndUpload(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final x = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
+      );
+      if (x == null) return;
+      final file = File(x.path);
+      setState(() {
+        _localAvatarPreview = file;   // show preview immediately
+        _uploadingAvatar = true;
+      });
+
+      final dh = DataHandler.fromContext(context);
+      //TODO replace with endpoint when working
+      //await dh.clerkUpdateProfile(file);
+
+      // Bust local preview and force a Clerk refetch to get the new URL
+      setState(() {
+        _localAvatarPreview = null;
+      });
+      await dh.clerkFetchProfile(force: true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo updated')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update photo: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingAvatar = false);
+      }
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    try {
+      setState(() => _uploadingAvatar = true);
+      final dh = DataHandler.fromContext(context);
+      //TODO Replace with endpoint or use built in SDK, unsure which works
+      //await dh.removeClerkProfileImage();
+      await dh.clerkFetchProfile(force: true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo removed')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to remove photo: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _localAvatarPreview = null;
+          _uploadingAvatar = false;
+        });
+      }
+    }
   }
 }
 
@@ -984,3 +1144,5 @@ class _InlineEditableFullNameState extends State<_InlineEditableFullName> {
     );
   }
 }
+
+enum _AvatarAction { camera, gallery, remove }
