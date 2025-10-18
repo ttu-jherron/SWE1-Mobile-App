@@ -207,10 +207,10 @@ class DataHandler {
                   ),
                 )
                 .toList();
-            final changed = !_listShallowEquals(_cachedAssets, list);
+            // final changed = !_listShallowEquals(_cachedAssets, list); // not needed
             _cachedAssets = list;
             _assetsFetchedAt = DateTime.now();
-            if (changed) _emitAssets();
+            _emitAssets(); // always emit so UI gets field updates
           } else {
             debugPrint('DataHandler: Assets payload not a list (${res.body})');
           }
@@ -550,7 +550,10 @@ class DataHandler {
       'imageUrl': u.imageUrl,
     };
 
-    final changed = _didClerkProfileChange(_cachedClerkProfile, map);
+    final changed = _didClerkProfileChange(
+      _cachedClerkProfile,
+      map,
+    );
     if (changed) {
       _cachedClerkProfile = map;
       _clerkCachedAt = DateTime.now();
@@ -894,12 +897,29 @@ class DataHandler {
       throw Exception('Failed to update asset: ${res.statusCode} - $errorBody');
     }
 
+    var merged = false;
     try {
-      final decoded = jsonDecode(res.body);
-      if (decoded is Map<String, dynamic>) {
-        _mergeOrInsertAsset(decoded);
+      // Try to merge if backend returned an asset payload
+      if (res.body.isNotEmpty) {
+        final decoded = jsonDecode(res.body);
+        if (decoded is Map<String, dynamic>) {
+          _mergeOrInsertAsset(decoded);
+          merged = true;
+        } else if (decoded is Map &&
+            decoded['asset'] is Map<String, dynamic>) {
+          _mergeOrInsertAsset(Map<String, dynamic>.from(decoded['asset']));
+          merged = true;
+        }
       }
-    } catch (_) {}
+    } catch (_) {
+      // fall through to refresh
+    }
+
+    if (!merged) {
+      // No usable payload (e.g., 204 or empty/unknown format) -> refresh list
+      debugPrint('UpdateAsset: no mergeable payload, refreshing assets...');
+      await _fetchAssetsForUser(clerkId);
+    }
 
     // Optionally refresh related profile data
     try {
