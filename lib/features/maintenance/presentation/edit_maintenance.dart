@@ -9,6 +9,8 @@ import '../../assets/data/asset.dart';
 import 'package:mobile_app/features/assets/data/asset_repository.dart';
 import '../data/maintenance_entry.dart';
 import 'package:mobile_app/features/maintenance/data/maintenance_store.dart';
+import '../../../core/data/data_handler.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
 
 
 //DROP DOWN ASSET NAMES
@@ -40,32 +42,42 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
   
   @override
     void initState() {
-    super.initState();
-    // Initialize with 4 rows
-    for (int i = 0; i < 4; i++) {
-      controllers1.add(TextEditingController());
-      controllers2.add(TextEditingController());
+      super.initState();
+      // Initialize with 4 rows
+      for (int i = 0; i < 4; i++) {
+        controllers1.add(TextEditingController());
+        controllers2.add(TextEditingController());
     }
 
     _currentAssets = assetRepository.getAll(); // implement .all() if you don't have it yet
     if (_currentAssets.isNotEmpty) _assetId = _currentAssets.first.id; // default selection
+    //WidgetsBinding.instance.addPostFrameCallback((_) => _prefillFromSources());
   }
 
   @override
-  void dispose() {
-    _completionDateCtrl.dispose();
-    _shortDescriptionCtrl.dispose();
-    _notesCtrl.dispose();
-    _requiredToolsCtrl.dispose();
-    _toolLocationsCtrl.dispose();
-    super.dispose();
-    for (final c in controllers1) {
-      c.dispose();
-    }
-    for (final c in controllers2) {
-      c.dispose();
-    }
-  }
+    // Future<void> _prefillFromSources() async {
+    // final auth = ClerkAuth.of(context);
+    // final u = auth.user;
+    // Map<String, dynamic>? backend;
+    // try {
+    //   final dh = DataHandler.fromContext(context);
+    //   backend = await dh.backendFetchProfile(force: true);
+    // } catch (_) {
+    //   // ignore; will fall back to Clerk-only data
+    // }
+
+    // if (!mounted) return;
+    // setState(() {
+    //   _completionDateCtrl.text =
+    //       (backendUsername?.trim().isNotEmpty == true ? backendUsername : u?.username)?.trim() ?? '';
+    //   _shortDescriptionCtrl.text =
+    //       (backendEmail?.trim().isNotEmpty == true ? backendEmail : u?.email)?.trim() ?? '';
+    //   _notesCtrl.text = (backendFirst ?? u?.firstName ?? '').trim();
+    //   _requiredToolsCtrl.text = (backendLast ?? u?.lastName ?? '').trim();
+    //   _toolLocationsCtrl.text = (backendPhone ?? '').trim();
+    // });
+  // }
+
   //for the date picker
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -119,48 +131,50 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
   // ----------------------------------------------------
   
 
+  //FIX VALIDATION: works too well
+
   // --- LOGIC: Pass the data back to the calling screen (My Assets Page) ---
   void _addMaintenance() {
     //validation + error message
     final List<String> missingFields = [];
-    // 1. Asset Name
-    if (_assetName == null) {
-      missingFields.add('Asset Name');
-    }
-    // 2. Completion Date
-    if (_completionDateCtrl.text.isEmpty) {
-      missingFields.add('Completion Date');
-    }
-    // 2. Short Description
-    if (_shortDescriptionCtrl.text.isEmpty) {
-      missingFields.add('Description');
-    }
 
-    if (missingFields.isNotEmpty) {
-      _showValidationErrorDialog(context);
-      return; 
-    }
-    debugPrint('missing fields: ): $missingFields');
+    // // 1. Asset Name
+    // if (_assetId == null) {
+    //   missingFields.add('Asset Name');
+    // }
+    // // 2. Completion Date
+    // if (_completionDateCtrl.text.isEmpty) {
+    //   missingFields.add('Completion Date');
+    // }
+    // // 2. Short Description
+    // if (_shortDescriptionCtrl.text.isEmpty) {
+    //   missingFields.add('Description');
+    // }
+
+    // if (missingFields.isNotEmpty) {
+    //   _showValidationErrorDialog(context);
+    //   return; 
+    // }
+
+    debugPrint('MISSING FIELDS: ): $missingFields');
     
-      //GOT THIS FROM JOHN
-      final id = 'm_${DateTime.now().millisecondsSinceEpoch}';
-        final entry = MaintenanceEntry(
-          id: id,
-          assetId: _assetId!,
-          date: _date!,
-          summary: _shortDescriptionCtrl.text.trim(),
-          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+    final id = 'm_${DateTime.now().millisecondsSinceEpoch}';
+    final entry = MaintenanceEntry(
+      id: id,
+      assetId: _assetId!,
+      date: _date!,
+      summary: _shortDescriptionCtrl.text.trim(),
+      notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
     );
 
     maintenanceStore.add(entry);
 
-    //debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
+    debugPrint('Asset data captured (Passed via routing): $entry');
 
-    //Navigator.pop(context);
-
-    // Pass the new Asset object back to the previous screen
-  Navigator.pop(context, AppRoutes.maintenance); 
-    //);
+    Navigator.pop(context); // close sheet
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Maintenance added')),
+    );
   }
   // --------------------------------------------------------------------------
 
@@ -261,9 +275,8 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
                 // Button
                 Center(
                   child: ElevatedButton(
-                    onPressed: (){
-                      _addMaintenance();
-                      },
+                    onPressed:
+                      _addMaintenance,
                     style: TextButton.styleFrom(
                       backgroundColor: AppColors.ebonyClay,
                       foregroundColor: AppColors.sandyYellow,
@@ -336,7 +349,7 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
 
   // Custom text field component 
   Widget _buildTextField(
-      String label, TextEditingController controller, TextInputType type, {bool readOnly = false}) {
+      String label, TextEditingController mainController, TextInputType type, {bool readOnly = false}) {
     return Padding(
       padding: const EdgeInsets.only(top: Spacing.sm),
       child: Column(
@@ -352,7 +365,7 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
           ),
           const SizedBox(height: Spacing.xs),
           TextField(
-            controller: controller,
+            controller: mainController,
             keyboardType: type,
             readOnly: readOnly,
             style: const TextStyle(color: AppColors.ebonyClay),
@@ -435,7 +448,8 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
                           child: Text('${a.brand} — ${a.title}'),
                         ))
                     .toList(),
-                onChanged: (v) => setState(() => _assetId = v),
+                onChanged: (v) => setState(() => 
+                  _assetId = v),
                 validator: (v) => v == null ? 'Select an asset' : null,
           ),
         ],
