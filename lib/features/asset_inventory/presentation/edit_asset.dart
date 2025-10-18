@@ -4,10 +4,12 @@ import 'package:image_picker/image_picker.dart';
 import '../../assets/data/asset.dart';
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
+import '../../../core/data/data_handler.dart';
+import 'package:intl/intl.dart';
 
 class EditAssetPage extends StatefulWidget {
   final Asset asset;
-  
+
   const EditAssetPage({super.key, required this.asset});
 
   @override
@@ -21,17 +23,31 @@ class _EditAssetPageState extends State<EditAssetPage> {
   String? _selectedCondition;
   late final TextEditingController _storeController;
   late final TextEditingController _priceController;
+  final _categoryController = TextEditingController();
+  final _purchaseDateController = TextEditingController();
+  final DateFormat _df = DateFormat('MMM dd, yyyy');
+
+  // Purchase date & status & favorite
+  DateTime _purchaseDate = DateTime.now();
+  String _selectedStatus = 'Active';
+  bool _favorite = false;
+  List<String> _locationSuggestions = <String>[];
 
   // State for the selected image file path
   String? _imagePath;
   final ImagePicker _picker = ImagePicker();
-
 
   final List<String> _conditions = [
     'New',
     'Used - Like New',
     'Used - Good',
     'Used - Poor',
+  ];
+  final List<String> _statusOptions = [
+    'Active',
+    'Inactive',
+    'Maintenance',
+    'Retired',
   ];
 
   @override
@@ -40,19 +56,52 @@ class _EditAssetPageState extends State<EditAssetPage> {
     // Initialize controllers with existing asset data
     _brandController = TextEditingController(text: widget.asset.brand);
     _nameController = TextEditingController(text: widget.asset.title);
-    _selectedCondition = widget.asset.condition;
-    //_storeController = TextEditingController(text: widget.asset.store);
-    _priceController =
-        TextEditingController(text: widget.asset.price.toStringAsFixed(2));
+    // FIXED: Only set _selectedCondition if the asset's condition is in the dropdown list
+    _selectedCondition = _conditions.contains(widget.asset.condition)
+        ? widget.asset.condition
+        : null; // default to null (no selection) if not in list
+    // Initialize store controller using the asset's currentLocation
+    _storeController = TextEditingController(
+      text: widget.asset.currentLocation,
+    );
+    _priceController = TextEditingController(
+      text: widget.asset.price.toStringAsFixed(2),
+    );
     _imagePath = widget.asset.imagePath;
+    // Prefill category/status/favorite where possible
+    _categoryController.text = widget.asset.category; // Load category from asset
+    _purchaseDate = widget.asset.completionDate;
+    _selectedStatus = 'Active';
+    _favorite = widget.asset.favorite;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadLocationSuggestions(),
+    );
+    _purchaseDateController.text = _df.format(_purchaseDate);
   }
-  
+
+  Future<void> _loadLocationSuggestions() async {
+    try {
+      final handler = DataHandler.fromContext(context);
+      final assets = await handler.getAssets(staleOk: true);
+      final set = assets
+          .map((a) => a.currentLocation)
+          .where((s) => s.trim().isNotEmpty)
+          .toSet();
+      setState(() {
+        _locationSuggestions = set.toList();
+      });
+    } catch (e) {
+      debugPrint('Failed to load location suggestions: $e');
+    }
+  }
+
   @override
   void dispose() {
     _brandController.dispose();
     _nameController.dispose();
     _storeController.dispose();
     _priceController.dispose();
+    _purchaseDateController.dispose();
     super.dispose();
   }
 
@@ -70,6 +119,22 @@ class _EditAssetPageState extends State<EditAssetPage> {
     }
   }
 
+  Future<void> _pickPurchaseDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _purchaseDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Select purchase date',
+    );
+    if (picked != null) {
+      setState(() {
+        _purchaseDate = picked;
+        _purchaseDateController.text = _df.format(picked);
+      });
+    }
+  }
+
   // NEW: Logic to show the modal selection menu
   void _pickImage() {
     showModalBottomSheet(
@@ -81,8 +146,14 @@ class _EditAssetPageState extends State<EditAssetPage> {
             children: <Widget>[
               // Option 1: Photo Library
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppColors.nearWhite),
-                title: const Text('Photo Library', style: TextStyle(color: AppColors.nearWhite)),
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: AppColors.nearWhite,
+                ),
+                title: const Text(
+                  'Photo Library',
+                  style: TextStyle(color: AppColors.nearWhite),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromSource(ImageSource.gallery);
@@ -90,8 +161,14 @@ class _EditAssetPageState extends State<EditAssetPage> {
               ),
               // Option 2: Camera
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppColors.nearWhite),
-                title: const Text('Camera', style: TextStyle(color: AppColors.nearWhite)),
+                leading: const Icon(
+                  Icons.camera_alt,
+                  color: AppColors.nearWhite,
+                ),
+                title: const Text(
+                  'Camera',
+                  style: TextStyle(color: AppColors.nearWhite),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromSource(ImageSource.camera);
@@ -104,18 +181,20 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 
-
   //---------------------------------------
-  
+
   // --- Custom Dialog to show the list of missing fields ---
-  void _showValidationErrorDialog(BuildContext context, List<String> missingFields) {
+  void _showValidationErrorDialog(
+    BuildContext context,
+    List<String> missingFields,
+  ) {
     // Generate a comma-separated list with "and" before the last item
     final String fieldsList = missingFields.length > 1
-      ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
-      : missingFields.first;
+        ? '${missingFields.sublist(0, missingFields.length - 1).join(', ')}, and ${missingFields.last}'
+        : missingFields.first;
 
     final String contentMessage =
-      'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
+        'The following field(s) must be filled out correctly to save the asset: $fieldsList.';
 
     showDialog(
       context: context,
@@ -138,7 +217,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
   //-----------------------------
   // --- LOGIC: Validate fields and save asset ---
-  void _saveChanges() {
+  Future<void> _saveChanges() async {
     final List<String> missingFields = [];
     const double minPrice = 1.00;
     const double maxPrice = 300000.00;
@@ -155,9 +234,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
     if (_selectedCondition == null) {
       missingFields.add('Condition');
     }
-    // 4. Store
+    // 4. Location (currentLocation)
     if (_storeController.text.isEmpty) {
-      missingFields.add('Store');
+      missingFields.add('Location');
     }
 
     // 5. Price (empty, invalid number, or out of range)
@@ -169,45 +248,68 @@ class _EditAssetPageState extends State<EditAssetPage> {
     } else if (priceValue == null) {
       missingFields.add('Price (must be a valid number)');
     } else if (priceValue < minPrice || priceValue > maxPrice) {
-      missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
+      missingFields.add(
+        'Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})',
+      );
     }
-
 
     if (missingFields.isNotEmpty) {
       _showValidationErrorDialog(context, missingFields);
       return;
     }
 
-    // Create the full updated Asset object (using copyWith for edits)
-    final updatedAsset = widget.asset.copyWith(
-      brand: _brandController.text,
-      title: _nameController.text, // Using name as title for simplicity
-      name: '${_brandController.text} ${_nameController.text}',
+    // Call backend update and return updated asset on success
+    try {
+      final handler = DataHandler.fromContext(context);
+      await handler.updateAsset(
+        id: widget.asset.id,
+        itemName: _nameController.text,
+        brandName: _brandController.text,
+        category: _categoryController.text.isNotEmpty
+            ? _categoryController.text
+            : 'Uncategorized',
+        purchaseDate: _purchaseDate,
+        purchaseCost: priceValue!,
+        currentLocation: _storeController.text,
+        images: _imagePath != null ? [_imagePath!] : [],
+        conditionDescription: _selectedCondition!,
+        status: _selectedStatus,
+        favorite: _favorite,
+      );
 
-      // Purchase fields
-      condition: _selectedCondition, // Already validated not null
-      //store: _storeController.text,
-      price: priceValue, // Use the safely parsed and validated value
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Asset Updated Successfully!'),
+          backgroundColor: AppColors.sandyYellow,
+        ),
+      );
 
-      // NEW: Include the image path
-      imagePath: () => _imagePath, // Use ValueGetter for nullable update
-    );
+      // Return updated local copy as well
+      final updatedAsset = widget.asset.copyWith(
+        brand: _brandController.text,
+        title: _nameController.text,
+        name: '${_brandController.text} ${_nameController.text}',
+        condition: _selectedCondition,
+        currentLocation: _storeController.text,
+        price: priceValue,
+        category: _categoryController.text.isNotEmpty
+            ? _categoryController.text
+            : 'Uncategorized', // Include category in update
+        imagePath: () => _imagePath,
+      );
 
-    debugPrint('Asset data captured (Passed via routing): ${updatedAsset.toJson()}');
-
-    // Pass the updated Asset object back to the previous screen
-    Navigator.pop(context, updatedAsset);
-
-    // Optional: Show a simple success snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Asset Updated Successfully!'),
-        backgroundColor: AppColors.sandyYellow,
-      ),
-    );
+      Navigator.pop(context, updatedAsset);
+    } catch (e) {
+      debugPrint('Error updating asset: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update asset: $e')));
+    }
   }
 
-//-----------------------------------------
+  //-----------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,7 +361,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
                       onTap: _pickImage, // Calls the modal selection
                       // FIX: Added horizontal padding here to match field padding
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.lg,
+                        ),
                         child: Container(
                           height: 150,
                           decoration: BoxDecoration(
@@ -280,12 +384,18 @@ class _EditAssetPageState extends State<EditAssetPage> {
                               ? Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: const [
-                                    Icon(Icons.add_a_photo,
-                                        color: AppColors.ebonyClay, size: 40),
+                                    Icon(
+                                      Icons.add_a_photo,
+                                      color: AppColors.ebonyClay,
+                                      size: 40,
+                                    ),
                                     SizedBox(height: Spacing.sm),
-                                    Text('Tap to Change Image',
-                                        style: TextStyle(
-                                            color: AppColors.ebonyClay)),
+                                    Text(
+                                      'Tap to Change Image',
+                                      style: TextStyle(
+                                        color: AppColors.ebonyClay,
+                                      ),
+                                    ),
                                   ],
                                 )
                               : null,
@@ -296,9 +406,11 @@ class _EditAssetPageState extends State<EditAssetPage> {
 
                     // Text Fields
                     _buildTextField(
-                        label: 'Brand', controller: _brandController),
+                      label: 'Brand',
+                      controller: _brandController,
+                    ),
                     _buildTextField(label: 'Name', controller: _nameController),
-                    
+
                     // Condition Dropdown
                     _buildDropdownField(
                       label: 'Condition',
@@ -310,12 +422,200 @@ class _EditAssetPageState extends State<EditAssetPage> {
                       },
                     ),
 
-                    _buildTextField(label: 'Store', controller: _storeController),
+                    // Category (optional)
+                    _buildTextField(
+                      label: 'Category',
+                      controller: _categoryController,
+                    ),
+
+                    // Location with autocomplete suggestions and helper hint
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Location',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          Autocomplete<String>(
+                            optionsBuilder:
+                                (TextEditingValue textEditingValue) {
+                                  if (textEditingValue.text == '') {
+                                    return _locationSuggestions;
+                                  }
+                                  return _locationSuggestions.where((
+                                    String option,
+                                  ) {
+                                    return option.toLowerCase().contains(
+                                      textEditingValue.text.toLowerCase(),
+                                    );
+                                  });
+                                },
+                            onSelected: (String selection) {
+                              _storeController.text = selection;
+                            },
+                            fieldViewBuilder:
+                                (
+                                  context,
+                                  controller,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  controller.text = _storeController.text;
+                                  return TextFormField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    onFieldSubmitted: (_) => onFieldSubmitted(),
+                                    decoration: const InputDecoration(
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                    ),
+                                    style: const TextStyle(
+                                      color: AppColors.ebonyClay,
+                                    ),
+                                    onChanged: (v) => _storeController.text = v,
+                                  );
+                                },
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          const Text(
+                            'Where is this item stored? e.g., Garage, Warehouse B, Toolshed',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Purchase Date (calendar picker)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Purchase Date',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          TextFormField(
+                            controller: _purchaseDateController,
+                            readOnly: true,
+                            onTap: _pickPurchaseDate,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: Spacing.xs,
+                                horizontal: Spacing.sm,
+                              ),
+                              suffixIcon: const Icon(Icons.calendar_today),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(Radii.sm),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: const TextStyle(color: AppColors.ebonyClay),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Status Dropdown
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Status',
+                            style: const TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          DropdownButtonFormField<String>(
+                            value: _selectedStatus,
+                            selectedItemBuilder: (BuildContext context) {
+                              return _statusOptions.map<Widget>((
+                                String status,
+                              ) {
+                                return Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    status,
+                                    style: const TextStyle(
+                                      color: AppColors.ebonyClay,
+                                      fontSize: TypographyScale.field,
+                                    ),
+                                  ),
+                                );
+                              }).toList();
+                            },
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: Spacing.xs,
+                                horizontal: Spacing.sm,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(Radii.sm),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            items: _statusOptions
+                                .map(
+                                  (s) => DropdownMenuItem(
+                                    value: s,
+                                    child: Text(s),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (String? v) {
+                              setState(() {
+                                if (v != null) _selectedStatus = v;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                     _buildTextField(
                       label: 'Price',
                       controller: _priceController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
 
                     const SizedBox(height: Spacing.lg),
@@ -323,7 +623,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
                     // Button
                     // FIX: Added horizontal padding to the button to align with fields
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.lg,
+                      ),
                       child: Center(
                         child: ElevatedButton(
                           onPressed: _saveChanges,
@@ -331,7 +633,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
                             backgroundColor: AppColors.ebonyClay,
                             foregroundColor: AppColors.sandyYellow,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: Spacing.xl, vertical: Spacing.md),
+                              horizontal: Spacing.xl,
+                              vertical: Spacing.md,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(Radii.md),
                             ),
@@ -352,10 +656,11 @@ class _EditAssetPageState extends State<EditAssetPage> {
   }
 
   // Helper method for the text fields
-  Widget _buildTextField(
-      {required String label,
-      required TextEditingController controller,
-      TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Padding(
       // FIX: Added horizontal padding (20px on left/right) to contain the field
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
@@ -379,7 +684,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
-                  vertical: Spacing.xs, horizontal: Spacing.sm),
+                vertical: Spacing.xs,
+                horizontal: Spacing.sm,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
                 borderSide: BorderSide.none,
@@ -390,8 +697,10 @@ class _EditAssetPageState extends State<EditAssetPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
-                borderSide:
-                    const BorderSide(color: AppColors.sandyYellow, width: 2.0),
+                borderSide: const BorderSide(
+                  color: AppColors.sandyYellow,
+                  width: 2.0,
+                ),
               ),
             ),
           ),
@@ -423,9 +732,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
           const SizedBox(height: Spacing.xs),
           DropdownButtonFormField<String>(
             // Use `value` for dynamic state tracking
-            value: currentValue, 
+            value: currentValue,
             // Removed top-level style as it was being ignored.
-            
+
             // NEW: Use selectedItemBuilder to explicitly style the selected value text
             selectedItemBuilder: (BuildContext context) {
               return _conditions.map<Widget>((String condition) {
@@ -435,7 +744,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
                     condition,
                     style: const TextStyle(
                       // IMPORTANT FIX: Force dark text color for the field value
-                      color: AppColors.ebonyClay, 
+                      color: AppColors.ebonyClay,
                       fontSize: TypographyScale.field,
                     ),
                   ),
@@ -446,7 +755,9 @@ class _EditAssetPageState extends State<EditAssetPage> {
               filled: true,
               fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(
-                  vertical: Spacing.xs, horizontal: Spacing.sm),
+                vertical: Spacing.xs,
+                horizontal: Spacing.sm,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
                 borderSide: BorderSide.none,
@@ -457,17 +768,22 @@ class _EditAssetPageState extends State<EditAssetPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(Radii.sm),
-                borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2.0),
+                borderSide: const BorderSide(
+                  color: AppColors.sandyYellow,
+                  width: 2.0,
+                ),
               ),
             ),
-            items: _conditions.map<DropdownMenuItem<String>>((String condition) {
+            items: _conditions.map<DropdownMenuItem<String>>((
+              String condition,
+            ) {
               return DropdownMenuItem<String>(
                 value: condition,
                 // FIX: Set text color for the options *in the dropdown menu* (Near White)
                 child: Text(
-                  condition, 
+                  condition,
                   style: const TextStyle(color: AppColors.nearWhite),
-                ), 
+                ),
               );
             }).toList(),
             onChanged: onChanged,
@@ -477,14 +793,3 @@ class _EditAssetPageState extends State<EditAssetPage> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

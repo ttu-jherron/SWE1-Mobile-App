@@ -1,11 +1,11 @@
 import 'dart:io'; // Required for Image Picker
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; //Image Picker
-import '../../assets/data/asset.dart'; 
-import '../../../core/colors.dart'; 
-import '../../../core/constants.dart'; 
+import '../../assets/data/asset.dart';
+import '../../../core/colors.dart';
+import '../../../core/constants.dart';
 import '../../../core/data/data_handler.dart';
-
 
 class AddAssetPage extends StatefulWidget {
   const AddAssetPage({super.key});
@@ -21,6 +21,18 @@ class _AddAssetPageState extends State<AddAssetPage> {
   String? _selectedCondition;
   final _storeController = TextEditingController();
   final _priceController = TextEditingController();
+  final _categoryController = TextEditingController();
+  final _purchaseDateController = TextEditingController();
+
+  final DateFormat _df = DateFormat('MMM dd, yyyy');
+
+  // Location suggestions (prefilled from existing assets)
+  List<String> _locationSuggestions = <String>[];
+
+  // Purchase date & status & favorite
+  DateTime _purchaseDate = DateTime.now();
+  String _selectedStatus = 'Active';
+  bool _favorite = false;
 
   // NEW: State for the selected image file path
   String? _imagePath;
@@ -31,6 +43,12 @@ class _AddAssetPageState extends State<AddAssetPage> {
     'Used - Like New',
     'Used - Good',
     'Used - Poor',
+  ];
+  final List<String> _statusOptions = [
+    'Active',
+    'Inactive',
+    'Maintenance',
+    'Retired',
   ];
 
   // NEW: Logic to handle image picking from a specific source (Camera or Gallery)
@@ -58,8 +76,14 @@ class _AddAssetPageState extends State<AddAssetPage> {
             children: <Widget>[
               // Option 1: Photo Library
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppColors.nearWhite),
-                title: const Text('Photo Library', style: TextStyle(color: AppColors.nearWhite)),
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: AppColors.nearWhite,
+                ),
+                title: const Text(
+                  'Photo Library',
+                  style: TextStyle(color: AppColors.nearWhite),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromSource(ImageSource.gallery);
@@ -67,8 +91,14 @@ class _AddAssetPageState extends State<AddAssetPage> {
               ),
               // Option 2: Camera
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppColors.nearWhite),
-                title: const Text('Camera', style: TextStyle(color: AppColors.nearWhite)),
+                leading: const Icon(
+                  Icons.camera_alt,
+                  color: AppColors.nearWhite,
+                ),
+                title: const Text(
+                  'Camera',
+                  style: TextStyle(color: AppColors.nearWhite),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImageFromSource(ImageSource.camera);
@@ -81,17 +111,61 @@ class _AddAssetPageState extends State<AddAssetPage> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // Load previous asset locations for autocomplete after first frame
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadLocationSuggestions(),
+    );
+    _purchaseDateController.text = _df.format(_purchaseDate);
+  }
+
+  Future<void> _loadLocationSuggestions() async {
+    try {
+      final handler = DataHandler.fromContext(context);
+      final assets = await handler.getAssets(staleOk: true);
+      final set = assets
+          .map((a) => a.currentLocation)
+          .where((s) => s.trim().isNotEmpty)
+          .toSet();
+      setState(() {
+        _locationSuggestions = set.toList();
+      });
+    } catch (e) {
+      debugPrint('Failed to load location suggestions: $e');
+    }
+  }
+
+  Future<void> _pickPurchaseDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _purchaseDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Select purchase date',
+    );
+    if (picked != null) {
+      setState(() {
+        _purchaseDate = picked;
+        _purchaseDateController.text = _df.format(picked);
+      });
+    }
+  }
 
   //----------------------------------------
-   // --- Custom Dialog to show the list of missing fields ---
-  void _showValidationErrorDialog(BuildContext context, List<String> missingFields) {
+  // --- Custom Dialog to show the list of missing fields ---
+  void _showValidationErrorDialog(
+    BuildContext context,
+    List<String> missingFields,
+  ) {
     // Generate a comma-separated list with "and" before the last item
     final String fieldsList = missingFields.length > 1
-      ? '   - ${missingFields.sublist(0, missingFields.length - 1).join('\n   - ')} \n   - ${missingFields.last}'
-      : missingFields.first;
+        ? '   - ${missingFields.sublist(0, missingFields.length - 1).join('\n   - ')} \n   - ${missingFields.last}'
+        : missingFields.first;
 
-    final String contentMessage = 
-      'The following field(s) must be filled out correctly to save the asset:\n\n$fieldsList';
+    final String contentMessage =
+        'The following field(s) must be filled out correctly to save the asset:\n\n$fieldsList';
 
     showDialog(
       context: context,
@@ -111,7 +185,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
       },
     );
   }
-  
+
   // --- LOGIC: Pass the data back to the calling screen (My Assets Page) ---
   void _addAsset() async {
     final List<String> missingFields = [];
@@ -130,10 +204,12 @@ class _AddAssetPageState extends State<AddAssetPage> {
     if (_selectedCondition == null) {
       missingFields.add('Condition');
     }
-    // 4. Store
+    // 4. Location (currentLocation)
     if (_storeController.text.isEmpty) {
-      missingFields.add('Store');
+      missingFields.add('Location');
     }
+
+    // 6. Category (optional) - no required validation
 
     // 5. Price (empty, invalid number, or out of range)
     final priceText = _priceController.text;
@@ -144,29 +220,32 @@ class _AddAssetPageState extends State<AddAssetPage> {
     } else if (priceValue == null) {
       missingFields.add('Price');
     } else if (priceValue < minPrice || priceValue > maxPrice) {
-      missingFields.add('Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})');
+      missingFields.add(
+        'Price (must be between \$${minPrice.toStringAsFixed(2)} and \$${maxPrice.toStringAsFixed(2)})',
+      );
     }
-
 
     if (missingFields.isNotEmpty) {
       _showValidationErrorDialog(context, missingFields);
-      return; 
+      return;
     }
 
     try {
       final dataHandler = DataHandler.fromContext(context);
-      
+
       await dataHandler.addAsset(
         itemName: _nameController.text,
         brandName: _brandController.text,
-        category: 'Uncategorized', // You can add a category dropdown if needed
-        purchaseDate: DateTime.now(),
+        category: _categoryController.text.isNotEmpty
+            ? _categoryController.text
+            : 'Uncategorized',
+        purchaseDate: _purchaseDate,
         purchaseCost: priceValue!,
         currentLocation: _storeController.text,
         images: _imagePath != null ? [_imagePath!] : [],
         conditionDescription: _selectedCondition!,
-        status: 'Active',
-        favorite: false,
+        status: _selectedStatus,
+        favorite: _favorite,
       );
 
       // ✅ Success dialog or toast/snackbar
@@ -179,38 +258,45 @@ class _AddAssetPageState extends State<AddAssetPage> {
     } catch (e) {
       debugPrint('Error adding asset: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to add asset: $e")),
-      );
-      
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to add asset: $e")));
+
       // Create the full new Asset object
       final newAsset = Asset(
         id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
         brand: _brandController.text,
         title: _nameController.text, // Using name as title for simplicity
         name: '${_brandController.text} ${_nameController.text}',
-        
+
         // Purchase fields
         condition: _selectedCondition!,
         //store: _storeController.text,
         price: priceValue!, // Use the safely parsed and validated value
         imagePath: _imagePath, // NEW: Include the image path
-        
+        category: _categoryController.text.isNotEmpty
+            ? _categoryController.text
+            : 'Uncategorized', // Include category
+        // Category / status / favorite
+        // NOTE: Asset model does not store category/status separately; we include them in notes via shortDescription
+
         // Default/placeholder values for Maintenance fields
-        completionDate: DateTime.now().add(const Duration(days: 365)),
+        completionDate: _purchaseDate,
         shortDescription: 'Newly added asset.',
         notes: '',
-        requiredMaterials: [], currentLocation: '',
+        requiredMaterials: [],
+        currentLocation: '',
       );
 
-      debugPrint('Asset data captured (Passed via routing): ${newAsset.toJson()}');
-      
+      debugPrint(
+        'Asset data captured (Passed via routing): ${newAsset.toJson()}',
+      );
+
       // Pass the new Asset object back to the previous screen
       Navigator.pop(context);
     }
   }
   //---------------------------------------------
-
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +349,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
                       onTap: _pickImage, // Calls the modal selection
                       // FIX: Added horizontal padding here to match field padding
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.lg,
+                        ),
                         child: Container(
                           height: 150,
                           decoration: BoxDecoration(
@@ -284,12 +372,18 @@ class _AddAssetPageState extends State<AddAssetPage> {
                               ? Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: const [
-                                    Icon(Icons.add_a_photo,
-                                        color: AppColors.ebonyClay, size: 40),
+                                    Icon(
+                                      Icons.add_a_photo,
+                                      color: AppColors.ebonyClay,
+                                      size: 40,
+                                    ),
                                     SizedBox(height: Spacing.sm),
-                                    Text('Tap to Add Image',
-                                        style: TextStyle(
-                                            color: AppColors.ebonyClay)),
+                                    Text(
+                                      'Tap to Add Image',
+                                      style: TextStyle(
+                                        color: AppColors.ebonyClay,
+                                      ),
+                                    ),
                                   ],
                                 )
                               : null,
@@ -300,9 +394,17 @@ class _AddAssetPageState extends State<AddAssetPage> {
 
                     // Text Fields
                     _buildTextField(
-                        label: 'Brand', controller: _brandController),
+                      label: 'Brand',
+                      controller: _brandController,
+                    ),
                     _buildTextField(label: 'Name', controller: _nameController),
-                    
+
+                    // Category (optional)
+                    _buildTextField(
+                      label: 'Category',
+                      controller: _categoryController,
+                    ),
+
                     // Condition Dropdown
                     _buildDropdownField(
                       label: 'Condition',
@@ -314,12 +416,195 @@ class _AddAssetPageState extends State<AddAssetPage> {
                       },
                     ),
 
-                    _buildTextField(label: 'Store', controller: _storeController),
+                    // Status Dropdown
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Status',
+                            style: const TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          DropdownButtonFormField<String>(
+                            value: _selectedStatus,
+                            // Ensure selected value text is visible (force dark color)
+                            selectedItemBuilder: (BuildContext context) {
+                              return _statusOptions.map<Widget>((
+                                String status,
+                              ) {
+                                return Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    status,
+                                    style: const TextStyle(
+                                      color: AppColors.ebonyClay,
+                                      fontSize: TypographyScale.field,
+                                    ),
+                                  ),
+                                );
+                              }).toList();
+                            },
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: Spacing.xs,
+                                horizontal: Spacing.sm,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(Radii.sm),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            items: _statusOptions
+                                .map(
+                                  (s) => DropdownMenuItem(
+                                    value: s,
+                                    child: Text(s),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (String? v) {
+                              setState(() {
+                                if (v != null) _selectedStatus = v;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Location with autocomplete suggestions and helper hint
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Location',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          Autocomplete<String>(
+                            optionsBuilder:
+                                (TextEditingValue textEditingValue) {
+                                  if (textEditingValue.text == '') {
+                                    return _locationSuggestions;
+                                  }
+                                  return _locationSuggestions.where((
+                                    String option,
+                                  ) {
+                                    return option.toLowerCase().contains(
+                                      textEditingValue.text.toLowerCase(),
+                                    );
+                                  });
+                                },
+                            onSelected: (String selection) {
+                              _storeController.text = selection;
+                            },
+                            fieldViewBuilder:
+                                (
+                                  context,
+                                  controller,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  controller.text = _storeController.text;
+                                  return TextFormField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    onFieldSubmitted: (_) => onFieldSubmitted(),
+                                    decoration: const InputDecoration(
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                    ),
+                                    style: const TextStyle(
+                                      color: AppColors.ebonyClay,
+                                    ),
+                                    onChanged: (v) => _storeController.text = v,
+                                  );
+                                },
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          const Text(
+                            'Where is this item stored? e.g., Garage, Warehouse B, Toolshed',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Purchase Date (calendar picker)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Spacing.lg,
+                        0,
+                        Spacing.lg,
+                        Spacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Purchase Date',
+                            style: TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: TypographyScale.field,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: Spacing.xs),
+                          TextFormField(
+                            controller: _purchaseDateController,
+                            readOnly: true,
+                            onTap: _pickPurchaseDate,
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: Spacing.xs,
+                                horizontal: Spacing.sm,
+                              ),
+                              suffixIcon: const Icon(Icons.calendar_today),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(Radii.sm),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: const TextStyle(color: AppColors.ebonyClay),
+                          ),
+                        ],
+                      ),
+                    ),
                     _buildTextField(
                       label: 'Price',
                       controller: _priceController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
 
                     const SizedBox(height: Spacing.lg),
@@ -327,7 +612,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
                     // Button
                     // FIX: Added horizontal padding to the button to align with fields
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.lg,
+                      ),
                       child: Center(
                         child: ElevatedButton(
                           onPressed: _addAsset,
@@ -335,7 +622,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
                             backgroundColor: AppColors.ebonyClay,
                             foregroundColor: AppColors.sandyYellow,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: Spacing.xl, vertical: Spacing.md),
+                              horizontal: Spacing.xl,
+                              vertical: Spacing.md,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(Radii.md),
                             ),
@@ -355,11 +644,23 @@ class _AddAssetPageState extends State<AddAssetPage> {
     );
   }
 
+  @override
+  void dispose() {
+    _brandController.dispose();
+    _nameController.dispose();
+    _storeController.dispose();
+    _priceController.dispose();
+    _categoryController.dispose();
+    _purchaseDateController.dispose();
+    super.dispose();
+  }
+
   // Helper method for the text fields
-  Widget _buildTextField(
-      {required String label,
-      required TextEditingController controller,
-      TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Padding(
       // FIX: Added horizontal padding (20px on left/right) to contain the field
       padding: const EdgeInsets.fromLTRB(Spacing.lg, 0, Spacing.lg, Spacing.lg),
@@ -451,7 +752,7 @@ class _AddAssetPageState extends State<AddAssetPage> {
                     fontSize: TypographyScale.field,
                   ),
                 ),
-            ],
+              ],
             ),
           ),
 
@@ -497,7 +798,9 @@ class _AddAssetPageState extends State<AddAssetPage> {
                 ),
               ),
             ),
-            items: _conditions.map<DropdownMenuItem<String>>((String condition) {
+            items: _conditions.map<DropdownMenuItem<String>>((
+              String condition,
+            ) {
               return DropdownMenuItem<String>(
                 value: condition,
                 child: Text(

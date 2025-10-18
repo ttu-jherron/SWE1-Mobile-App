@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/colors.dart';
 import '../../../../core/constants.dart';
 
-enum ButtonVariant { darkFilled, yellowFilled }
+enum ButtonVariant { darkFilled, yellowFilled, yellowOutline }
 
 class PrimaryButton extends StatelessWidget {
   final String text;

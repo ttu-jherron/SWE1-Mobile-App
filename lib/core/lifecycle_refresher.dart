@@ -55,15 +55,6 @@ class _LifeCycleRefresherState extends State<LifeCycleRefresher> with WidgetsBin
   Future<void> _refreshOnce() async {
     if (!mounted || _running) return;
     _running = true;
-    try {
-      final auth = ClerkAuth.of(context);
-      if (auth.user != null) {
-        // Kick a priming burst if still no cache and not already priming (backend only)
-        DataHandler(auth: auth).startPrimingIfNeeded();
-      }
-    } finally {
-      _running = false;
-    }
   }
 
   void _markActivity() {

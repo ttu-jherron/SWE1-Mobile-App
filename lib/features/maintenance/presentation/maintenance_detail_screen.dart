@@ -25,6 +25,7 @@ class MaintenanceDetailScreen extends StatelessWidget {
 
     return AppLayout( // WRAP with AppLayout to restore header + bottom nav
       currentIndex: 2, // Maintenance tab
+      navigateToTabRootOnCurrentTap: true, // ensure tapping Maintenance routes to root list
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,7 +38,9 @@ class MaintenanceDetailScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    a != null ? 'Maintenance: ${a.title}' : 'Maintenance Detail',
+                    a != null
+                        ? 'Maintenance: ${a.title}'
+                        : 'Maintenance Detail',
                     maxLines: 2,
                     softWrap: true,
                     overflow: TextOverflow.ellipsis,
@@ -50,7 +53,11 @@ class MaintenanceDetailScreen extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: AppColors.ebonyClay, size: 28),
+                  icon: const Icon(
+                    Icons.close,
+                    color: AppColors.ebonyClay,
+                    size: 28,
+                  ),
                   tooltip: 'Close',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -62,7 +69,10 @@ class MaintenanceDetailScreen extends StatelessWidget {
           if (a == null)
             const Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text('Asset not found', style: TextStyle(color: Colors.black87)),
+              child: Text(
+                'Asset not found',
+                style: TextStyle(color: Colors.black87),
+              ),
             )
           else
             Expanded(
@@ -82,7 +92,8 @@ class MaintenanceDetailScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       a.title,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF36404B),
                           ),
@@ -108,7 +119,10 @@ class MaintenanceDetailScreen extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       a.notes,
-                      style: const TextStyle(height: 1.35, color: Colors.black87),
+                      style: const TextStyle(
+                        height: 1.35,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: Spacing.xl),
 
@@ -118,7 +132,7 @@ class MaintenanceDetailScreen extends StatelessWidget {
                     const SizedBox(height: Spacing.xl),
 
                     ElevatedButton(
-                      onPressed:() {
+                      onPressed: () {
                         if (a != null) {
                           Navigator.pushNamed(
                             context,
@@ -133,7 +147,9 @@ class MaintenanceDetailScreen extends StatelessWidget {
                         backgroundColor: AppColors.ebonyClay,
                         foregroundColor: AppColors.sandyYellow,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: Spacing.xl, vertical: Spacing.sm),
+                          horizontal: Spacing.xl,
+                          vertical: Spacing.sm,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(Radii.md),
                         ),
@@ -152,8 +168,18 @@ class MaintenanceDetailScreen extends StatelessWidget {
 
   static String _formatDate(DateTime d) {
     final months = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     final m = months[d.month - 1];
     final day = d.day.toString().padLeft(2, '0');
@@ -166,7 +192,13 @@ class _Label extends StatelessWidget {
   const _Label(this.text);
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.black87));
+    return Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.w800,
+        color: Colors.black87,
+      ),
+    );
   }
 }
 
@@ -200,7 +232,9 @@ class _MaterialsTable extends StatelessWidget {
           ),
           for (int i = 0; i < rows.length; i++)
             TableRow(
-              decoration: BoxDecoration(color: i.isOdd ? Colors.black12 : Colors.transparent),
+              decoration: BoxDecoration(
+                color: i.isOdd ? Colors.black12 : Colors.transparent,
+              ),
               children: [_Cell(rows[i].tool), _Cell(rows[i].location)],
             ),
         ],
@@ -215,7 +249,10 @@ class _HeaderCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.sm,
+      ),
       child: Text(
         text,
         style: const TextStyle(
@@ -234,7 +271,10 @@ class _Cell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.md,
+        vertical: Spacing.sm,
+      ),
       child: Text(text, style: const TextStyle(color: Colors.black87)),
     );
   }

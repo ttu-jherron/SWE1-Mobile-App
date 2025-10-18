@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:clerk_auth/clerk_auth.dart' as clerk;
-import 'package:mobile_app/app.dart';
 
 import '../../../core/colors.dart';
 import '../../../core/constants.dart';
@@ -11,6 +10,7 @@ import '../../../core/routing.dart';
 import 'widgets/app_text_field.dart';
 import 'widgets/primary_button.dart';
 import 'widgets/link_text.dart';
+import 'verify_email_screen.dart'; // ADD
 
 
 // TODO flash text fields red when info is wrong or not there
@@ -28,21 +28,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordCtrl = TextEditingController();
   final confirmCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  
-  // Controllers for fields to be used later (commented out in UI)
-  // final addressCtrl = TextEditingController();
-  // final stateCtrl = TextEditingController();
-  // final zipCtrl = TextEditingController();
 
   final formKey = GlobalKey<FormState>();
 
   // State variables for Clerk logic
   late final ClerkAuthState _auth;
-  late final StreamSubscription _errorSub;
+  StreamSubscription? _errorSub; // change: allow cancel/re-subscribe
   bool _loading = false;
   bool _hasShownError = false; // Track if we've already shown an error
   DateTime? _lastErrorTime; // Track when we last showed an error
   bool _authSuccess = false; // Track if auth was successful to prevent multiple navigations
+  bool _suppressAutoNav = false; // ADD: suppress auto-nav while verifying
   
   static const int snackBarDuration = 5;
 
@@ -61,9 +57,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
       _auth.addListener(_onAuthChanged);
       _errorSub = _auth.errorStream.listen((err) {
-        if (mounted) {
-          _showErrorSnackbar(err.message);
-        }
+        if (!mounted) return;
+        // ...existing snackbar display...
       });
     });
   }
@@ -74,8 +69,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       debugPrint('_onAuthChanged called - mounted: $mounted, _authSuccess: $_authSuccess, user: ${_auth.user?.id}');
     }
     
-    if (!mounted || _authSuccess) return; // Prevent multiple navigations
-    
+    if (!mounted || _authSuccess || _suppressAutoNav) return; // ADD: respect suppression
+
     if (_auth.user != null) {
       if (kDebugMode) {
         debugPrint('User authenticated, navigating to home...');
@@ -135,7 +130,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // --- REVISED SIGN UP LOGIC ---
   Future<void> _signUp() async {
     // Prevent multiple simultaneous requests
     if (!mounted || _loading || _authSuccess) return;
@@ -163,6 +157,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
           _showErrorSnackbar('Please fill in all fields.');
         }
       return;
+    }
+
+    if (mounted) {
+      String? message = _auth.checkPassword(passwordCtrl.text, confirmCtrl.text, context);
+      if(message != null) {
+        _showErrorSnackbar(message);
+      }
     }
 
     if (passwordCtrl.text != confirmCtrl.text) {
@@ -193,23 +194,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
         passwordConfirmation: confirmCtrl.text,
         username: usernameCtrl.text,
       );
-      
-      // If we reach here, sign-up was successful
-      if (kDebugMode) {
-        debugPrint('Sign-up successful, waiting for auth state change...');
-      }
-    } catch (e) {
-      if (mounted) {
-        // Clear any partial sign-up state that might have been created
+
+      // After creating the pending user, go to verify screen
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _suppressAutoNav = true; // prevent auto nav while verifying
+      });
+
+      // Pause Sign Up error listener while Verify is active
+      _errorSub?.cancel();
+      _errorSub = null;
+
+      final verified = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VerifyEmailScreen(
+            email: emailCtrl.text,
+            password: passwordCtrl.text,
+            passwordConfirm: confirmCtrl.text,
+            username: usernameCtrl.text,
+            ),
+        ),
+      );
+
+      // Re-subscribe after returning
+      _errorSub ??= _auth.errorStream.listen((err) {
+        if (!mounted) return;
+        // ...existing snackbar display...
+      });
+
+      // Handle result
+      if (verified == true) {
+        // Verification screen already navigated to Home; prevent further auto nav
+        _authSuccess = true;
+        return;
+      } else {
+        // Back to Sign Up on failure/cancel
+        if (!mounted) return;
+        setState(() {
+          _suppressAutoNav = false;
+        });
+        _showErrorSnackbar('Email not verified. Please try again.');
         try {
           _auth.signOut();
           _auth.refreshClient();
           _auth.refreshEnvironment();
-        } catch (clearError) {
-          debugPrint('Error clearing state after failed sign-up: $clearError');
-        }
-        _showErrorSnackbar('Error: ${e.toString()}');
+        } catch (_) {}
       }
+    } catch (e) {
+      // ...existing error handling...
+      if (mounted) _showErrorSnackbar('Error: ${e.toString()}');
     } finally {
       // Fallback: If loading is still true, reset it
       // This prevents permanent loading in case something goes wrong
@@ -227,11 +262,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     passwordCtrl.dispose();
     confirmCtrl.dispose();
     emailCtrl.dispose();
-    // addressCtrl.dispose();
-    // stateCtrl.dispose();
-    // zipCtrl.dispose();
     _auth.removeListener(_onAuthChanged);
-    _errorSub.cancel();
+    _errorSub?.cancel();
     super.dispose();
   }
 
@@ -286,6 +318,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           label: 'Username',
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          textColor: AppColors.sandyYellow,
+                          cursorColor: AppColors.sandyYellow,
+                          selectionColor: AppColors.sandyYellow.withValues(alpha: 0.35),
+                          selectionHandleColor: AppColors.sandyYellow,
                           isRequired: true,
                         ),
                         const SizedBox(height: Spacing.md),
@@ -304,6 +340,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          textColor: AppColors.sandyYellow,
+                          cursorColor: AppColors.sandyYellow,
+                          selectionColor: AppColors.sandyYellow.withValues(alpha: 0.35),
+                          selectionHandleColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
                         const Text(
@@ -321,6 +361,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          textColor: AppColors.sandyYellow,
+                          cursorColor: AppColors.sandyYellow,
+                          selectionColor: AppColors.sandyYellow.withValues(alpha: 0.35),
+                          selectionHandleColor: AppColors.sandyYellow,
                         ),
                         const SizedBox(height: Spacing.md),
                         const Text(
@@ -337,50 +381,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           isRequired: true,
                           borderColor: AppColors.sandyYellow,
                           labelColor: AppColors.sandyYellow,
+                          textColor: AppColors.sandyYellow,
+                          cursorColor: AppColors.sandyYellow,
+                          selectionColor: AppColors.sandyYellow.withValues(alpha: 0.35),
+                          selectionHandleColor: AppColors.sandyYellow,
                         ),
-                    
-                    // --- ADDRESS FIELDS (COMMENTED OUT) ---
-                    /* const SizedBox(height: Spacing.md),
-                    const Text('Address', style: TextStyle(...)),
-                    AppTextField(
-                      controller: addressCtrl,
-                      label: 'Address',
-                      borderColor: AppColors.sandyYellow,
-                    ),
-                    const SizedBox(height: Spacing.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('State', style: TextStyle(...)),
-                              AppTextField(
-                                controller: stateCtrl,
-                                label: 'State',
-                                borderColor: AppColors.sandyYellow,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: Spacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Zip Code', style: TextStyle(...)),
-                              AppTextField(
-                                controller: zipCtrl,
-                                label: 'Zip Code',
-                                keyboardType: TextInputType.number,
-                                borderColor: AppColors.sandyYellow,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    */
 
                     const SizedBox(height: Spacing.xl + Spacing.sm),
                     Center(

@@ -33,6 +33,12 @@ class _LoginScreenState extends State<LoginScreen> {
   void _navigateHomeOnce() {
     if (_navigated || !mounted) return;
     _navigated = true;
+    final jwt = ClerkAuth.of(context).session?.lastActiveToken?.jwt;
+    if (jwt == null || jwt.isEmpty) {
+      throw Exception('No Clerk session JWT');
+    }
+    //debugPrint("jwt: $jwt");
+    
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
   }
 
@@ -60,9 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onAuthChanged() {
     if (!mounted) return;
     if (_auth.user != null) {
-      // Start bounded backend priming if no cache yet
-      final dh = DataHandler(auth: _auth);
-      dh.startPrimingIfNeeded();
 
       _navigateHomeOnce();
     }
@@ -157,6 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   hint: 'Email/Username',
                                   labelColor: Colors.black,
                                   borderColor: Colors.black,
+                                  cursorColor: Colors.black,
                                   isRequired: true,
                                 ),
                               ),
@@ -187,6 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   label: 'Password',
                                   hint: '************',
                                   labelColor: Colors.black,
+                                  cursorColor: Colors.black,
                                   isRequired: true,
                                   obscure: true,
                                   borderColor: Colors.black,
