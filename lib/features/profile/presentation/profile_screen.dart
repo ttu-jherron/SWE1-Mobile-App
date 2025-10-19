@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mobile_app/core/colors.dart';
 import 'package:mobile_app/core/data/data_handler.dart';
 import '../../../core/constants.dart';
@@ -27,8 +25,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   Timer? _retryTimer;
   int _retryAttempts = 0;
   bool _subscribed = false; // avoid double-subscribing RouteObserver
-  bool _uploadingAvatar = false;
-  File? _localAvatarPreview;
 
   @override
   void initState() {
@@ -118,13 +114,13 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     // 100ms splash per navigation
     _splashFuture = Future.delayed(const Duration(milliseconds: 100));
 
-    // Force a Clerk fetch; fallback to cache on timeout
+    // Force a backend fetch; fallback to cache on timeout
     setState(() {
       _backendFuture = dh
-          .clerkFetchProfile(force: true) // was: backendFetchProfile
+          .backendFetchProfile(force: true)
           .timeout(
             const Duration(seconds: 5),
-            onTimeout: () => dh.cachedClerkProfile ?? <String, dynamic>{}, // was: cachedBackendProfile
+            onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{},
           );
     });
   }
@@ -134,14 +130,14 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
   void _startRetryLoop() {
     _stopRetryLoop();
     final dh = DataHandler.fromContext(context);
-    final noCache = dh.cachedClerkProfile == null || dh.cachedClerkProfile!.isEmpty; // was: cachedBackendProfile
+    final noCache = dh.cachedBackendProfile == null || dh.cachedBackendProfile!.isEmpty;
     if (!noCache) return;
 
     // Try immediately once and rebuild the future
     setState(() {
       _backendFuture = dh
-          .clerkFetchProfile(force: true) // was: backendFetchProfile
-          .timeout(const Duration(seconds: 5), onTimeout: () => dh.cachedClerkProfile ?? <String, dynamic>{}); // was: cachedBackendProfile
+          .backendFetchProfile(force: true)
+          .timeout(const Duration(seconds: 5), onTimeout: () => dh.cachedBackendProfile ?? <String, dynamic>{});
     });
 
     _retryAttempts = 0;
@@ -151,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         return;
       }
       final handler = DataHandler.fromContext(context);
-      final hasCache = handler.cachedClerkProfile != null && handler.cachedClerkProfile!.isNotEmpty; // was: cachedBackendProfile
+      final hasCache = handler.cachedBackendProfile != null && handler.cachedBackendProfile!.isNotEmpty;
       if (hasCache) {
         t.cancel();
         return;
@@ -164,8 +160,8 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       // Rebuild the future each attempt
       setState(() {
         _backendFuture = handler
-            .clerkFetchProfile(force: true) // was: backendFetchProfile
-            .timeout(const Duration(seconds: 5), onTimeout: () => handler.cachedClerkProfile ?? <String, dynamic>{}); // was: cachedBackendProfile
+            .backendFetchProfile(force: true)
+            .timeout(const Duration(seconds: 5), onTimeout: () => handler.cachedBackendProfile ?? <String, dynamic>{});
       });
     });
   }
@@ -192,17 +188,17 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     // Ensure builders have futures even on first build
     _splashFuture ??= Future.delayed(const Duration(milliseconds: 100));
     _backendFuture ??= dataHandler
-        .clerkFetchProfile(force: true) // was: backendFetchProfile
+        .backendFetchProfile(force: true)
         .timeout(
           const Duration(seconds: 5),
-          onTimeout: () => dataHandler.cachedClerkProfile ?? <String, dynamic>{}, // was: cachedBackendProfile
+          onTimeout: () => dataHandler.cachedBackendProfile ?? <String, dynamic>{},
         );
 
     return AppLayout(
       currentIndex: 3,
       body: StreamBuilder<Map<String, dynamic>>(
-        stream: dataHandler.clerkProfileStream, // was: backendProfileStream
-        initialData: dataHandler.cachedClerkProfile, // was: cachedBackendProfile
+        stream: dataHandler.backendProfileStream,
+        initialData: dataHandler.cachedBackendProfile,
         builder: (context, streamSnap) {
           final streamData = streamSnap.data ?? <String, dynamic>{};
 
@@ -222,21 +218,24 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                   final effective =
                       streamData.isNotEmpty ? streamData
                       : futureData.isNotEmpty ? futureData
-                      : (dataHandler.cachedClerkProfile ?? <String, dynamic>{}); // was: cachedBackendProfile
+                      : (dataHandler.cachedBackendProfile ?? <String, dynamic>{});
 
-                  // Prefer Clerk (camelCase), fall back to snake_case if present
-                  final String? profileImageUrl = effective['imageUrl'] ?? effective['image_url'];
+                  final String? profileImageUrl = effective['image_url'] ?? effective['imageUrl'];
                   final String email = effective['email'] ?? effective['Email'] ?? 'No Email';
                   final String username = effective['username'] ?? email;
 
-                  final String firstName = effective['firstName'] ?? effective['first_name'] ?? '';
-                  final String lastName = effective['lastName'] ?? effective['last_name'] ?? '';
+                  final String firstName = effective['first_name'] ?? effective['firstName'] ?? '';
+                  final String lastName = effective['last_name'] ?? effective['lastName'] ?? '';
+                  final String fullName = "$firstName $lastName".trim();
+                  final String displayFullName = fullName.isEmpty ? "No access to backend" : fullName;
+                  final String phoneNumber =
+                      effective['phone_number'] ?? effective['phoneNumber'] ?? 'No access to backend';
 
                   final bool avatarLoading =
                       backendSnap.connectionState == ConnectionState.waiting &&
                       streamData.isEmpty &&
-                      (dataHandler.cachedClerkProfile == null || // was: cachedBackendProfile
-                       dataHandler.cachedClerkProfile!.isEmpty);
+                      (dataHandler.cachedBackendProfile == null ||
+                       dataHandler.cachedBackendProfile!.isEmpty);
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
@@ -247,58 +246,15 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const SizedBox(height: Spacing.lg),
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            CircleAvatar(
-                              radius: 64,
-                              backgroundColor: Colors.grey.shade200,
-                              child: ClipOval(
-                                child: _buildProfileAvatar(
-                                  profileImageUrl,
-                                  loading: avatarLoading,
-                                ),
-                              ),
+                        CircleAvatar(
+                          radius: 64,
+                          backgroundColor: Colors.grey.shade200,
+                          child: ClipOval(
+                            child: _buildProfileAvatar(
+                              profileImageUrl,
+                              loading: avatarLoading,
                             ),
-                            // Upload overlay
-                            if (_uploadingAvatar)
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.35),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Center(
-                                    child: SizedBox(
-                                      width: 28,
-                                      height: 28,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            // Camera button
-                            Positioned(
-                              right: -6,
-                              bottom: -6,
-                              child: Material(
-                                elevation: 2,
-                                shape: const CircleBorder(),
-                                color: Colors.white,
-                                child: IconButton(
-                                  iconSize: 22,
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-                                  icon: const Icon(Icons.photo_camera, color: Colors.black87),
-                                  tooltip: 'Change photo',
-                                  onPressed: _uploadingAvatar ? null : _showAvatarSheet,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: Spacing.lg),
                         Text(
@@ -316,46 +272,42 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // EDITABLE: Full Name (now split into First / Last when editing)
-                                _InlineEditableFullName(
-                                  firstName: firstName,
-                                  lastName: lastName,
-                                  underline: false,
-                                ),
+                                _FieldBlock(label: 'Full Name', value: displayFullName),
                                 const SizedBox(height: Spacing.lg),
-                                // EDITABLE: Email
-                                _InlineEditableField(
-                                  label: 'Email',
-                                  initialValue: email,
-                                  underline: true,
-                                  keyboardType: TextInputType.emailAddress,
-                                  saveKey: 'email',
-                                  validator: (v) {
-                                    final s = v.trim();
-                                    final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s);
-                                    return ok ? null : 'Enter a valid email';
-                                  },
-                                ),
+                                _FieldBlock(label: 'Phone Number', value: phoneNumber),
                                 const SizedBox(height: Spacing.lg),
-                                // EDITABLE: Password
-                                const _InlineEditablePassword(
-                                  label: 'Password',
-                                  saveKey: 'password',
-                                ),
+                                _FieldBlock(label: 'Email', value: email, underline: true),
+                                const SizedBox(height: Spacing.lg),
+                                const _FieldBlock(label: 'Password', value: '***************'),
                                 const SizedBox(height: Spacing.xl),
                               ],
                             ),
                           ),
                         ),
-                       
+                        const SizedBox(height: 16),
                         SizedBox(
-                          width: 128,
+                          width: 160,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pushNamed(context, AppRoutes.profileEdit),
+                            style: ButtonStyle(
+                              padding: MaterialStateProperty.all(
+                                const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                            child: const Center(child: Text('Edit Profile')),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: 120,
                           height: 48,
                           child: ElevatedButton(
                             onPressed: () async {
                               await dataHandler.clearAllCache();
                               await auth.signOut();
                               if (context.mounted) {
+                                
                                 Navigator.of(context).pushReplacementNamed(AppRoutes.login);
                               }
                             },
@@ -396,16 +348,6 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       );
     }
 
-    // Local preview while user just picked a photo (optimistic UX)
-    if (_localAvatarPreview != null) {
-      return Image.file(
-        _localAvatarPreview!,
-        fit: BoxFit.cover,
-        width: 128,
-        height: 128,
-      );
-    }
-
     // If we have an image URL, load it with a simple grey placeholder
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return CachedNetworkImage(
@@ -435,738 +377,45 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       child: const Icon(Icons.person, size: 48, color: Colors.white),
     );
   }
-
-  void _showAvatarSheet() async {
-    final action = await showModalBottomSheet<_AvatarAction>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Take photo'),
-                onTap: () => Navigator.pop(context, _AvatarAction.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_outlined),
-                title: const Text('Choose from gallery'),
-                onTap: () => Navigator.pop(context, _AvatarAction.gallery),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Remove photo', style: TextStyle(color: Colors.red)),
-                onTap: () => Navigator.pop(context, _AvatarAction.remove),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    if (!mounted || action == null) return;
-    switch (action) {
-      case _AvatarAction.camera:
-        _pickAndUpload(ImageSource.camera);
-        break;
-      case _AvatarAction.gallery:
-        _pickAndUpload(ImageSource.gallery);
-        break;
-      case _AvatarAction.remove:
-        _removeAvatar();
-        break;
-    }
-  }
-
-  Future<void> _pickAndUpload(ImageSource source) async {
-    try {
-      final picker = ImagePicker();
-      final x = await picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 90,
-      );
-      if (x == null) return;
-      final file = File(x.path);
-      setState(() {
-        _localAvatarPreview = file;   // show preview immediately
-        _uploadingAvatar = true;
-      });
-
-      final dh = DataHandler.fromContext(context);
-      await dh.clerkUpdateProfilePicture(file);
-
-      // Bust local preview and force a Clerk refetch to get the new URL
-      setState(() {
-        _localAvatarPreview = null;
-      });
-      await dh.clerkFetchProfile(force: true);
-
-      _startFetch();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo updated')));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update photo: $e')));
-    } finally {
-      if (mounted) {
-        setState(() => _uploadingAvatar = false);
-      }
-    }
-  }
-
-  Future<void> _removeAvatar() async {
-    try {
-      setState(() => _uploadingAvatar = true);
-      final dh = DataHandler.fromContext(context);
-      await dh.clerkDeleteProfilePicture();
-      await dh.clerkFetchProfile(force: true);
-
-      _startFetch();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo removed')));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to remove photo: $e')));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _localAvatarPreview = null;
-          _uploadingAvatar = false;
-        });
-      }
-    }
-  }
 }
 
-class _InlineEditableField extends StatefulWidget {
+class _FieldBlock extends StatelessWidget {
   final String label;
-  final String initialValue;
-  final bool underline;
-  final TextInputType keyboardType;
-  final String saveKey; // used only in TODO comment
-  final String? Function(String value)? validator;
-
-  const _InlineEditableField({
-    required this.label,
-    required this.initialValue,
-    required this.saveKey,
-    this.underline = false,
-    this.keyboardType = TextInputType.text,
-    this.validator,
-  });
-
-  @override
-  State<_InlineEditableField> createState() => _InlineEditableFieldState();
-}
-
-class _InlineEditableFieldState extends State<_InlineEditableField> {
-  late String _value;
-  bool _editing = false;
-  final _ctrl = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _value = widget.initialValue;
-    _ctrl.text = widget.initialValue;
-  }
-
-  @override
-  void didUpdateWidget(covariant _InlineEditableField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // If parent value changes (e.g., from stream), refresh when not editing
-    if (!_editing && oldWidget.initialValue != widget.initialValue) {
-      _value = widget.initialValue;
-      _ctrl.text = widget.initialValue;
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _startEdit() {
-    setState(() {
-      _ctrl.text = _value;
-      _editing = true;
-    });
-  }
-
-  void _cancel() {
-    setState(() {
-      _ctrl.text = _value;
-      _editing = false;
-    });
-  }
-
-  void _save() async {
-    final newVal = _ctrl.text.trim();
-    if (widget.validator != null) {
-      final err = widget.validator!(newVal);
-      if (err != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-        return;
-      }
-    }
-    if (newVal == _value) {
-      setState(() => _editing = false);
-      return;
-    }
-    setState(() {
-      _value = newVal;
-      _editing = false;
-    });
-
-    try {
-      final dh = DataHandler.fromContext(context);
-      // Decide which field to change; others will auto-fill from cache
-      if (widget.label.toLowerCase() == 'email') {
-        await dh.clerkUpdateProfile(emailAddress: _value);
-      } else if (widget.label.toLowerCase() == 'username') {
-        await dh.clerkUpdateProfile(username: _value);
-      }
-      await dh.clerkFetchProfile(force: true);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: $e')));
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final labelStyle = const TextStyle(
-      fontWeight: FontWeight.w800,
-      color: Colors.black87,
-    );
-
-    if (!_editing) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.label, style: labelStyle),
-            const SizedBox(height: Spacing.xs),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    _value,
-                    style: TextStyle(
-                      color: AppColors.ebonyClay, // was Colors.black87
-                      decoration: widget.underline ? TextDecoration.underline : TextDecoration.none,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
-                  tooltip: 'Edit',
-                  onPressed: _startEdit,
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.label, style: labelStyle),
-          const SizedBox(height: Spacing.xs),
-          TextSelectionTheme(
-            data: TextSelectionThemeData(
-              selectionColor: AppColors.ebonyClay.withOpacity(0.25),
-              selectionHandleColor: AppColors.ebonyClay, // “blob”
-            ),
-            child: TextField(
-              controller: _ctrl,
-              keyboardType: widget.keyboardType,
-              cursorColor: AppColors.ebonyClay,
-              style: const TextStyle(color: Colors.black87),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.black26, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.black26, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Save'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: _cancel,
-                icon: const Icon(Icons.close, size: 18),
-                label: const Text('Cancel'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineEditablePassword extends StatefulWidget {
-  final String label;
-  final String saveKey; // used only in TODO comment
-
-  const _InlineEditablePassword({
-    required this.label,
-    required this.saveKey,
-  });
-
-  @override
-  State<_InlineEditablePassword> createState() => _InlineEditablePasswordState();
-}
-
-class _InlineEditablePasswordState extends State<_InlineEditablePassword> {
-  bool _editing = false;
-  final _newCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
-  bool _obscure1 = true;
-  bool _obscure2 = true;
-
-  @override
-  void dispose() {
-    _newCtrl.dispose();
-    _confirmCtrl.dispose();
-    super.dispose();
-  }
-
-  void _startEdit() => setState(() => _editing = true);
-  void _cancel() {
-    _newCtrl.clear();
-    _confirmCtrl.clear();
-    setState(() => _editing = false);
-  }
-
-  void _save() async {
-    final p1 = _newCtrl.text;
-    final p2 = _confirmCtrl.text;
-    if (p1.isEmpty || p2.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter and confirm your new password.')));
-      return;
-    }
-    if (p1 != p2) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
-      return;
-    }
-
-    try {
-      final dh = DataHandler.fromContext(context);
-      // Sends all required profile fields from cache + new password
-      await dh.clerkUpdateProfile(password: p1);
-      await dh.clerkFetchProfile(force: true);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password updated')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update password: $e')));
-      }
-    }
-
-    _cancel();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final labelStyle = const TextStyle(
-      fontWeight: FontWeight.w800,
-      color: Colors.black87,
-    );
-
-    if (!_editing) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.label, style: labelStyle),
-            const SizedBox(height: Spacing.xs),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    '***************',
-                    style: TextStyle(color: AppColors.ebonyClay), // was Colors.black87
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
-                  tooltip: 'Edit',
-                  onPressed: _startEdit,
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(widget.label, style: labelStyle),
-          const SizedBox(height: Spacing.xs),
-          TextSelectionTheme(
-            data: TextSelectionThemeData(
-              selectionColor: AppColors.ebonyClay.withOpacity(0.25),
-              selectionHandleColor: AppColors.ebonyClay, // “blob”
-            ),
-            child: TextField(
-              controller: _newCtrl,
-              obscureText: _obscure1,
-              cursorColor: AppColors.ebonyClay,
-              style: const TextStyle(color: Colors.black87),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                labelText: 'New password',
-                labelStyle: const TextStyle(color: Colors.black54),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscure1 ? Icons.visibility_off : Icons.visibility, color: Colors.black54),
-                  onPressed: () => setState(() => _obscure1 = !_obscure1),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.black26, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.black26, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextSelectionTheme(
-            data: TextSelectionThemeData(
-              selectionColor: AppColors.ebonyClay.withOpacity(0.25),
-              selectionHandleColor: AppColors.ebonyClay, // “blob”
-            ),
-            child: TextField(
-              controller: _confirmCtrl,
-              obscureText: _obscure2,
-              cursorColor: AppColors.ebonyClay,
-              style: const TextStyle(color: Colors.black87),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                labelText: 'Confirm password',
-                labelStyle: const TextStyle(color: Colors.black54),
-                suffixIcon: IconButton(
-                  icon: Icon(_obscure2 ? Icons.visibility_off : Icons.visibility, color: Colors.black54),
-                  onPressed: () => setState(() => _obscure2 = !_obscure2),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.black26, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.black26, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Save'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: _cancel,
-                icon: const Icon(Icons.close, size: 18),
-                label: const Text('Cancel'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineEditableFullName extends StatefulWidget {
-  final String firstName;
-  final String lastName;
+  final String value;
   final bool underline;
 
-  const _InlineEditableFullName({
-    required this.firstName,
-    required this.lastName,
+  const _FieldBlock({
+    required this.label,
+    required this.value,
     this.underline = false,
   });
 
   @override
-  State<_InlineEditableFullName> createState() => _InlineEditableFullNameState();
-}
-
-class _InlineEditableFullNameState extends State<_InlineEditableFullName> {
-  late String _first;
-  late String _last;
-  bool _editing = false;
-
-  final _firstCtrl = TextEditingController();
-  final _lastCtrl = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _first = widget.firstName;
-    _last = widget.lastName;
-    _firstCtrl.text = _first;
-    _lastCtrl.text = _last;
-  }
-
-  @override
-  void didUpdateWidget(covariant _InlineEditableFullName oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_editing &&
-        (oldWidget.firstName != widget.firstName || oldWidget.lastName != widget.lastName)) {
-      _first = widget.firstName;
-      _last = widget.lastName;
-      _firstCtrl.text = _first;
-      _lastCtrl.text = _last;
-    }
-  }
-
-  @override
-  void dispose() {
-    _firstCtrl.dispose();
-    _lastCtrl.dispose();
-    super.dispose();
-  }
-
-  void _startEdit() {
-    setState(() {
-      _firstCtrl.text = _first;
-      _lastCtrl.text = _last;
-      _editing = true;
-    });
-  }
-
-  void _cancel() {
-    setState(() {
-      _firstCtrl.text = _first;
-      _lastCtrl.text = _last;
-      _editing = false;
-    });
-  }
-
-  void _save() async {
-    final newFirst = _firstCtrl.text.trim();
-    final newLast = _lastCtrl.text.trim();
-    final changed = newFirst != _first || newLast != _last;
-    if (!changed) {
-      setState(() => _editing = false);
-      return;
-    }
-    setState(() {
-      _first = newFirst;
-      _last = newLast;
-      _editing = false;
-    });
-
-    try {
-      final dh = DataHandler.fromContext(context);
-      await dh.clerkUpdateProfile(firstName: _first, lastName: _last);
-      await dh.clerkFetchProfile(force: true);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Name updated')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update name: $e')));
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final labelStyle = const TextStyle(
-      fontWeight: FontWeight.w800,
-      color: Colors.black87,
-    );
-
-    final combined = '$_first $_last'.trim().isEmpty ? 'No access to backend' : '$_first $_last'.trim();
-
-    if (!_editing) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Full Name', style: labelStyle),
-            const SizedBox(height: Spacing.xs),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    combined,
-                    style: TextStyle(
-                      color: AppColors.ebonyClay,
-                      decoration: widget.underline ? TextDecoration.underline : TextDecoration.none,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
-                  tooltip: 'Edit',
-                  onPressed: _startEdit,
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    InputDecoration _dec(String label) => InputDecoration(
-          isDense: true,
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.black26, width: 1),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.black26, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2),
-          ),
-        );
-
     return Align(
       alignment: Alignment.centerLeft,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Full Name', style: labelStyle),
-            const SizedBox(height: Spacing.xs),
-          Row(
-            children: [
-              Expanded(
-                child: TextSelectionTheme(
-                  data: TextSelectionThemeData(
-                    selectionColor: AppColors.ebonyClay.withOpacity(0.25),
-                    selectionHandleColor: AppColors.ebonyClay,
-                  ),
-                  child: TextField(
-                    controller: _firstCtrl,
-                    cursorColor: AppColors.ebonyClay,
-                    style: const TextStyle(color: Colors.black87),
-                    textCapitalization: TextCapitalization.words,
-                    decoration: _dec('First'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextSelectionTheme(
-                  data: TextSelectionThemeData(
-                    selectionColor: AppColors.ebonyClay.withOpacity(0.25),
-                    selectionHandleColor: AppColors.ebonyClay,
-                  ),
-                  child: TextField(
-                    controller: _lastCtrl,
-                    cursorColor: AppColors.ebonyClay,
-                    style: const TextStyle(color: Colors.black87),
-                    textCapitalization: TextCapitalization.words,
-                    decoration: _dec('Last'),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Save'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: _cancel,
-                icon: const Icon(Icons.close, size: 18),
-                label: const Text('Cancel'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
-              ),
-            ],
+          const SizedBox(height: Spacing.xs),
+          Text(
+            value,
+            style: TextStyle(
+              color: Colors.black87,
+              decoration: underline
+                  ? TextDecoration.underline
+                  : TextDecoration.none,
+            ),
           ),
         ],
       ),
     );
   }
 }
-
-enum _AvatarAction { camera, gallery, remove }

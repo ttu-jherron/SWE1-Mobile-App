@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   static const sandyYellow = Color(0xFFFFF47B);
+  static const darkGold = Color(0xFFDAA520);
   static const ebonyClay   = Color(0xFF2A323F);
 
   // Supporting neutrals
