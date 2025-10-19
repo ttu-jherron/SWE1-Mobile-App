@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    assets:
+      - assets/images/clerkProfile.png
   #image picker dependency
   image_picker: ^1.2.0
   #clerk dependencies

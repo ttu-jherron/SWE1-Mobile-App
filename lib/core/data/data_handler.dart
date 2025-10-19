@@ -10,6 +10,8 @@ import 'package:mobile_app/features/assets/data/asset.dart';
 import 'package:mobile_app/features/maintenance/data/maintenance_entry.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
 
 class DataHandler {
   // Instance deps
@@ -525,10 +527,22 @@ class DataHandler {
     }
   }
 
+  // Helper to get a File from assets
+  Future<File> getAssetFile(String assetPath, String filename) async {
+    final byteData = await rootBundle.load(assetPath);
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$filename');
+    await file.writeAsBytes(byteData.buffer.asUint8List());
+    return file;
+  }
+
   Future<void> clerkDeleteProfilePicture() async {
-    // TODO does not immediately update for some reason
-    // However UpdateProfilePicture does work
+    // Weird bandaid fix
+    // Update profile with default clerk image, then delete so it is updated locally
+    // NOTE: the default profile is for production, so it wont look smooth right now
     try {
+      File defaultProfilePicture = await getAssetFile('assets/images/clerkProfile.png', 'clerkProfile.png');
+      await clerkUpdateProfilePicture(defaultProfilePicture);
       await auth.deleteUserImage();
       await clerkRefreshUserData();
       await clerkFetchProfile(force: true);
