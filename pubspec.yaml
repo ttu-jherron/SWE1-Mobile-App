@@ -30,8 +30,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-    assets:
-      - assets/images/clerkProfile.png
   #image picker dependency
   image_picker: ^1.2.0
   #clerk dependencies
@@ -66,6 +64,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/
+    - assets/images/clerkProfile.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
