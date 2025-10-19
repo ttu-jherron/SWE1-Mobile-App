@@ -162,8 +162,7 @@ Future<void> _deleteAsset() async {
       
       // 3. Navigate away ONLY IF the widget is still mounted
       if (mounted) {
-        // Use pop twice if this page was pushed on top of a detail page
-        Navigator.of(context).pop(); 
+        Navigator.of(context).pushNamedAndRemoveUntil('/myassets', (route) => route.isFirst);
       }
     } catch (e) {
       // Handle error, e.g., show a snackbar

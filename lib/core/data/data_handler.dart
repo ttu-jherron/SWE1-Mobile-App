@@ -380,7 +380,7 @@ class DataHandler {
       throw Exception('User not authenticated for asset deletion.');
     }
 
-    final uri = Uri.parse('$_globalBaseUrl/users/$clerkId/assets/$assetId');
+    final uri = Uri.parse('$_globalBaseUrl/assets/$assetId');
 
     http.Response res;
     try {
@@ -400,7 +400,7 @@ class DataHandler {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       debugPrint('DeleteAsset failed: ${res.statusCode} - ${res.body}');
       throw Exception(
-        'Failed to delete asset: ${res.statusCode} - ${res.body}',
+        'Failed to delete asset $assetId}: ${res.statusCode} - ${res.body}',
       );
     }
 
@@ -739,6 +739,7 @@ class DataHandler {
     }
 
     debugPrint('Asset added successfully: ${res.body}');
+    await getAssets(force: true);
 
     try {
       final decoded = jsonDecode(res.body);

@@ -13,28 +13,6 @@ import 'layout/app_layout.dart';
 
 import '../features/home/presentation/home_screen.dart' as home_feature;
 
-class _AssetsScaffold extends StatelessWidget {
-  const _AssetsScaffold();
-
-  @override
-  Widget build(BuildContext context) {
-    return AppLayout(
-      currentIndex: 1,
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pushNamed(
-              context,
-              AppRoutes.maintenanceDetail, //defined in your routes
-              arguments: 'asset_001', //burner ID for now
-            );
-          },
-          child: const Text('Open Maintenance Page'),
-        ),
-      ),
-    );
-  }
-}
 
 class _MyAssetsScaffold extends StatelessWidget {
   const _MyAssetsScaffold();
@@ -53,7 +31,6 @@ class AppRoutes {
   static const signUp = '/signup';
   static const home = '/home';
 
-  static const assets = '/assets';
   static const myAssets = '/myassets';
   static const viewAssets = '/viewassets';
 
@@ -70,7 +47,6 @@ class AppRoutes {
     // stubs:
     home: (_) => const home_feature.HomeScreen(),
     //home: (_) => const _HomeScaffold(), // see below
-    assets: (_) => const _AssetsScaffold(),
 
     myAssets: (_) => const _MyAssetsScaffold(),
     viewAssets: (context) {
