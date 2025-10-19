@@ -521,8 +521,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
     try {
       setState(() => _uploadingAvatar = true);
       final dh = DataHandler.fromContext(context);
-      //TODO Replace with endpoint or use built in SDK, unsure which works
-      //await dh.removeClerkProfileImage();
+      await dh.clerkDeleteProfilePicture();
       await dh.clerkFetchProfile(force: true);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo removed')));

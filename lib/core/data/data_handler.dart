@@ -523,6 +523,17 @@ class DataHandler {
     }
   }
 
+  Future<void> clerkDeleteProfilePicture() async {
+    try {
+      await auth.deleteUserImage();
+      // Refresh and emit updated profile (imageUrl will change)
+      await clerkFetchProfile(force: true);
+    } catch (e) {
+      debugPrint('clerkDeleteProfilePicture error: $e');
+      rethrow;
+    }
+  }
+
   // Optional: expose a manual prefetch trigger you can call from Home initState
   Future<void> prefetchAll() async {
     await _prefetchForCurrentUser();
