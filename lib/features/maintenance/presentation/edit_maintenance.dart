@@ -145,264 +145,351 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.ebonyClay,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Edit Maintenance",
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: Spacing.lg),
-
-                // Title
-                TextFormField(
-                  controller: _titleController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Maintenance Title',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white70),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
+    return AppLayout(
+      currentIndex: 2,
+      body: Scaffold(
+        backgroundColor: Colors.white,
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Edit Maintenance",
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: AppColors.ebonyClay,
+                            fontWeight: FontWeight.w800,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(), 
+                        icon: const Icon(Icons.close, color: AppColors.ebonyClay, size:28),
+                        tooltip: 'Close',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.xxl),
+                  Text(
+                    "* - Must be filled out",
+                    style: const TextStyle(
+                      color: AppColors.ebonyClay,
+                      fontSize: TypographyScale.field,
+                      fontWeight: FontWeight.normal,
                     ),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Enter a maintenance title'
-                      : null,
-                ),
-                const SizedBox(height: Spacing.md),
-
-                // Description
-                TextFormField(
-                  controller: _descriptionController,
-                  minLines: 3,
-                  maxLines: null,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Maintenance Description',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white70),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: Spacing.md),
-
-                // Due Date
-                InkWell(
-                  onTap: _pickDate,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Maintenance Due Date',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      border: OutlineInputBorder(),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Title
+                  TextFormField(
+                    controller: _titleController,
+                    style: const TextStyle(color: AppColors.ebonyClay),
+                    decoration: InputDecoration(
+                      labelText: 'Maintenance Title*',
+                      labelStyle: TextStyle(color: AppColors.ebonyClay),
+                      fillColor: AppColors.lightGrey,
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white70),
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(
+                          color: AppColors.ebonyClay,
+                          width: 2.0,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white),
-                      ),
-                    ),
-                    child: Text(
-                      _dueDateController.text.isEmpty ? 'Select date' : _dueDateController.text,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-                if (_dueDate != null && _dueDate!.isBefore(DateTime.now().subtract(const Duration(days: 1))))
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      'Due date must be today or in the future',
-                      style: TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  ),
-                const SizedBox(height: Spacing.md),
-
-                // Status
-                DropdownButtonFormField<String>(
-                  value: _selectedStatus,
-                  style: const TextStyle(color: Colors.white),
-                  dropdownColor: AppColors.ebonyClay,
-                  items: const [
-                    DropdownMenuItem(value: 'Pending', child: Text('Pending')),
-                    DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
-                    DropdownMenuItem(value: 'Completed', child: Text('Completed')),
-                    DropdownMenuItem(value: 'Overdue', child: Text('Overdue')),
-                  ],
-                  onChanged: (value) => setState(() => _selectedStatus = value),
-                  decoration: const InputDecoration(
-                    labelText: 'Maintenance Status',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white70),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                  ),
-                  validator: (v) => v == null ? 'Select a status' : null,
-                ),
-                const SizedBox(height: Spacing.md),
-
-                // Cost
-                TextFormField(
-                  controller: _costController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Cost Paid',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white70),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Cost is required';
-                    final cost = double.tryParse(v);
-                    if (cost == null) return 'Enter a valid number';
-                    if (cost < 0.01 || cost > 1000000) return 'Cost must be between 0.01 and 1,000,000';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: Spacing.md),
-
-                // Recurrence
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _recurrenceIntervalController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Recurrence Interval',
-                          labelStyle: TextStyle(color: Colors.white70),
-                          border: OutlineInputBorder(),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white70),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(
+                          color: AppColors.ebonyClay,
+                          width: 2.0,
                         ),
                       ),
                     ),
-                    const SizedBox(width: Spacing.md),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _recurrenceUnitController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Recurrence Unit',
-                          labelStyle: TextStyle(color: Colors.white70),
-                          border: OutlineInputBorder(),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white70),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Enter a maintenance title'
+                        : null,
+                  ),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Description
+                  TextFormField(
+                    controller: _descriptionController,
+                    minLines: 3,
+                    maxLines: null,
+                    readOnly: false,
+                    style: const TextStyle(color: AppColors.ebonyClay),
+                    decoration: InputDecoration(
+                      labelText: 'Maintenance Description',
+                      labelStyle: TextStyle(color: AppColors.ebonyClay),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: Spacing.xs,
+                      horizontal: Spacing.sm,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Radii.sm),
+                      borderSide: const BorderSide(
+                        color: AppColors.ebonyClay,
+                        width: 2.0,
+                        ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Radii.sm),
+                      borderSide: const BorderSide(
+                        color: AppColors.ebonyClay,
+                        width: 2.0,
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: Spacing.md),
-
-                // Required Tools
-                TextFormField(
-                  controller: _requiredToolsController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Required Tools (comma separated)',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white70),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
                   ),
-                ),
-                const SizedBox(height: Spacing.md),
-
-                // Tool Location
-                TextFormField(
-                  controller: _toolLocationController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Tool Location',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white70),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Tool location is required';
-                    if (v.trim().length < 2 || v.trim().length > 200) return 'Tool location must be between 2 and 200 characters';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: Spacing.md),
-
-                // Completed Checkbox
-                CheckboxListTile(
-                  title: const Text('Completed', style: TextStyle(color: Colors.white)),
-                  value: _isCompleted,
-                  onChanged: (value) => setState(() => _isCompleted = value ?? false),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  activeColor: AppColors.sandyYellow,
-                  checkColor: AppColors.ebonyClay,
-                ),
-                const SizedBox(height: Spacing.xxl),
-
-                // Button
-                Center(
-                  child: ElevatedButton(
-                    onPressed: _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.sandyYellow,
-                      foregroundColor: AppColors.ebonyClay,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.xl, vertical: Spacing.md),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(Radii.md),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Due Date
+                  InkWell(
+                    onTap: _pickDate,
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Maintenance Due Date',
+                        labelStyle: TextStyle(color: AppColors.ebonyClay),
+                        contentPadding: const EdgeInsets.symmetric(
+                        vertical: Spacing.xs, horizontal: Spacing.sm),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(Radii.sm),
+                          borderSide: const BorderSide(
+                            color: AppColors.ebonyClay,
+                            width: 2.0,
+                            ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(Radii.sm),
+                          borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                        ),
+                      ),
+                      child: Text(
+                        _dueDateController.text.isEmpty ? 'Select date' : _dueDateController.text,
+                        style: const TextStyle(color: AppColors.ebonyClay),
                       ),
                     ),
-                    child: const Text('Save Maintenance'),
                   ),
-                ),
-                const SizedBox(height: Spacing.lg),
-              ],
+                  if (_dueDate != null && _dueDate!.isBefore(DateTime.now().subtract(const Duration(days: 1))))
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Due date must be today or in the future',
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Status
+                  DropdownButtonFormField<String>(
+                    value: _selectedStatus,
+                    style: const TextStyle(color: AppColors.ebonyClay),
+                    dropdownColor: Colors.white,
+                    items: const [
+                      DropdownMenuItem(value: 'Pending', child: Text('Pending')),
+                      DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
+                      DropdownMenuItem(value: 'Completed', child: Text('Completed')),
+                      DropdownMenuItem(value: 'Overdue', child: Text('Overdue')),
+                    ],
+                    onChanged: (value) => setState(() => _selectedStatus = value),
+                    decoration: InputDecoration(
+                      labelText: 'Maintenance Status',
+                      labelStyle: TextStyle(color: AppColors.ebonyClay),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: Spacing.xs, horizontal: Spacing.sm
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(
+                          color: AppColors.ebonyClay,
+                          width: 2.0,
+                          ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                      ),
+                    ),
+                    validator: (v) => v == null ? 'Select a status' : null,
+                  ),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Cost
+                  TextFormField(
+                    controller: _costController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: AppColors.ebonyClay),
+                    decoration: InputDecoration(
+                      labelText: 'Cost Paid*',
+                      labelStyle: TextStyle(color: AppColors.ebonyClay),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: Spacing.xs, horizontal: Spacing.sm),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(
+                          color: AppColors.ebonyClay,
+                          width: 2.0,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Cost is required';
+                      final cost = double.tryParse(v);
+                      if (cost == null) return 'Enter a valid number';
+                      if (cost < 0.01 || cost > 1000000) return 'Cost must be between 0.01 and 1,000,000';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Recurrence
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _recurrenceIntervalController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: AppColors.ebonyClay),
+                          decoration: InputDecoration(
+                            labelText: 'Recurrence Interval',
+                            labelStyle: TextStyle(color: AppColors.ebonyClay),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: Spacing.xs, horizontal: Spacing.sm),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Radii.sm),
+                              borderSide: const BorderSide(
+                                color: AppColors.ebonyClay,
+                                width: 2.0,
+                                ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Radii.sm),
+                              borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: Spacing.md),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _recurrenceUnitController,
+                          style: const TextStyle(color: AppColors.ebonyClay),
+                          decoration: InputDecoration(
+                            labelText: 'Recurrence Unit',
+                            labelStyle: TextStyle(color: AppColors.ebonyClay),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: Spacing.xs, horizontal: Spacing.sm),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Radii.sm),
+                              borderSide: const BorderSide(
+                                color: AppColors.ebonyClay,
+                                width: 2.0,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(Radii.sm),
+                              borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Required Tools
+                  TextFormField(
+                    controller: _requiredToolsController,
+                    style: const TextStyle(color: AppColors.ebonyClay),
+                    decoration: InputDecoration(
+                      labelText: 'Required Tools (comma separated)',
+                      labelStyle: TextStyle(color: AppColors.ebonyClay),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: Spacing.xs, horizontal: Spacing.sm),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(
+                          color: AppColors.ebonyClay,
+                          width: 2.0,
+                          ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Tool Location
+                  TextFormField(
+                    controller: _toolLocationController,
+                    style: const TextStyle(color: AppColors.ebonyClay),
+                    decoration: InputDecoration(
+                      labelText: 'Tool Location*',
+                      labelStyle: TextStyle(color: AppColors.ebonyClay),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: Spacing.xs, horizontal: Spacing.sm),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(
+                          color: AppColors.ebonyClay,
+                          width: 2.0,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Tool location is required';
+                      if (v.trim().length < 2 || v.trim().length > 200) return 'Tool location must be between 2 and 200 characters';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: Spacing.md),
+      
+                  // Completed Checkbox
+                  CheckboxListTile(
+                    title: const Text('Completed', style: TextStyle(color: AppColors.ebonyClay)),
+                    value: _isCompleted,
+                    onChanged: (value) => setState(() => _isCompleted = value ?? false),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    side: BorderSide(color: AppColors.ebonyClay, width:2.0),
+                    activeColor: AppColors.ebonyClay,
+                    checkColor: AppColors.nearWhite,
+                  ),
+                  const SizedBox(height: Spacing.xxl),
+      
+                  // Button
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.ebonyClay,
+                        foregroundColor: AppColors.sandyYellow,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Spacing.xl, vertical: Spacing.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(Radii.md),
+                        ),
+                      ),
+                      child: const Text('Save Maintenance'),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                ],
+              ),
             ),
           ),
         ),
