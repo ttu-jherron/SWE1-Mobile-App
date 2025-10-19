@@ -1,4 +1,4 @@
-import 'dart:io'; // Required for Image Picker
+import 'dart:io'; 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../assets/data/asset.dart';
@@ -6,6 +6,7 @@ import '../../../core/colors.dart';
 import '../../../core/constants.dart';
 import '../../../core/data/data_handler.dart';
 import 'package:intl/intl.dart';
+import '../../assets/data/asset_store.dart';
 
 class EditAssetPage extends StatefulWidget {
   final Asset asset;
@@ -50,6 +51,8 @@ class _EditAssetPageState extends State<EditAssetPage> {
     'Retired',
   ];
 
+  bool _bound = false;
+
   @override
   void initState() {
     super.initState();
@@ -79,6 +82,16 @@ class _EditAssetPageState extends State<EditAssetPage> {
     _purchaseDateController.text = _df.format(_purchaseDate);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // FIX: Ensure AssetStore is bound to the DataHandler in the context
+    if (_bound) return;
+    assetStore.bind(context);
+    _bound = true;
+  }
+  
+
   Future<void> _loadLocationSuggestions() async {
     try {
       final handler = DataHandler.fromContext(context);
@@ -103,6 +116,64 @@ class _EditAssetPageState extends State<EditAssetPage> {
     _priceController.dispose();
     _purchaseDateController.dispose();
     super.dispose();
+  }
+
+  // --- Delete Logic ---
+  
+  // NEW: Function to show a confirmation dialog before deleting
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Deletion'),
+          content: Text('Are you sure you want to delete ${widget.asset.name}? This action cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel', style: TextStyle(color: AppColors.sandyYellow)),
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss dialog
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: AppColors.nearWhite,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss dialog
+                _deleteAsset();
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+Future<void> _deleteAsset() async {
+    try {
+      // 1. Get the DataHandler using the current, valid context
+      final DataHandler dh = DataHandler.fromContext(context);
+      
+      // 2. Pass the handler to the store's delete method
+      await assetStore.deleteAsset(widget.asset.id, dataHandler: dh);
+      
+      // 3. Navigate away ONLY IF the widget is still mounted
+      if (mounted) {
+        // Use pop twice if this page was pushed on top of a detail page
+        Navigator.of(context).pop(); 
+      }
+    } catch (e) {
+      // Handle error, e.g., show a snackbar
+      debugPrint('Delete failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete asset: $e')),
+        );
+      }
+    }
   }
 
   // NEW: Logic to handle image picking from a specific source (Camera or Gallery)
@@ -564,7 +635,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
                           ),
                           const SizedBox(height: Spacing.xs),
                           DropdownButtonFormField<String>(
-                            value: _selectedStatus,
+                            initialValue: _selectedStatus,
                             selectedItemBuilder: (BuildContext context) {
                               return _statusOptions.map<Widget>((
                                 String status,
@@ -641,6 +712,32 @@ class _EditAssetPageState extends State<EditAssetPage> {
                             ),
                           ),
                           child: const Text('Save Changes'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: Spacing.lg),
+
+                    // NEW: Delete Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.lg,
+                      ),
+                      child: Center(
+                        child: ElevatedButton(
+                          onPressed: () => _showDeleteConfirmation(context),
+                          style: ElevatedButton.styleFrom(
+                            // Use a warning color for deletion
+                            backgroundColor: Colors.red.shade700,
+                            foregroundColor: AppColors.sandyYellow,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.xl,
+                              vertical: Spacing.md,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(Radii.md),
+                            ),
+                          ),
+                          child: const Text('Delete Asset'),
                         ),
                       ),
                     ),
@@ -732,7 +829,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
           const SizedBox(height: Spacing.xs),
           DropdownButtonFormField<String>(
             // Use `value` for dynamic state tracking
-            value: currentValue,
+            initialValue: currentValue,
             // Removed top-level style as it was being ignored.
 
             // NEW: Use selectedItemBuilder to explicitly style the selected value text
