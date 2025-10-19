@@ -497,8 +497,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       });
 
       final dh = DataHandler.fromContext(context);
-      //TODO replace with endpoint when working
-      //await dh.clerkUpdateProfile(file);
+      await dh.clerkUpdateProfilePicture(file);
 
       // Bust local preview and force a Clerk refetch to get the new URL
       setState(() {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:clerk_flutter/clerk_flutter.dart';
@@ -7,6 +8,7 @@ import 'package:clerk_auth/clerk_auth.dart' as clerk;
 import 'package:http/http.dart' as http;
 import 'package:mobile_app/features/assets/data/asset.dart';
 import 'package:mobile_app/features/maintenance/data/maintenance_entry.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class DataHandler {
@@ -526,10 +528,21 @@ class DataHandler {
   Future<void> clerkDeleteProfilePicture() async {
     try {
       await auth.deleteUserImage();
-      // Refresh and emit updated profile (imageUrl will change)
       await clerkFetchProfile(force: true);
+      _emitClerk();
     } catch (e) {
       debugPrint('clerkDeleteProfilePicture error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> clerkUpdateProfilePicture(File file) async {
+    try {
+      await auth.updateUserImage(file);
+      await clerkFetchProfile(force: true);
+      _emitClerk();
+    } catch (e) {
+      debugPrint('clerkUpdateProfilePicture error: $e');
       rethrow;
     }
   }
