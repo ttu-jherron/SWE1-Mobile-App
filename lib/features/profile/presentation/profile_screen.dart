@@ -504,6 +504,9 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
         _localAvatarPreview = null;
       });
       await dh.clerkFetchProfile(force: true);
+
+      _startFetch();
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo updated')));
     } catch (e) {
@@ -522,6 +525,9 @@ class _ProfileScreenState extends State<ProfileScreen> with RouteAware {
       final dh = DataHandler.fromContext(context);
       await dh.clerkDeleteProfilePicture();
       await dh.clerkFetchProfile(force: true);
+
+      _startFetch();
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo removed')));
     } catch (e) {

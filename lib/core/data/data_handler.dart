@@ -526,8 +526,11 @@ class DataHandler {
   }
 
   Future<void> clerkDeleteProfilePicture() async {
+    // TODO does not immediately update for some reason
+    // However UpdateProfilePicture does work
     try {
       await auth.deleteUserImage();
+      await clerkRefreshUserData();
       await clerkFetchProfile(force: true);
       _emitClerk();
     } catch (e) {
