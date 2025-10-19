@@ -266,11 +266,12 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                                         return _MaintChip(
                                           dateLabel: _df.format(e.maintenanceDueDate),
                                           title: e.maintenanceTitle,
+                                          status: e.maintenanceStatus,
                                           onTap: () {
                                             Navigator.pushNamed(
                                               context,
-                                              AppRoutes.maintenanceDetail,
-                                              arguments: _asset.id,
+                                              AppRoutes.maintenanceEntryDetail,
+                                              arguments: e,
                                             );
                                           },
                                         );
@@ -343,7 +344,7 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                                 onPressed: () {
                                   Navigator.pushNamed(
                                     context,
-                                    AppRoutes.maintenanceDetail,
+                                    AppRoutes.assetMaintenance,
                                     arguments: _asset.id,
                                   );
                                 },
@@ -383,11 +384,13 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
 class _MaintChip extends StatelessWidget {
   final String dateLabel;
   final String title;
+  final String status;
   final VoidCallback onTap;
 
   const _MaintChip({
     required this.dateLabel,
     required this.title,
+    required this.status,
     required this.onTap,
   });
 
@@ -414,7 +417,17 @@ class _MaintChip extends StatelessWidget {
                 color: Colors.black12,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.build, color: AppColors.ebonyClay),
+              child: Icon(
+                Icons.build_circle,
+                color: status == 'Overdue'
+                    ? Colors.red
+                    : status == 'Completed'
+                        ? Colors.green
+                        : status == 'Upcoming'
+                            ? AppColors.darkGold
+                            : AppColors.ebonyClay,
+                size: 32,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

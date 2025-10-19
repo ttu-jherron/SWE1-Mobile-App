@@ -20,16 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool showAlert = true;
 
   @override
-  void initState() {
-    super.initState();
-    // Clear any snackbar that might still be queued from the previous screen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      messenger?.hideCurrentSnackBar(reason: SnackBarClosedReason.remove);
-    });
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Bind to DataHandler via AssetStore (subscribes and fetches once)

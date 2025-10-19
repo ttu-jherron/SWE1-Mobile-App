@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
-//import '../../../core/routing.dart';
+import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:intl/intl.dart';
 //import 'edit_maintenance.dart';
@@ -40,12 +40,14 @@ class MaintenanceScreen extends StatefulWidget {
 
 class _MaintenanceScreenState extends State<MaintenanceScreen> {
   FilterType selectedFilter = FilterType.all;
+  final _df = DateFormat('MMM dd, yyyy');
 
   @override
-  void initState() {
-    super.initState();
-    // Initialize maintenance store
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize and kick a fetch whenever we enter this route
     initializeMaintenanceStore(context);
+    maintenanceStore.refresh(force: false);
   }
 
   List<MaintenanceEntry> getFilteredTasks() {
@@ -63,203 +65,145 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   }
 
   List<MaintenanceEntry> get sortedTasksAsc {
-    List<MaintenanceEntry> filteredTasks = getFilteredTasks();
-    final tasksCopy = List<MaintenanceEntry>.from(filteredTasks);
+    final filtered = getFilteredTasks();
+    final tasksCopy = List<MaintenanceEntry>.from(filtered);
     tasksCopy.sort((a, b) => a.maintenanceDueDate.compareTo(b.maintenanceDueDate));
     return tasksCopy;
   }
-
-  //TODO: function for making the date
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: maintenanceStore,
       builder: (context, _) {
+        final items = sortedTasksAsc;
         return AppLayout(
-          currentIndex: 2, // Maintenance tab
+          currentIndex: 2,
           body: Padding(
-            padding: const EdgeInsets.all(32.0),
+            padding: const EdgeInsets.all(Spacing.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text("Maintenance",
+                    Text(
+                      "Maintenance",
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w800,
-                      ),
-                      textAlign: TextAlign.center,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
-                    //padding
-                    const SizedBox(width: Spacing.md),
-                    //addMaintenance button
+                    const Spacer(),
                     IconButton(
-                      onPressed: () {
-                        showModalBottomSheet(
+                      tooltip: 'Add maintenance',
+                      icon: const Icon(Icons.add_circle, color: AppColors.ebonyClay, size: 28),
+                      onPressed: () async {
+                        await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          useSafeArea: true,
+                          backgroundColor: Colors.white,
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                           ),
                           builder: (_) => const AddMaintenanceSheet(),
                         );
+                        // Refresh after closing sheet in case something changed
+                        maintenanceStore.refresh(force: true);
                       },
-                      icon: const Icon(Icons.add_circle, color: AppColors.ebonyClay, size: 28),
                     ),
+                  ],
+                ),
+                const SizedBox(height: Spacing.md),
 
-                  ],
-                ),
-                // FILTER BUTTONS
+                // Filter buttons
                 Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center ,
-                  alignment: WrapAlignment.spaceBetween,
+                  spacing: Spacing.lg,
                   children: [
-                    _buildFilterButton("All", FilterType.all),
-                    SizedBox(
-                      height: 50,
-                      child: const VerticalDivider(
-                        width: 35, // The space allocated for the divider
-                        thickness: 2, // The actual thickness of the line
-                        indent: 10, // Space from the top of the parent to the divider's start
-                        endIndent: 10, // Space from the bottom of the parent to the divider's end
-                        color: Colors.grey, // Color of the divider line
-                      ),),
-                    _buildFilterButton("Overdue", FilterType.overdue),
-                    SizedBox(
-                      height: 50,
-                      child: const VerticalDivider(
-                        width: 35, // The space allocated for the divider
-                        thickness: 2, // The actual thickness of the line
-                        indent: 10, // Space from the top of the parent to the divider's start
-                        endIndent: 10, // Space from the bottom of the parent to the divider's end
-                        color: Colors.grey, // Color of the divider line
-                      ),),
-                    _buildFilterButton("Upcoming", FilterType.upcoming),
-                    SizedBox(
-                      height: 50,
-                      child: const VerticalDivider(
-                        width: 35, // The space allocated for the divider
-                        thickness: 2, // The actual thickness of the line
-                        indent: 10, // Space from the top of the parent to the divider's start
-                        endIndent: 10, // Space from the bottom of the parent to the divider's end
-                        color: Colors.grey, // Color of the divider line
-                      ),),
-                    _buildFilterButton("History", FilterType.history),
+                    _buildFilterButton('All', FilterType.all),
+                    _buildFilterButton('Overdue', FilterType.overdue),
+                    _buildFilterButton('Upcoming', FilterType.upcoming),
+                    _buildFilterButton('History', FilterType.history),
                   ],
                 ),
-            
-                const SizedBox(height: 20),
-            
-                // LIST OF TASKS
-                Expanded( //everything will dissapear if this is removed
-                  child: sortedTasksAsc.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(
-                              Icons.build,
-                              size: 48,
-                              color: Color(0xFF9AA3AD),
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'No maintenance items yet.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Color(0xFF3C4652),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Add maintenance schedules to your assets.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Color(0xFF3C4652)),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(//makes it scroll
-                        itemCount: sortedTasksAsc.length,
-                        itemBuilder: (context, index) {
-                          final entry = sortedTasksAsc[index];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            //Due Date
-                            title:
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                              Flexible(
-                                child: Text(
-                                  DateFormat('MMM dd, yyyy').format(entry.maintenanceDueDate),
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    color: Colors.black87,
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  textAlign: TextAlign.start,
-                                  ),
-                              ),
-                              const SizedBox(width: Spacing.xs),
-                              if (entry.maintenanceStatus == 'Overdue')
-                                const Text("! Late", style: TextStyle(color: Colors.red)),
-                              if (entry.isCompleted) ...[
-                                const SizedBox(width: 5), // optional spacing
-                                Icon(Icons.check, color: Colors.green, size: 16),
-                                const SizedBox(width: 3),
-                                const Text("Completed", style: TextStyle(color: Colors.green)),
-                              ],
-                            ],),
-                            subtitle: Row(
-                              children: [
-                                Expanded(
-                                  child: RichText(
-                                    text:
-                                    TextSpan(
-                                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                        color: Colors.black87,
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w100,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      children: [
-                                        TextSpan(text: entry.maintenanceTitle),
-                                        WidgetSpan(
-                                          alignment: PlaceholderAlignment.middle,
-                                          child: //circle icon
-                                          SizedBox(
-                                            width: 22,
-                                            child: Center(
-                                              child: Icon(Icons.circle, color: AppColors.ebonyClay, size: 5)
+
+                const SizedBox(height: Spacing.lg),
+
+                // List
+                Expanded(
+                  child: items.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No maintenance found.',
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: items.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: Spacing.md),
+                          itemBuilder: (context, index) {
+                            final e = items[index];
+                            final statusColor = e.maintenanceStatus == 'Overdue'
+                                ? Colors.red
+                                : e.maintenanceStatus == 'Completed'
+                                    ? Colors.green
+                                    : e.maintenanceStatus == 'Upcoming'
+                                        ? AppColors.darkGold
+                                        : AppColors.ebonyClay;
+
+                            return InkWell(
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.maintenanceEntryDetail,
+                                  arguments: e,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(Spacing.md),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.black12),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.build_circle, color: statusColor),
+                                    const SizedBox(width: Spacing.md),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            e.maintenanceTitle,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.black87,
                                             ),
                                           ),
-                                        ),
-                                        //maintenance short description
-                                        TextSpan(text: entry.maintenanceDescription),
-                                      ]
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${_df.format(e.maintenanceDueDate)} • ${e.maintenanceStatus}',
+                                            style: TextStyle(color: statusColor),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    softWrap: true,
-                                  ),
+                                    const SizedBox(width: Spacing.sm),
+                                    const Icon(Icons.chevron_right, color: AppColors.ebonyClay),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                              ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
-          )
+          ),
         );
-      }
+      },
     );
   }
 
@@ -267,26 +211,19 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     final isSelected = selectedFilter == type;
     return TextButton(
       style: TextButton.styleFrom(
-        padding: EdgeInsets.zero, // removes all default padding
-        minimumSize: Size(0, 0),  // prevents extra space
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap, // tighter tap area
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(0, 0),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        foregroundColor: isSelected ? AppColors.ebonyClay : Colors.black45,
       ),
-      onPressed: () {
-        setState(() {
-          selectedFilter = type;
-        });
-      },
+      onPressed: () => setState(() => selectedFilter = type),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-          color: Colors.black87,
-          fontSize: TypographyScale.button,
-          fontWeight: FontWeight.w600,
-          decoration: isSelected ? TextDecoration.underline : TextDecoration.none,
-          decorationColor: Colors.black87,
-          decorationThickness: 2.0,
-        ),
         textAlign: TextAlign.center,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          decoration: isSelected ? TextDecoration.underline : TextDecoration.none,
+        ),
       ),
     );
   }

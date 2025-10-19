@@ -2,7 +2,7 @@ import 'package:mobile_app/features/maintenance/data/maintenance_store.dart';
 import '../../maintenance/data/maintenance_store.dart'; // where your burner assets live
 import 'asset.dart';
 
-// I added two more dummy assets and a required getAll() method to simulate fetching all
+// I added two more dummy assets and a required getAll() method to simulate fetching all 
 //assets for the list page.
 
 /// Burner in-memory repo. Swap for a real API later.
@@ -14,14 +14,13 @@ class AssetRepository {
       brand: 'Predator',
       title: '350 W Power Station',
       name: 'Predator 350 W Power Station',
-
+      
       // FIX: Added required fields (condition, store, price) and imagePath
       condition: 'New', // Default hardcoded condition
       //store: 'Harbor Freight Tools', // Default hardcoded store
       price: 349.99, // Default hardcoded price
       imagePath: 'assets/images/PredatorHippo.png',
-      category: 'Power Tools', // Add category
-
+      
       completionDate: DateTime(2025, 10, 1),
       shortDescription: 'Recharge Station',
       notes:
@@ -30,8 +29,7 @@ class AssetRepository {
         MaterialRow(tool: 'power supply cord', location: 'cord box'),
         MaterialRow(tool: 'solar panels', location: 'bottom garage shelf'),
       ],
-      favorite: true,
-      currentLocation: '',
+      favorite: true, currentLocation: '',
     ),
     //ADDED: Additional dummy assets for the list view
     'asset_002': Asset(
@@ -43,13 +41,11 @@ class AssetRepository {
       //store: 'Local Farm Auction',
       price: 15000.00,
       imagePath: 'assets/images/Tractor.png',
-      category: 'Farm Equipment', // Add category
       completionDate: DateTime(2024, 1, 1),
       shortDescription: 'Engine Oil Change',
       notes: 'Need to replace hydraulic lines soon.',
       requiredMaterials: [],
-      favorite: true,
-      currentLocation: '',
+      favorite: true, currentLocation: '',
     ),
     'asset_003': Asset(
       id: 'asset_003',
@@ -60,13 +56,11 @@ class AssetRepository {
       //store: 'Amazon',
       price: 699.00,
       imagePath: 'assets/images/HippoVacuumV2.png',
-      category: 'Home Appliances', // Add category
       completionDate: DateTime(2026, 6, 15),
       shortDescription: 'Filter cleaning',
       notes: 'Annual filter cleaning required.',
       requiredMaterials: [],
-      favorite: true,
-      currentLocation: '',
+      favorite: true, currentLocation: '',
       //currentLocation: "Living Room",
     ),
   };
@@ -80,7 +74,7 @@ class AssetRepository {
     }
     return a;
   }
-
+  
   //ADDED: Method to get all assets for the list page
   List<Asset> getAll() => List.unmodifiable(_items.values);
 
@@ -88,3 +82,4 @@ class AssetRepository {
 }
 
 final assetRepository = AssetRepository();
+

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'maintenance_entry.dart';
@@ -30,26 +31,53 @@ class MaintenanceStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> update(MaintenanceEntry entry) async {
+    final patch = {
+      'maintenanceTitle': entry.maintenanceTitle,
+      'maintenanceDescription': entry.maintenanceDescription,
+      'maintenanceDueDate': entry.maintenanceDueDate.toIso8601String(),
+      'maintenanceStatus': entry.maintenanceStatus,
+      'costPaid': entry.costPaid,
+      'recurrenceInterval': entry.recurrenceInterval,
+      'recurrenceUnit': entry.recurrenceUnit,
+      'requiredTools': entry.requiredTools,
+      'toolLocation': entry.toolLocation,
+      'isCompleted': entry.isCompleted,
+    };
+    await _dataHandler.updateMaintenance(maintenanceId: entry.id, patch: patch);
+    await refresh(force: true);
+  }
+
   List<MaintenanceEntry> getAll() {
     return _dataHandler.cachedMaintenance ?? [];
   }
+
+  // Optional: expose a manual refresh
+  Future<void> refresh({bool force = true}) async {
+    await _dataHandler.getMaintenance(force: force);
+    notifyListeners();
+  }
 }
 
-  // TODO: Initialize with proper context injection when used in widgets
-  // For now, create a factory method to initialize with context
-  MaintenanceStore createMaintenanceStore(BuildContext context) {
-    return MaintenanceStore(DataHandler.fromContext(context));
-  }
+// TODO: Initialize with proper context injection when used in widgets
+// For now, create a factory method to initialize with context
+MaintenanceStore createMaintenanceStore(BuildContext context) {
+  return MaintenanceStore(DataHandler.fromContext(context));
+}
 
-  // Temporary global instance - will be replaced with proper dependency injection
-  MaintenanceStore? _maintenanceStore;
-  MaintenanceStore get maintenanceStore {
-    if (_maintenanceStore == null) {
-      throw Exception('MaintenanceStore not initialized. Call initializeMaintenanceStore(context) first.');
-    }
-    return _maintenanceStore!;
+// Temporary global instance - will be replaced with proper dependency injection
+MaintenanceStore? _maintenanceStore;
+MaintenanceStore get maintenanceStore {
+  if (_maintenanceStore == null) {
+    throw Exception('MaintenanceStore not initialized. Call initializeMaintenanceStore(context) first.');
   }
+  return _maintenanceStore!;
+}
 
-  void initializeMaintenanceStore(BuildContext context) {
-    _maintenanceStore ??= MaintenanceStore(DataHandler.fromContext(context));
+void initializeMaintenanceStore(BuildContext context) {
+  if (_maintenanceStore == null) {
+    _maintenanceStore = MaintenanceStore(DataHandler.fromContext(context));
+    // Kick initial fetch so UI has data
+    unawaited(_maintenanceStore!._dataHandler.getMaintenance(force: false));
   }
+}
