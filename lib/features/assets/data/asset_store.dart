@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mobile_app/core/data/data_handler.dart';
 import 'asset.dart';
@@ -65,6 +64,20 @@ class AssetStore extends ChangeNotifier {
     await _dh?.markAssetFavorite(getById(assetId), value);
   }
 
+// MODIFIED: Accept a DataHandler directly, safer when context is volatile
+  Future<void> deleteAsset(String assetId, {DataHandler? dataHandler}) async {
+    final handler = dataHandler ?? _dh;
+    
+    if (handler == null) {
+      throw StateError(
+        'AssetStore is not bound to a DataHandler. Ensure bind(context) is called '
+        'or pass a DataHandler directly.',
+      );
+    }
+    await handler.deleteAsset(assetId);
+    // DataHandler should stream the new list, which will then notifyListeners() here
+  }
+
   @override
   void dispose() {
     _sub?.cancel();
@@ -74,3 +87,4 @@ class AssetStore extends ChangeNotifier {
 
 // Simple global for now.
 final assetStore = AssetStore();
+

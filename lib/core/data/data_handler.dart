@@ -355,6 +355,66 @@ class DataHandler {
     }
   }
 
+  // Helper to remove an asset locally and update the stream (List-based)
+  void _removeAssetById(String id) {
+    final originalLength = _cachedAssets?.length;
+    _cachedAssets?.removeWhere((asset) => asset.id == id);
+    
+    // Only update the stream if something was actually removed
+    if (_cachedAssets!.length < originalLength!) {
+      _assetsController.add(_cachedAssets!); 
+    }
+  }
+
+  Future<String?> _getClerkUserId() async {
+    final auth = _subscribedAuth;
+    final u = auth?.user;
+    return u?.id;
+  }
+
+  // Public method to delete the asset on the backend 
+  Future<void> deleteAsset(String assetId) async {
+    // Use the authentication helper
+    final clerkId = await _getClerkUserId();
+    if (clerkId == null) {
+      throw Exception('User not authenticated for asset deletion.');
+    }
+
+    final uri = Uri.parse('$_globalBaseUrl/users/$clerkId/assets/$assetId');
+
+    http.Response res;
+    try {
+      res = await _client.delete(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-User-Id': clerkId,
+        },
+      );
+    } catch (e) {
+      debugPrint('DeleteAsset network error: $e');
+      throw Exception('Network error while deleting asset: $e');
+    }
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      debugPrint('DeleteAsset failed: ${res.statusCode} - ${res.body}');
+      throw Exception(
+        'Failed to delete asset: ${res.statusCode} - ${res.body}',
+      );
+    }
+
+    // On successful deletion from the backend, remove it from local cache
+    _removeAssetById(assetId);
+
+    // Refresh profile data if needed 
+    try {
+      // await _refreshBackendProfileForUser(clerkId);
+    } catch (e) {
+      debugPrint('Profile refresh failed after asset deletion: $e');
+    }
+  }
+
   // ================== Activity / Context ==================
   void markActivity() {
     _lastActivity = DateTime.now();
@@ -431,14 +491,14 @@ class DataHandler {
       prof = await clerkFetchProfile(force: true);
     }
 
-    String _get(Map m, String a, String b) =>
+    String get(Map m, String a, String b) =>
         (m[a] ?? m[b] ?? '').toString();
 
     final body = <String, dynamic>{
-      'first_name': (firstName ?? _get(prof, 'firstName', 'first_name')).trim(),
-      'last_name': (lastName ?? _get(prof, 'lastName', 'last_name')).trim(),
-      'username': (username ?? _get(prof, 'username', 'username')).trim(),
-      'email_address': (emailAddress ?? _get(prof, 'email', 'email_address')).trim(),
+      'first_name': (firstName ?? get(prof, 'firstName', 'first_name')).trim(),
+      'last_name': (lastName ?? get(prof, 'lastName', 'last_name')).trim(),
+      'username': (username ?? get(prof, 'username', 'username')).trim(),
+      'email_address': (emailAddress ?? get(prof, 'email', 'email_address')).trim(),
       if (password != null && password.trim().isNotEmpty)
         'password': password.trim(),
     };
