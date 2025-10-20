@@ -96,157 +96,198 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
   Widget build(BuildContext context) {
     return AppLayout(
       currentIndex: 2,
-      body: Column(
-        children: [
-          // Top bar styled like myassets.dart
-          Container(
-            height: MediaQuery.of(context).size.height * 0.13,
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(30, 30, 4, 10),
-            alignment: Alignment.topLeft,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Editable Title (auto-size)
-                Expanded(
-                  flex: 2,
-                  child: !_editingTitle
-                      ? AutoSizeText(
-                          _titleController.text,
-                          style: const TextStyle(
-                            color: AppColors.ebonyClay,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          minFontSize: 16,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : SizedBox(
-                          height: 36,
-                          child: TextField(
-                            controller: _titleController,
-                            autofocus: true,
+      body: Container(
+        color: const Color(0xFFF5F5F5), // Match View Asset background
+        child: Column(
+          children: [
+            // Top bar with contrast
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.fromLTRB(30, 20, 4, 8), // Reduced bottom padding
+              alignment: Alignment.topLeft,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: !_editingTitle
+                        ? AutoSizeText(
+                            _titleController.text,
                             style: const TextStyle(
                               color: AppColors.ebonyClay,
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
                             ),
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-                              border: OutlineInputBorder(),
+                            maxLines: 1,
+                            minFontSize: 16,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : SizedBox(
+                            height: 36,
+                            child: TextField(
+                              controller: _titleController,
+                              autofocus: true,
+                              style: const TextStyle(
+                                color: AppColors.ebonyClay,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+                                border: OutlineInputBorder(),
+                              ),
+                              onSubmitted: (_) {
+                                setState(() {
+                                  _editingTitle = false;
+                                  _saveField('title');
+                                });
+                              },
                             ),
-                            onSubmitted: (_) {
-                              setState(() {
-                                _editingTitle = false;
-                                _saveField('title');
-                              });
-                            },
                           ),
-                        ),
-                ),
-                IconButton(
-                  icon: Icon(_editingTitle ? Icons.check : Icons.edit, color: Colors.black54, size: 22),
-                  tooltip: _editingTitle ? 'Save' : 'Edit',
-                  onPressed: () {
-                    setState(() {
-                      if (_editingTitle) _saveField('title');
-                      _editingTitle = !_editingTitle;
-                    });
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(
-                    Icons.close,
-                    color: AppColors.ebonyClay,
-                    size: 32,
                   ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-          ),
-          // Main content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.xl, vertical: Spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Asset Name as plain text
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: Spacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Asset Name',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_currentEntry.brandName} ${_currentEntry.productName}',
-                          style: const TextStyle(
-                            color: AppColors.ebonyClay, // matches editable field value
-                            fontSize: 15,                // matches editable field value
-                          ),
-                          maxLines: 2,
-                          softWrap: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Description (editable)
-                  _InlineEditableField(
-                    label: 'Description',
-                    controller: _descriptionController,
-                    onSave: () => _saveField('description'),
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: Spacing.lg),
-                  _InlineEditableDateField(
-                    label: 'Due Date',
-                    date: _dueDate,
-                    onPick: () async {
-                      await _pickDate();
-                      _saveField('dueDate');
-                    },
-                  ),
-                  const SizedBox(height: Spacing.lg),
-                  _InlineEditableField(
-                    label: 'Cost Paid',
-                    controller: _costController,
-                    onSave: () => _saveField('cost'),
-                    keyboardType: TextInputType.number,
-                    prefix: '\$',
-                  ),
-                  const SizedBox(height: Spacing.lg),
-                  _InlineEditableCheckbox(
-                    label: 'Completed',
-                    value: _isCompleted,
-                    onChanged: (val) {
+                  IconButton(
+                    icon: Icon(_editingTitle ? Icons.check : Icons.edit, color: Colors.black54, size: 22),
+                    tooltip: _editingTitle ? 'Save' : 'Edit',
+                    onPressed: () {
                       setState(() {
-                        _isCompleted = val ?? false;
-                        _saveField('completed');
+                        if (_editingTitle) _saveField('title');
+                        _editingTitle = !_editingTitle;
                       });
                     },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
-                  const SizedBox(height: Spacing.lg),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.ebonyClay,
+                      size: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
+            // Main content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.xl, vertical: Spacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Remove extra gap here!
+                    // Colored status above asset name
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Spacing.lg, top: 0),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
+                        decoration: BoxDecoration(
+                          color: _currentEntry.maintenanceStatus == 'Overdue'
+                              ? Colors.red.withOpacity(0.1)
+                              : _currentEntry.maintenanceStatus == 'Completed'
+                                  ? Colors.green.withOpacity(0.1)
+                                  : _currentEntry.maintenanceStatus == 'Upcoming'
+                                      ? AppColors.darkGold.withOpacity(0.1)
+                                      : AppColors.ebonyClay.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _currentEntry.maintenanceStatus,
+                          style: TextStyle(
+                            color: _currentEntry.maintenanceStatus == 'Overdue'
+                                ? Colors.red
+                                : _currentEntry.maintenanceStatus == 'Completed'
+                                    ? Colors.green
+                                    : _currentEntry.maintenanceStatus == 'Upcoming'
+                                        ? AppColors.darkGold
+                                        : AppColors.ebonyClay,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Asset Name as plain text
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Spacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Asset Name',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black87,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_currentEntry.brandName} ${_currentEntry.productName}',
+                            style: const TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: 15,
+                            ),
+                            maxLines: 2,
+                            softWrap: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Description (editable)
+                    _InlineEditableField(
+                      label: 'Description',
+                      controller: _descriptionController,
+                      onSave: () => _saveField('description'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: Spacing.lg),
+                    _InlineEditableDateField(
+                      label: 'Due Date',
+                      date: _dueDate,
+                      onPick: () async {
+                        await _pickDate();
+                        _saveField('dueDate');
+                      },
+                    ),
+                    const SizedBox(height: Spacing.lg),
+                    _InlineEditableField(
+                      label: 'Cost Paid',
+                      controller: _costController,
+                      onSave: () => _saveField('cost'),
+                      keyboardType: TextInputType.number,
+                      prefix: '\$',
+                    ),
+                    const SizedBox(height: Spacing.lg),
+                    _InlineEditableCheckbox(
+                      label: 'Completed',
+                      value: _isCompleted,
+                      onChanged: (val) {
+                        setState(() {
+                          _isCompleted = val ?? false;
+                          _saveField('completed');
+                        });
+                      },
+                    ),
+                    const SizedBox(height: Spacing.lg),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      )
     );
   }
 }
