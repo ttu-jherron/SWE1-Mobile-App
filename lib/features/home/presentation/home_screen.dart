@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_app/core/colors.dart';
 import 'package:mobile_app/core/data/data_handler.dart';
 import 'package:mobile_app/features/assets/data/asset.dart';
+import 'package:mobile_app/features/maintenance/data/maintenance_entry.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/constants.dart';
 import '../../../core/routing.dart';
@@ -59,22 +60,20 @@ class _HomeScreenState extends State<HomeScreen> {
         final List<Asset> favorites =
             assets.where((a) => a.favorite == true).toList(growable: false);
         final maintenanceEntries = maintenanceStore.getAll();
-        final maintenanceItems = maintenanceEntries
-            .map((entry) => MaintenanceItem.fromMaintenanceEntry(entry))
-            .toList();
 
-        final upcomingItems = maintenanceItems
-            .where((item) => item.maintenanceStatus == 'Upcoming')
+        // Use localStatus for filtering
+        final upcomingEntries = maintenanceEntries
+            .where((entry) => entry.localStatus == 'Upcoming')
             .toList();
 
         // Count overdue items
-        final overdueCount = maintenanceItems
-            .where((item) => item.maintenanceStatus == 'Overdue')
+        final overdueCount = maintenanceEntries
+            .where((entry) => entry.localStatus == 'Overdue')
             .length;
 
         final maxCards = 10;
-        final showMore = upcomingItems.length > maxCards;
-        final visibleItems = showMore ? upcomingItems.take(maxCards).toList() : upcomingItems;
+        final showMore = upcomingEntries.length > maxCards;
+        final visibleEntries = showMore ? upcomingEntries.take(maxCards).toList() : upcomingEntries;
 
         return AppLayout(
           currentIndex: 0, // Home tab
@@ -114,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: Spacing.md),
                 SizedBox(
                   height: 92,
-                  child: upcomingItems.isEmpty
+                  child: upcomingEntries.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -144,10 +143,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: showMore ? visibleItems.length + 1 : visibleItems.length,
+                          itemCount: showMore ? visibleEntries.length + 1 : visibleEntries.length,
                           separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
                           itemBuilder: (ctx, i) {
-                            if (showMore && i == visibleItems.length) {
+                            if (showMore && i == visibleEntries.length) {
                               // Show More Card
                               return InkWell(
                                 onTap: () {
@@ -187,17 +186,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
                             }
-                            final item = visibleItems[i];
-                            final asset = assetStore.getById(item.assetId);
+                            final entry = visibleEntries[i];
+                            final asset = assetStore.getById(entry.assetId);
 
                             return MaintenanceCard(
-                              item: item,
+                              item: MaintenanceItem.fromMaintenanceEntry(entry),
                               asset: asset,
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
                                   AppRoutes.maintenanceEntryDetail,
-                                  arguments: maintenanceEntries.firstWhere((e) => e.id == item.id),
+                                  arguments: entry,
                                 );
                               },
                             );
