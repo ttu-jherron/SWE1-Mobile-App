@@ -70,6 +70,7 @@ class _EditAssetPageState extends State<EditAssetPage> {
     _priceController = TextEditingController(
       text: widget.asset.price.toStringAsFixed(2),
     );
+    // Use imagePath directly since Asset does not have 'images'
     _imagePath = widget.asset.imagePath;
     // Prefill category/status/favorite where possible
     _categoryController.text = widget.asset.category; // Load category from asset
@@ -444,10 +445,15 @@ Future<void> _deleteAsset() async {
                               width: 2,
                             ),
                             image: _imagePath != null
-                                ? DecorationImage(
-                                    image: FileImage(File(_imagePath!)),
-                                    fit: BoxFit.cover,
-                                  )
+                                ? (_imagePath!.startsWith('http')
+                                    ? DecorationImage(
+                                        image: NetworkImage(_imagePath!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : DecorationImage(
+                                        image: FileImage(File(_imagePath!)),
+                                        fit: BoxFit.cover,
+                                      ))
                                 : null,
                           ),
                           child: _imagePath == null
