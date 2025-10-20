@@ -78,12 +78,12 @@ class MaintenanceCard extends StatelessWidget {
                         child: AutoSizeText(
                           item.maintenanceTitle,
                           maxLines: 1,
-                          minFontSize: 10,
+                          minFontSize: 12,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
-                            fontSize: 13,
+                            decoration: TextDecoration.none, // <-- Add this line
                           ),
                         ),
                       ),

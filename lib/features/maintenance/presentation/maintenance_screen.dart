@@ -21,13 +21,19 @@ class MaintenanceScreen extends StatefulWidget {
 }
 
 class _MaintenanceScreenState extends State<MaintenanceScreen> {
-  FilterType selectedFilter = FilterType.all;
+  String _selectedFilter = 'All'; // or whatever your default is
   String? selectedAssetId;
   final _df = DateFormat('MMM dd, yyyy');
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['filter'] != null) {
+      setState(() {
+        _selectedFilter = args['filter'];
+      });
+    }
     initializeMaintenanceStore(context);
     maintenanceStore.refresh(force: false);
   }
@@ -39,12 +45,12 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     } else {
       allEntries = maintenanceStore.getAll();
     }
-    switch (selectedFilter) {
-      case FilterType.overdue:
+    switch (_selectedFilter) {
+      case 'Overdue':
         return allEntries.where((entry) => entry.maintenanceStatus == 'Overdue').toList();
-      case FilterType.upcoming:
+      case 'Upcoming':
         return allEntries.where((entry) => entry.maintenanceStatus == 'Upcoming').toList();
-      case FilterType.completed:
+      case 'Completed':
         return allEntries.where((entry) => entry.maintenanceStatus == 'Completed').toList();
       default:
         return allEntries;
@@ -166,10 +172,10 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 Wrap(
                   spacing: Spacing.lg,
                   children: [
-                    _buildFilterButton('All', FilterType.all),
-                    _buildFilterButton('Overdue', FilterType.overdue),
-                    _buildFilterButton('Upcoming', FilterType.upcoming),
-                    _buildFilterButton('Completed', FilterType.completed),
+                    _buildFilterButton('All', 'All'),
+                    _buildFilterButton('Overdue', 'Overdue'),
+                    _buildFilterButton('Upcoming', 'Upcoming'),
+                    _buildFilterButton('Completed', 'Completed'),
                   ],
                 ),
 
@@ -255,8 +261,8 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     );
   }
 
-  Widget _buildFilterButton(String text, FilterType type) {
-    final isSelected = selectedFilter == type;
+  Widget _buildFilterButton(String text, String filter) {
+    final isSelected = _selectedFilter == filter;
     return TextButton(
       style: TextButton.styleFrom(
         padding: EdgeInsets.zero,
@@ -264,7 +270,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         foregroundColor: isSelected ? AppColors.ebonyClay : Colors.black45,
       ),
-      onPressed: () => setState(() => selectedFilter = type),
+      onPressed: () => setState(() => _selectedFilter = filter),
       child: Text(
         text,
         textAlign: TextAlign.center,

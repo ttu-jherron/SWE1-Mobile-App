@@ -20,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool showAlert = true;
+  bool _showOverdueBanner = true;
 
   @override
   void initState() {
@@ -87,11 +88,28 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (showAlert && overdueCount > 0)
-                  AlertBanner(
-                    title: 'Important',
-                    message: 'You have $overdueCount overdue maintenance item${overdueCount == 1 ? '' : 's'}.',
-                    onClose: () => setState(() => showAlert = false),
+                if (overdueCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Spacing.lg),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.maintenance,
+                          arguments: {'filter': 'Overdue'},
+                        );
+                      },
+                      child: AlertBanner(
+                        message: 'You have $overdueCount overdue maintenance tasks. '
+                            'Tap to view them, or tap the X to dismiss.',
+                        onClose: () {
+                          setState(() {
+                            _showOverdueBanner = false;
+                          });
+                        }, title: 'Important',
+                      ),
+                    ),
                   ),
                 const SizedBox(height: Spacing.xl),
 
