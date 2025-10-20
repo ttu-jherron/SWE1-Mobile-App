@@ -72,8 +72,8 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
     final initial = _dueDate ?? now;
     final picked = await showDatePicker(
       context: context,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 3),
+      firstDate: DateTime(now.year, now.month, now.day), // today
+      lastDate: DateTime(now.year + 100),
       initialDate: initial,
     );
     if (picked != null) setState(() => _dueDate = picked);
@@ -95,7 +95,7 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
       maintenanceDueDate: _dueDate!,
       maintenanceTitle: _titleController.text.trim(),
       maintenanceDescription: _descriptionController.text.trim(),
-      maintenanceStatus: _selectedStatus!,
+      maintenanceStatus: 'Upcoming',
       preserveFromPrior: false,
       isCompleted: false,
     );
@@ -216,24 +216,6 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
                 ),
               ),
               const SizedBox(height: Spacing.md),
-
-              // Maintenance Status
-              DropdownButtonFormField<String>(
-                value: _selectedStatus,
-                items: const [
-                  DropdownMenuItem(value: 'Upcoming', child: Text('Upcoming')),
-                  DropdownMenuItem(value: 'Completed', child: Text('Completed')),
-                  DropdownMenuItem(value: 'Overdue', child: Text('Overdue')),
-                ],
-                onChanged: (value) => setState(() => _selectedStatus = value),
-                decoration: const InputDecoration(
-                  labelText: 'Maintenance Status',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) => v == null ? 'Select a status' : null,
-              ),
-              const SizedBox(height: Spacing.md),
-
 
 
               Align(
