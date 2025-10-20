@@ -62,149 +62,161 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
         final items = sortedTasksAsc;
         // Get asset name from assetStore
         final asset = assetStore.getById(widget.assetId);
-        final assetName = '${asset.brand} ${asset.name}';
 
         return AppLayout(
           currentIndex: 2,
-          body: Padding(
-            padding: const EdgeInsets.all(Spacing.xl),
+          body: Container(
+            color: const Color(0xFFF5F5F5), // Match ViewAssetPage background
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header row
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                      tooltip: 'Back',
-                      padding: EdgeInsets.zero, // Remove extra padding
-                      constraints: const BoxConstraints(), // Remove extra constraints
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
+                // Top bar like in ViewAssetPage
+                SafeArea(
+                  bottom: false,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF6F8FA), // Light gray for contrast
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Maintenance",
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w800,
+                    padding: const EdgeInsets.fromLTRB(30, 24, 8, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            asset.name,
+                            maxLines: 2,
+                            softWrap: true,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      tooltip: 'Add maintenance',
-                      icon: const Icon(Icons.add_circle, color: AppColors.ebonyClay, size: 28),
-                      onPressed: () async {
-                        await showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: const Color(0xFF2A323F),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppColors.ebonyClay,
+                            size: 32,
                           ),
-                          builder: (_) => const AddMaintenanceSheet(),
-                        );
-                        maintenanceStore.refresh(force: true);
-                      },
-                    ),
-                  ],
-                ),
-                // Smaller asset name below header
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 12),
-                  child: Text(
-                    assetName,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w500,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-
-                // Filter buttons
-                Wrap(
-                  spacing: Spacing.lg,
-                  children: [
-                    _buildFilterButton('All', FilterType.all),
-                    _buildFilterButton('Overdue', FilterType.overdue),
-                    _buildFilterButton('Upcoming', FilterType.upcoming),
-                    _buildFilterButton('Completed', FilterType.completed),
-                  ],
-                ),
-
-                const SizedBox(height: Spacing.lg),
-
-                // List
+                // Content
                 Expanded(
-                  child: items.isEmpty
-                      ? const Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(Spacing.xl),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title below top bar
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
                           child: Text(
-                            'No maintenance found for this asset.',
-                            style: TextStyle(color: Colors.black54),
+                            "Maintenance",
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w800,
+                                ),
                           ),
-                        )
-                      : ListView.separated(
-                          itemCount: items.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: Spacing.md),
-                          itemBuilder: (context, index) {
-                            final e = items[index];
-                            final statusColor = e.maintenanceStatus == 'Overdue'
-                                ? Colors.red
-                                : e.maintenanceStatus == 'Completed'
-                                    ? Colors.green
-                                    : e.maintenanceStatus == 'Upcoming'
-                                        ? AppColors.darkGold
-                                        : AppColors.ebonyClay;
-
-                            return InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.maintenanceEntryDetail,
-                                  arguments: e,
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(Spacing.md),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.black12),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(Icons.build_circle, color: statusColor),
-                                    const SizedBox(width: Spacing.md),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            e.maintenanceTitle,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${_df.format(e.maintenanceDueDate)} • ${e.maintenanceStatus}',
-                                            style: TextStyle(color: statusColor),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: Spacing.sm),
-                                    const Icon(Icons.chevron_right, color: AppColors.ebonyClay),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
                         ),
+                        // Filter buttons
+                        Wrap(
+                          spacing: Spacing.lg,
+                          children: [
+                            _buildFilterButton('All', FilterType.all),
+                            _buildFilterButton('Overdue', FilterType.overdue),
+                            _buildFilterButton('Upcoming', FilterType.upcoming),
+                            _buildFilterButton('Completed', FilterType.completed),
+                          ],
+                        ),
+                        const SizedBox(height: Spacing.lg),
+                        // List
+                        Expanded(
+                          child: items.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    'No maintenance found for this asset.',
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  itemCount: items.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: Spacing.md),
+                                  itemBuilder: (context, index) {
+                                    final e = items[index];
+                                    final statusColor = e.maintenanceStatus == 'Overdue'
+                                        ? Colors.red
+                                        : e.maintenanceStatus == 'Completed'
+                                            ? Colors.green
+                                            : e.maintenanceStatus == 'Upcoming'
+                                                ? AppColors.darkGold
+                                                : AppColors.ebonyClay;
+
+                                    return InkWell(
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          AppRoutes.maintenanceEntryDetail,
+                                          arguments: e,
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(Spacing.md),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.black12),
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(Icons.build_circle, color: statusColor),
+                                            const SizedBox(width: Spacing.md),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    e.maintenanceTitle,
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.w700,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    '${_df.format(e.maintenanceDueDate)} • ${e.maintenanceStatus}',
+                                                    style: TextStyle(color: statusColor),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: Spacing.sm),
+                                            const Icon(Icons.chevron_right, color: AppColors.ebonyClay),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
