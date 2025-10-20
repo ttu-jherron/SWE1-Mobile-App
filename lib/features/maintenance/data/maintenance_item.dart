@@ -13,8 +13,6 @@ class MaintenanceItem {
   final String maintenanceStatus;
   final bool preserveFromPrior;
   final bool isCompleted;
-  final int recurrenceUnit;
-  final int recurrenceInterval;
 
   MaintenanceItem({
     required this.id,
@@ -29,8 +27,6 @@ class MaintenanceItem {
     required this.maintenanceStatus,
     required this.preserveFromPrior,
     required this.isCompleted,
-    required this.recurrenceUnit,
-    required this.recurrenceInterval,
   });
 
   factory MaintenanceItem.fromJson(Map<String, dynamic> json) {
@@ -47,8 +43,6 @@ class MaintenanceItem {
       maintenanceStatus: json['maintenanceStatus'] as String,
       preserveFromPrior: json['preserveFromPrior'] as bool,
       isCompleted: json['isCompleted'] as bool,
-      recurrenceUnit: json['recurrenceUnit'] as int,
-      recurrenceInterval: json['recurrenceInterval'] as int,
     );
   }
 
@@ -66,8 +60,6 @@ class MaintenanceItem {
       'maintenanceStatus': maintenanceStatus,
       'preserveFromPrior': preserveFromPrior,
       'isCompleted': isCompleted,
-      'recurrenceUnit': recurrenceUnit,
-      'recurrenceInterval': recurrenceInterval,
     };
   }
 
@@ -85,8 +77,6 @@ class MaintenanceItem {
       maintenanceStatus: entry.maintenanceStatus,
       preserveFromPrior: entry.preserveFromPrior,
       isCompleted: entry.isCompleted,
-      recurrenceUnit: entry.recurrenceUnit,
-      recurrenceInterval: entry.recurrenceInterval,
     );
   }
 }

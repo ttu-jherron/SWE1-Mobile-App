@@ -38,8 +38,6 @@ class MaintenanceStore extends ChangeNotifier {
       'maintenanceDueDate': entry.maintenanceDueDate.toIso8601String(),
       'maintenanceStatus': entry.maintenanceStatus,
       'costPaid': entry.costPaid,
-      'recurrenceInterval': entry.recurrenceInterval,
-      'recurrenceUnit': entry.recurrenceUnit,
       'isCompleted': entry.isCompleted,
     };
     await _dataHandler.updateMaintenance(maintenanceId: entry.id, patch: patch);

@@ -9,7 +9,7 @@ import 'add_maintenance_sheet.dart';
 import '../data/maintenance_store.dart';
 import '../data/maintenance_entry.dart';
 
-enum FilterType { all, overdue, upcoming, history }
+enum FilterType { all, overdue, upcoming, completed }
 DateTime now = DateTime.now();
 DateTime date = DateTime(now.year, now.month, now.day);
 
@@ -19,7 +19,7 @@ class Task {
   final DateTime date;
   final bool isOverdue;
   final bool isUpcoming;
-  final bool isHistory;
+  final bool isCompleted;
 
   Task({
     required this.title,
@@ -27,7 +27,7 @@ class Task {
     required this.date,
     this.isOverdue = false,
     this.isUpcoming = false,
-    this.isHistory = false,
+    this.isCompleted = false,
   });
 }
 
@@ -57,7 +57,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
         return allEntries.where((entry) => entry.maintenanceStatus == 'Overdue').toList();
       case FilterType.upcoming:
         return allEntries.where((entry) => entry.maintenanceStatus == 'Upcoming').toList();
-      case FilterType.history:
+      case FilterType.completed:
         return allEntries.where((entry) => entry.isCompleted).toList();
       default:
         return allEntries;
@@ -123,7 +123,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                     _buildFilterButton('All', FilterType.all),
                     _buildFilterButton('Overdue', FilterType.overdue),
                     _buildFilterButton('Upcoming', FilterType.upcoming),
-                    _buildFilterButton('History', FilterType.history),
+                    _buildFilterButton('Completed', FilterType.completed),
                   ],
                 ),
 

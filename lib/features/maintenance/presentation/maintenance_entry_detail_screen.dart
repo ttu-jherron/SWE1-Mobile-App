@@ -102,10 +102,6 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
             _buildDetailRow('Cost Paid', '\$${_currentEntry.costPaid.toStringAsFixed(2)}'),
             const SizedBox(height: Spacing.md),
 
-            // Recurrence
-            _buildDetailRow('Recurrence', '${_currentEntry.recurrenceInterval} ${_currentEntry.recurrenceUnit}'),
-            const SizedBox(height: Spacing.md),
-
             // Completed
             _buildDetailRow('Completed', _currentEntry.isCompleted ? 'Yes' : 'No'),
             const SizedBox(height: Spacing.xl),

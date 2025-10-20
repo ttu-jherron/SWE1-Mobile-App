@@ -28,7 +28,7 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
   DateTime? _dueDate = DateTime.now();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String? _selectedStatus = 'Pending';
+  String? _selectedStatus = 'Upcoming';
 
   List<Asset> _assets = [];
   bool _isLoadingAssets = true;
@@ -98,9 +98,6 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
       maintenanceStatus: _selectedStatus!,
       preserveFromPrior: false,
       isCompleted: false,
-      // TODO recurrence
-      recurrenceUnit: 0,
-      recurrenceInterval: 0,
     );
 
     try {
@@ -224,8 +221,7 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
               DropdownButtonFormField<String>(
                 value: _selectedStatus,
                 items: const [
-                  DropdownMenuItem(value: 'Pending', child: Text('Pending')),
-                  DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
+                  DropdownMenuItem(value: 'Upcoming', child: Text('Upcoming')),
                   DropdownMenuItem(value: 'Completed', child: Text('Completed')),
                   DropdownMenuItem(value: 'Overdue', child: Text('Overdue')),
                 ],

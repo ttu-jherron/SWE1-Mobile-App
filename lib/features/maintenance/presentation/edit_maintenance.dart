@@ -55,8 +55,6 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
     _dueDate = _entry!.maintenanceDueDate;
     _dueDateController.text = DateFormat('MMM dd, yyyy').format(_entry!.maintenanceDueDate);
     _costController.text = _entry!.costPaid.toString();
-    _recurrenceIntervalController.text = _entry!.recurrenceInterval.toString();
-    _recurrenceUnitController.text = _entry!.recurrenceUnit.toString();
     _selectedStatus = _entry!.maintenanceStatus;
     _isCompleted = _entry!.isCompleted;
   }
@@ -121,8 +119,6 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
       maintenanceStatus: _selectedStatus ?? _entry!.maintenanceStatus,
       preserveFromPrior: _entry!.preserveFromPrior,
       isCompleted: _isCompleted,
-      recurrenceUnit: int.tryParse(_recurrenceUnitController.text) ?? _entry!.recurrenceUnit,
-      recurrenceInterval: int.tryParse(_recurrenceIntervalController.text) ?? _entry!.recurrenceInterval,
     );
 
     try {

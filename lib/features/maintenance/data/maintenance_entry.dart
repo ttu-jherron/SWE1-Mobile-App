@@ -27,14 +27,6 @@ String _asString(dynamic v, {String fallback = ''}) {
   return v.toString();
 }
 
-List<String> _asStringList(dynamic v) {
-  if (v == null) return const [];
-  if (v is List) {
-    return v.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
-  }
-  return const [];
-}
-
 DateTime _asDate(dynamic v) {
   if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
   if (v is int) {
@@ -65,8 +57,6 @@ class MaintenanceEntry {
   final String maintenanceStatus;
   final bool preserveFromPrior;
   final bool isCompleted;
-  final int recurrenceUnit;
-  final int recurrenceInterval;
 
   MaintenanceEntry({
     required this.id,
@@ -81,8 +71,6 @@ class MaintenanceEntry {
     required this.maintenanceStatus,
     required this.preserveFromPrior,
     required this.isCompleted,
-    required this.recurrenceUnit,
-    required this.recurrenceInterval,
   });
 
   factory MaintenanceEntry.fromJson(Map<String, dynamic> json) {
@@ -102,8 +90,6 @@ class MaintenanceEntry {
       maintenanceStatus: _asString(json['maintenanceStatus'] ?? json['status']),
       preserveFromPrior: _asBool(json['preserveFromPrior']),
       isCompleted: _asBool(json['isCompleted'] ?? json['completed']),
-      recurrenceUnit: _asInt(json['recurrenceUnit']),
-      recurrenceInterval: _asInt(json['recurrenceInterval']),
     );
   }
 
@@ -121,8 +107,6 @@ class MaintenanceEntry {
       'maintenanceStatus': maintenanceStatus,
       'preserveFromPrior': preserveFromPrior,
       'isCompleted': isCompleted,
-      'recurrenceUnit': recurrenceUnit,
-      'recurrenceInterval': recurrenceInterval,
     };
   }
 }
