@@ -145,7 +145,7 @@ class MaintenanceDetailScreen extends StatelessWidget {
                       },
                       style: TextButton.styleFrom(
                         backgroundColor: AppColors.ebonyClay,
-                        foregroundColor: AppColors.sandyYellow,
+                        foregroundColor: AppColors.darkGold,
                         padding: const EdgeInsets.symmetric(
                           horizontal: Spacing.xl,
                           vertical: Spacing.sm,

@@ -1,3 +1,57 @@
+// Helpers (top-level)
+int _asInt(dynamic v, {int fallback = 0}) {
+  if (v == null) return fallback;
+  if (v is int) return v;
+  if (v is double) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? fallback;
+  return fallback;
+}
+
+double _asDouble(dynamic v, {double fallback = 0.0}) {
+  if (v == null) return fallback;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v) ?? fallback;
+  return fallback;
+}
+
+bool _asBool(dynamic v, {bool fallback = false}) {
+  if (v == null) return fallback;
+  if (v is bool) return v;
+  if (v is int) return v != 0;
+  if (v is String) return v.toLowerCase() == 'true';
+  return fallback;
+}
+
+String _asString(dynamic v, {String fallback = ''}) {
+  if (v == null) return fallback;
+  return v.toString();
+}
+
+List<String> _asStringList(dynamic v) {
+  if (v == null) return const [];
+  if (v is List) {
+    return v.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+  }
+  return const [];
+}
+
+DateTime _asDate(dynamic v) {
+  if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+  if (v is int) {
+    // Heuristic: seconds vs milliseconds
+    return v > 2000000000
+        ? DateTime.fromMillisecondsSinceEpoch(v).toLocal()
+        : DateTime.fromMillisecondsSinceEpoch(v * 1000).toLocal();
+  }
+  if (v is String) {
+    final iso = DateTime.tryParse(v);
+    if (iso != null) return iso.toLocal();
+    final n = int.tryParse(v);
+    if (n != null) return _asDate(n);
+  }
+  return DateTime.fromMillisecondsSinceEpoch(0);
+}
+
 class MaintenanceEntry {
   final String id;
   final String assetId;
@@ -38,24 +92,27 @@ class MaintenanceEntry {
   });
 
   factory MaintenanceEntry.fromJson(Map<String, dynamic> json) {
+    // Allow alternate key names and nulls
+    final dueRaw = json['maintenanceDueDate'] ?? json['dueDate'] ?? json['due_date'];
+
     return MaintenanceEntry(
-      id: json['id'] as String,
-      assetId: json['assetId'] as String,
-      brandName: json['brandName'] as String,
-      productName: json['productName'] as String,
-      purchaseLocation: json['purchaseLocation'] as String,
-      assetCategory: json['assetCategory'] as String,
-      costPaid: (json['costPaid'] as num).toDouble(),
-      maintenanceDueDate: DateTime.parse(json['maintenanceDueDate'] as String),
-      maintenanceTitle: json['maintenanceTitle'] as String,
-      maintenanceDescription: json['maintenanceDescription'] as String,
-      maintenanceStatus: json['maintenanceStatus'] as String,
-      preserveFromPrior: json['preserveFromPrior'] as bool,
-      isCompleted: json['isCompleted'] as bool,
-      requiredTools: List<String>.from(json['requiredTools'] as List),
-      toolLocation: json['toolLocation'] as String,
-      recurrenceUnit: json['recurrenceUnit'] as int,
-      recurrenceInterval: json['recurrenceInterval'] as int,
+      id: _asString(json['id'] ?? json['_id']),
+      assetId: _asString(json['assetId'] ?? json['asset_id']),
+      brandName: _asString(json['brandName']),
+      productName: _asString(json['productName']),
+      purchaseLocation: _asString(json['purchaseLocation']),
+      assetCategory: _asString(json['assetCategory']),
+      costPaid: _asDouble(json['costPaid']),
+      maintenanceDueDate: _asDate(dueRaw),
+      maintenanceTitle: _asString(json['maintenanceTitle'] ?? json['title']),
+      maintenanceDescription: _asString(json['maintenanceDescription'] ?? json['description']),
+      maintenanceStatus: _asString(json['maintenanceStatus'] ?? json['status']),
+      preserveFromPrior: _asBool(json['preserveFromPrior']),
+      isCompleted: _asBool(json['isCompleted'] ?? json['completed']),
+      requiredTools: _asStringList(json['requiredTools']),
+      toolLocation: _asString(json['toolLocation']),
+      recurrenceUnit: _asInt(json['recurrenceUnit']),
+      recurrenceInterval: _asInt(json['recurrenceInterval']),
     );
   }
 

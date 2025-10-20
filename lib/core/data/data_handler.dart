@@ -879,20 +879,17 @@ class DataHandler {
   static final _maintenanceController =
       StreamController<List<MaintenanceEntry>>.broadcast();
 
-  Stream<List<MaintenanceEntry>> get maintenanceStream =>
-      _maintenanceController.stream;
+  Stream<List<MaintenanceEntry>> get maintenanceStream => _maintenanceController.stream;
   List<MaintenanceEntry>? get cachedMaintenance => _cachedMaintenance;
 
   bool _maintenanceSoftExpired() {
     if (_maintenanceFetchedAt == null) return true;
-    return DateTime.now().difference(_maintenanceFetchedAt!) >
-        _maintenanceSoftTtl;
+    return DateTime.now().difference(_maintenanceFetchedAt!) > _maintenanceSoftTtl;
   }
 
   bool _maintenanceHardExpired() {
     if (_maintenanceFetchedAt == null) return true;
-    return DateTime.now().difference(_maintenanceFetchedAt!) >
-        _maintenanceHardTtl;
+    return DateTime.now().difference(_maintenanceFetchedAt!) > _maintenanceHardTtl;
   }
 
   void invalidateMaintenance() {
@@ -924,23 +921,18 @@ class DataHandler {
           final decoded = jsonDecode(res.body);
           if (decoded is List) {
             final list = decoded
-                .map<MaintenanceEntry>(
-                  (e) => MaintenanceEntry.fromJson(
-                    Map<String, dynamic>.from(e as Map<dynamic, dynamic>),
-                  ),
-                )
+                .map<MaintenanceEntry?>((e) {
+                  try { return MaintenanceEntry.fromJson(e as Map<String, dynamic>); }
+                  catch (err) { debugPrint('Skip bad maintenance item: $err'); return null; }
+                })
+                .whereType<MaintenanceEntry>()
                 .toList();
-            final changed = !_listShallowEqualsMaintenance(
-              _cachedMaintenance,
-              list,
-            );
+            final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
             _cachedMaintenance = list;
             _maintenanceFetchedAt = DateTime.now();
             if (changed) _emitMaintenance();
           } else {
-            debugPrint(
-              'DataHandler: Maintenance payload not a list (${res.body})',
-            );
+            debugPrint('DataHandler: Maintenance payload not a list (${res.body})');
           }
         } else if (res.statusCode == 401 || res.statusCode == 403) {
           debugPrint(
@@ -966,10 +958,7 @@ class DataHandler {
     return _inFlightMaintenance!;
   }
 
-  bool _listShallowEqualsMaintenance(
-    List<MaintenanceEntry>? a,
-    List<MaintenanceEntry>? b,
-  ) {
+  bool _listShallowEqualsMaintenance(List<MaintenanceEntry>? a, List<MaintenanceEntry>? b) {
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
     if (identical(a, b)) return true;
@@ -1008,11 +997,22 @@ class DataHandler {
   Future<void> addMaintenance(MaintenanceEntry entry) async {
     final clerkId = user?.id;
     if (clerkId == null) {
+      debugPrint('CMD: [addMaintenance] User not authenticated');
+      print('CMD: [addMaintenance] User not authenticated');
       throw Exception("User not authenticated");
     }
 
-    final uri = _buildUri('/maintenance');
-    final body = entry.toJson();
+    // According to API docs, creating a maintenance record requires the assetId
+    // to be supplied in the URL: POST /assets/{assetId}/maintenance
+    final assetId = entry.assetId;
+    final uri = _buildUri('/assets/$assetId/maintenance');
+
+    // The API expects the assetId in the path, not in the body. Remove id and assetId
+    // from the serialized body when creating.
+    final bodyMap = Map<String, dynamic>.from(entry.toJson())..remove('assetId')..remove('id');
+
+    debugPrint('CMD: [addMaintenance] POST $uri with body: $bodyMap');
+    print('CMD: [addMaintenance] POST $uri with body: $bodyMap');
 
     final res = await _client.post(
       uri,
@@ -1021,22 +1021,166 @@ class DataHandler {
         'Accept': 'application/json',
         'X-User-Id': clerkId,
       },
-      body: jsonEncode(body),
+      body: jsonEncode(bodyMap),
     );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      debugPrint('AddMaintenance failed: ${res.statusCode} - ${res.body}');
+      debugPrint('CMD: [addMaintenance] failed: ${res.statusCode} - ${res.body}');
+      print('CMD: [addMaintenance] failed: ${res.statusCode} - ${res.body}');
       throw Exception('Failed to add maintenance: ${res.statusCode}');
     }
 
-    debugPrint('Maintenance added successfully: ${res.body}');
+    debugPrint('CMD: [addMaintenance] Maintenance added successfully: ${res.body}');
+    print('CMD: [addMaintenance] Maintenance added successfully: ${res.body}');
 
     try {
       final decoded = jsonDecode(res.body);
       if (decoded is Map<String, dynamic>) {
         _mergeOrInsertMaintenance(MaintenanceEntry.fromJson(decoded));
+        debugPrint('CMD: [addMaintenance] Inserted new maintenance entry into cache.');
+        print('CMD: [addMaintenance] Inserted new maintenance entry into cache.');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CMD: [addMaintenance] Error decoding response: $e');
+      print('CMD: [addMaintenance] Error decoding response: $e');
+    }
+
+    // Force a refresh of all maintenance from backend to ensure UI is up to date
+    try {
+      debugPrint('CMD: [addMaintenance] Forcing maintenance refresh after add.');
+      print('CMD: [addMaintenance] Forcing maintenance refresh after add.');
+      await getMaintenance(force: true, staleOk: false);
+    } catch (e) {
+      debugPrint('CMD: [addMaintenance] Error during maintenance refresh: $e');
+      print('CMD: [addMaintenance] Error during maintenance refresh: $e');
+    }
+  }
+
+  /// Update an existing maintenance record using PATCH.
+  /// The API exposes PATCH /maintenance/{maintenanceId} for partial updates.
+  Future<void> updateMaintenance({
+    required String maintenanceId,
+    required Map<String, dynamic> patch,
+  }) async {
+    final clerkId = user?.id;
+    if (clerkId == null) {
+      debugPrint('CMD: [updateMaintenance] User not authenticated');
+      print('CMD: [updateMaintenance] User not authenticated');
+      throw Exception('User not authenticated');
+    }
+
+    final uri = _buildUri('/maintenance/$maintenanceId');
+
+    debugPrint('CMD: [updateMaintenance] PATCH $uri with patch: $patch');
+    print('CMD: [updateMaintenance] PATCH $uri with patch: $patch');
+
+    final res = await _client.patch(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-User-Id': clerkId,
+      },
+      body: jsonEncode(patch),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      debugPrint('CMD: [updateMaintenance] failed: ${res.statusCode} - ${res.body}');
+      print('CMD: [updateMaintenance] failed: ${res.statusCode} - ${res.body}');
+      throw Exception('Failed to update maintenance: ${res.statusCode}');
+    }
+
+    try {
+      final decoded = jsonDecode(res.body);
+      if (decoded is Map<String, dynamic>) {
+        _mergeOrInsertMaintenance(MaintenanceEntry.fromJson(decoded));
+        debugPrint('CMD: [updateMaintenance] Updated maintenance entry in cache.');
+        print('CMD: [updateMaintenance] Updated maintenance entry in cache.');
+      }
+    } catch (e) {
+      debugPrint('CMD: [updateMaintenance] Error decoding response: $e');
+      print('CMD: [updateMaintenance] Error decoding response: $e');
+    }
+  }
+
+  /// Fetch maintenance records for a specific asset: GET /assets/{assetId}/maintenance
+  Future<List<MaintenanceEntry>> getMaintenanceForAsset(String assetId,
+      {bool force = false, bool staleOk = true}) async {
+    markActivity();
+    final uid = user?.id;
+    if (uid == null) throw Exception('User not authenticated');
+
+    // Shortcut: if we already have maintenance cached and not forced, reuse it.
+    if (!force && _cachedMaintenance != null) {
+      final softExpired = _maintenanceSoftExpired();
+      final hardExpired = _maintenanceHardExpired();
+
+      if (!softExpired) return _cachedMaintenance!;
+      if (softExpired && !hardExpired && staleOk) {
+        // fire-and-forget refresh
+        _fetchMaintenanceForAsset(uid, assetId);
+        return _cachedMaintenance!;
+      }
+    }
+
+    return await _fetchMaintenanceForAsset(uid, assetId);
+  }
+
+  Future<List<MaintenanceEntry>> _fetchMaintenanceForAsset(String userId, String assetId) {
+    // Not deduping in-flight per-asset for simplicity; reuse the global in-flight when present.
+    if (_inFlightMaintenance != null) return _inFlightMaintenance!;
+
+    final uri = _buildUri('/assets/$assetId/maintenance');
+
+    _inFlightMaintenance = () async {
+      try {
+        final res = await _client
+            .get(
+              uri,
+              headers: {'Accept': 'application/json', 'X-User-Id': userId},
+            )
+            .timeout(const Duration(seconds: 8));
+
+        if (res.statusCode == 200) {
+          final decoded = jsonDecode(res.body);
+          if (decoded is List) {
+            final list = decoded
+                .map<MaintenanceEntry?>((e) {
+                  try { return MaintenanceEntry.fromJson(e as Map<String, dynamic>); }
+                  catch (err) { debugPrint('Skip bad maintenance item: $err'); return null; }
+                })
+                .whereType<MaintenanceEntry>()
+                .toList();
+            final changed = !_listShallowEqualsMaintenance(_cachedMaintenance, list);
+            _cachedMaintenance = list;
+            _maintenanceFetchedAt = DateTime.now();
+            if (changed) _emitMaintenance();
+          } else {
+            debugPrint('DataHandler: Maintenance payload not a list (${res.body})');
+          }
+        } else if (res.statusCode == 401 || res.statusCode == 403) {
+          debugPrint(
+            'DataHandler: Unauthorized maintenance fetch (${res.statusCode})',
+          );
+          if (_cachedMaintenance == null) {
+            throw Exception('Unauthorized');
+          }
+        } else {
+          debugPrint('DataHandler: Maintenance fetch failed ${res.statusCode}');
+          if (_cachedMaintenance == null) {
+            throw Exception('Failed to fetch maintenance: ${res.statusCode}');
+          }
+        }
+      } catch (e) {
+        debugPrint('DataHandler: Maintenance fetch error $e (uri=$uri)');
+        if (_cachedMaintenance == null) rethrow;
+      } finally {
+        _inFlightMaintenance = null;
+      }
+      return _cachedMaintenance ?? <MaintenanceEntry>[];
+    }();
+
+    return _inFlightMaintenance!;
   }
 
   void _mergeOrInsertMaintenance(MaintenanceEntry entry) {

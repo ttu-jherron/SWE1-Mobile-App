@@ -123,7 +123,8 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
 
     return SafeArea(
       child: SingleChildScrollView(
-        child: Padding(
+        child: Container(
+          color: AppColors.ebonyClay,
           padding: const EdgeInsets.fromLTRB(Spacing.xl, Spacing.lg, Spacing.xl, Spacing.xl),
           child: Form(
             key: _formKey,
