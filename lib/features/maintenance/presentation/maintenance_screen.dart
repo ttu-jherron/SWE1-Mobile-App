@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/assets/data/asset_store.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/routing.dart';
 import '../../../core/layout/app_layout.dart';
 import 'package:intl/intl.dart';
-//import 'edit_maintenance.dart';
 import 'add_maintenance_sheet.dart';
 import '../data/maintenance_store.dart';
 import '../data/maintenance_entry.dart';
@@ -12,24 +12,6 @@ import '../data/maintenance_entry.dart';
 enum FilterType { all, overdue, upcoming, completed }
 DateTime now = DateTime.now();
 DateTime date = DateTime(now.year, now.month, now.day);
-
-class Task {
-  final String title;
-  final String description;
-  final DateTime date;
-  final bool isOverdue;
-  final bool isUpcoming;
-  final bool isCompleted;
-
-  Task({
-    required this.title,
-    required this.description,
-    required this.date,
-    this.isOverdue = false,
-    this.isUpcoming = false,
-    this.isCompleted = false,
-  });
-}
 
 class MaintenanceScreen extends StatefulWidget {
   const MaintenanceScreen({super.key});
@@ -40,18 +22,23 @@ class MaintenanceScreen extends StatefulWidget {
 
 class _MaintenanceScreenState extends State<MaintenanceScreen> {
   FilterType selectedFilter = FilterType.all;
+  String? selectedAssetId;
   final _df = DateFormat('MMM dd, yyyy');
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize and kick a fetch whenever we enter this route
     initializeMaintenanceStore(context);
     maintenanceStore.refresh(force: false);
   }
 
   List<MaintenanceEntry> getFilteredTasks() {
-    final allEntries = maintenanceStore.getAll();
+    List<MaintenanceEntry> allEntries;
+    if (selectedAssetId != null) {
+      allEntries = maintenanceStore.allFor(selectedAssetId!);
+    } else {
+      allEntries = maintenanceStore.getAll();
+    }
     switch (selectedFilter) {
       case FilterType.overdue:
         return allEntries.where((entry) => entry.maintenanceStatus == 'Overdue').toList();
@@ -71,12 +58,45 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     return tasksCopy;
   }
 
+  Future<void> _selectAsset() async {
+    final assets = assetStore.all;
+    final chosen = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return SimpleDialog(
+          title: const Text('Select Asset'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text('All Assets'),
+            ),
+            ...assets().map((asset) => SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, asset.id),
+              child: Text('${asset.brand} ${asset.name}'),
+            )),
+          ],
+        );
+      },
+    );
+    setState(() {
+      selectedAssetId = chosen;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: maintenanceStore,
       builder: (context, _) {
         final items = sortedTasksAsc;
+        String assetName;
+        if (selectedAssetId == null) {
+          assetName = 'All Assets';
+        } else {
+          final asset = assetStore.getById(selectedAssetId!);
+          assetName = asset != null ? '${asset.brand} ${asset.name}' : 'Unknown Asset';
+        }
+
         return AppLayout(
           currentIndex: 2,
           body: Padding(
@@ -108,13 +128,39 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                           ),
                           builder: (_) => const AddMaintenanceSheet(),
                         );
-                        // Refresh after closing sheet in case something changed
                         maintenanceStore.refresh(force: true);
                       },
                     ),
                   ],
                 ),
-                const SizedBox(height: Spacing.md),
+                // Clickable asset name below header
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 12),
+                  child: TextButton(
+                    onPressed: _selectAsset,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      foregroundColor: Colors.black54,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          assetName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit, size: 16, color: Colors.black38),
+                      ],
+                    ),
+                  ),
+                ),
 
                 // Filter buttons
                 Wrap(
@@ -132,10 +178,12 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                 // List
                 Expanded(
                   child: items.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
-                            'No maintenance found.',
-                            style: TextStyle(color: Colors.black54),
+                            selectedAssetId == null
+                              ? 'No maintenance found.'
+                              : 'No maintenance found for this asset.',
+                            style: const TextStyle(color: Colors.black54),
                           ),
                         )
                       : ListView.separated(
