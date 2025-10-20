@@ -429,53 +429,53 @@ Future<void> _deleteAsset() async {
                   children: [
                     // Image Picker
                     GestureDetector(
-                      onTap: _pickImage, // Calls the modal selection
-                      // FIX: Added horizontal padding here to match field padding
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Spacing.lg,
-                        ),
-                        child: Container(
-                          height: 150,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(Radii.md),
-                            border: Border.all(
-                              color: AppColors.sandyYellow,
-                              width: 2,
+                      onTap: _pickImage,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            height: 150,
+                            width: 200,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(Radii.md),
+                              border: Border.all(
+                                color: AppColors.sandyYellow,
+                                width: 2,
+                              ),
+                              image: _imagePath != null
+                                  ? (_imagePath!.startsWith('http')
+                                      ? DecorationImage(
+                                          image: NetworkImage(_imagePath!),
+                                          fit: BoxFit.contain, // <-- Show whole image
+                                        )
+                                      : DecorationImage(
+                                          image: FileImage(File(_imagePath!)),
+                                          fit: BoxFit.contain, // <-- Show whole image
+                                        ))
+                                  : null,
                             ),
-                            image: _imagePath != null
-                                ? (_imagePath!.startsWith('http')
-                                    ? DecorationImage(
-                                        image: NetworkImage(_imagePath!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : DecorationImage(
-                                        image: FileImage(File(_imagePath!)),
-                                        fit: BoxFit.cover,
-                                      ))
+                            child: _imagePath == null
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(
+                                        Icons.add_a_photo,
+                                        color: AppColors.ebonyClay,
+                                        size: 40,
+                                      ),
+                                      SizedBox(height: Spacing.sm),
+                                      Text(
+                                        'Tap to Change Image',
+                                        style: TextStyle(
+                                          color: AppColors.ebonyClay,
+                                        ),
+                                      ),
+                                    ],
+                                  )
                                 : null,
                           ),
-                          child: _imagePath == null
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(
-                                      Icons.add_a_photo,
-                                      color: AppColors.ebonyClay,
-                                      size: 40,
-                                    ),
-                                    SizedBox(height: Spacing.sm),
-                                    Text(
-                                      'Tap to Change Image',
-                                      style: TextStyle(
-                                        color: AppColors.ebonyClay,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : null,
-                        ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: Spacing.lg),
