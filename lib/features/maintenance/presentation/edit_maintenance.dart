@@ -57,8 +57,6 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
     _costController.text = _entry!.costPaid.toString();
     _recurrenceIntervalController.text = _entry!.recurrenceInterval.toString();
     _recurrenceUnitController.text = _entry!.recurrenceUnit.toString();
-    _requiredToolsController.text = _entry!.requiredTools.join(', ');
-    _toolLocationController.text = _entry!.toolLocation;
     _selectedStatus = _entry!.maintenanceStatus;
     _isCompleted = _entry!.isCompleted;
   }
@@ -115,7 +113,6 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
       assetId: _entry!.assetId,
       brandName: _entry!.brandName,
       productName: _entry!.productName,
-      purchaseLocation: _entry!.purchaseLocation,
       assetCategory: _entry!.assetCategory,
       costPaid: double.tryParse(_costController.text) ?? _entry!.costPaid,
       maintenanceDueDate: _dueDate ?? _entry!.maintenanceDueDate,
@@ -124,8 +121,6 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
       maintenanceStatus: _selectedStatus ?? _entry!.maintenanceStatus,
       preserveFromPrior: _entry!.preserveFromPrior,
       isCompleted: _isCompleted,
-      requiredTools: _requiredToolsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-      toolLocation: _toolLocationController.text.trim(),
       recurrenceUnit: int.tryParse(_recurrenceUnitController.text) ?? _entry!.recurrenceUnit,
       recurrenceInterval: int.tryParse(_recurrenceIntervalController.text) ?? _entry!.recurrenceInterval,
     );

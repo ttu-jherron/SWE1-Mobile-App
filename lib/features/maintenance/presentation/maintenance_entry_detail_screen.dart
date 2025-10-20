@@ -94,10 +94,6 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
             _buildDetailRow('Asset', '${_currentEntry.brandName} ${_currentEntry.productName}'),
             const SizedBox(height: Spacing.md),
 
-            // Purchase Location
-            _buildDetailRow('Purchase Location', _currentEntry.purchaseLocation),
-            const SizedBox(height: Spacing.md),
-
             // Category
             _buildDetailRow('Category', _currentEntry.assetCategory),
             const SizedBox(height: Spacing.md),
@@ -109,18 +105,6 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
             // Recurrence
             _buildDetailRow('Recurrence', '${_currentEntry.recurrenceInterval} ${_currentEntry.recurrenceUnit}'),
             const SizedBox(height: Spacing.md),
-
-            // Required Tools
-            if (_currentEntry.requiredTools.isNotEmpty) ...[
-              _buildDetailRow('Required Tools', _currentEntry.requiredTools.join(', ')),
-              const SizedBox(height: Spacing.md),
-            ],
-
-            // Tool Location
-            if (_currentEntry.toolLocation.isNotEmpty) ...[
-              _buildDetailRow('Tool Location', _currentEntry.toolLocation),
-              const SizedBox(height: Spacing.md),
-            ],
 
             // Completed
             _buildDetailRow('Completed', _currentEntry.isCompleted ? 'Yes' : 'No'),

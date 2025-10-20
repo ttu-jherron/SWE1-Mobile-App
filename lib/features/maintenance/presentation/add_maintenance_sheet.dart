@@ -83,23 +83,22 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
     if (!_formKey.currentState!.validate()) return;
     if (_assetId == null || _dueDate == null) return;
 
+    Asset asset = assetStore.getById(_assetId!);
     final id = 'm_${DateTime.now().millisecondsSinceEpoch}';
     final entry = MaintenanceEntry(
       id: id,
       assetId: _assetId!,
-      brandName: '',
-      productName: '',
-      purchaseLocation: '',
-      assetCategory: '',
-      costPaid: 0.0,
+      brandName: asset.brand,
+      productName: asset.name,
+      assetCategory: asset.category,
+      costPaid: asset.price,
       maintenanceDueDate: _dueDate!,
       maintenanceTitle: _titleController.text.trim(),
       maintenanceDescription: _descriptionController.text.trim(),
       maintenanceStatus: _selectedStatus!,
       preserveFromPrior: false,
       isCompleted: false,
-      requiredTools: [],
-      toolLocation: '',
+      // TODO recurrence
       recurrenceUnit: 0,
       recurrenceInterval: 0,
     );

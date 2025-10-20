@@ -5,7 +5,6 @@ class MaintenanceItem {
   final String assetId;
   final String brandName;
   final String productName;
-  final String purchaseLocation;
   final String assetCategory;
   final double costPaid;
   final DateTime maintenanceDueDate;
@@ -14,8 +13,6 @@ class MaintenanceItem {
   final String maintenanceStatus;
   final bool preserveFromPrior;
   final bool isCompleted;
-  final List<String> requiredTools;
-  final String toolLocation;
   final int recurrenceUnit;
   final int recurrenceInterval;
 
@@ -24,7 +21,6 @@ class MaintenanceItem {
     required this.assetId,
     required this.brandName,
     required this.productName,
-    required this.purchaseLocation,
     required this.assetCategory,
     required this.costPaid,
     required this.maintenanceDueDate,
@@ -33,8 +29,6 @@ class MaintenanceItem {
     required this.maintenanceStatus,
     required this.preserveFromPrior,
     required this.isCompleted,
-    required this.requiredTools,
-    required this.toolLocation,
     required this.recurrenceUnit,
     required this.recurrenceInterval,
   });
@@ -45,7 +39,6 @@ class MaintenanceItem {
       assetId: json['assetId'] as String,
       brandName: json['brandName'] as String,
       productName: json['productName'] as String,
-      purchaseLocation: json['purchaseLocation'] as String,
       assetCategory: json['assetCategory'] as String,
       costPaid: (json['costPaid'] as num).toDouble(),
       maintenanceDueDate: DateTime.parse(json['maintenanceDueDate'] as String),
@@ -54,8 +47,6 @@ class MaintenanceItem {
       maintenanceStatus: json['maintenanceStatus'] as String,
       preserveFromPrior: json['preserveFromPrior'] as bool,
       isCompleted: json['isCompleted'] as bool,
-      requiredTools: List<String>.from(json['requiredTools'] as List),
-      toolLocation: json['toolLocation'] as String,
       recurrenceUnit: json['recurrenceUnit'] as int,
       recurrenceInterval: json['recurrenceInterval'] as int,
     );
@@ -67,7 +58,6 @@ class MaintenanceItem {
       'assetId': assetId,
       'brandName': brandName,
       'productName': productName,
-      'purchaseLocation': purchaseLocation,
       'assetCategory': assetCategory,
       'costPaid': costPaid,
       'maintenanceDueDate': maintenanceDueDate.toIso8601String(),
@@ -76,8 +66,6 @@ class MaintenanceItem {
       'maintenanceStatus': maintenanceStatus,
       'preserveFromPrior': preserveFromPrior,
       'isCompleted': isCompleted,
-      'requiredTools': requiredTools,
-      'toolLocation': toolLocation,
       'recurrenceUnit': recurrenceUnit,
       'recurrenceInterval': recurrenceInterval,
     };
@@ -89,7 +77,6 @@ class MaintenanceItem {
       assetId: entry.assetId,
       brandName: entry.brandName,
       productName: entry.productName,
-      purchaseLocation: entry.purchaseLocation,
       assetCategory: entry.assetCategory,
       costPaid: entry.costPaid,
       maintenanceDueDate: entry.maintenanceDueDate,
@@ -98,8 +85,6 @@ class MaintenanceItem {
       maintenanceStatus: entry.maintenanceStatus,
       preserveFromPrior: entry.preserveFromPrior,
       isCompleted: entry.isCompleted,
-      requiredTools: entry.requiredTools,
-      toolLocation: entry.toolLocation,
       recurrenceUnit: entry.recurrenceUnit,
       recurrenceInterval: entry.recurrenceInterval,
     );

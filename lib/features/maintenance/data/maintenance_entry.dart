@@ -57,7 +57,6 @@ class MaintenanceEntry {
   final String assetId;
   final String brandName;
   final String productName;
-  final String purchaseLocation;
   final String assetCategory;
   final double costPaid;
   final DateTime maintenanceDueDate;
@@ -66,8 +65,6 @@ class MaintenanceEntry {
   final String maintenanceStatus;
   final bool preserveFromPrior;
   final bool isCompleted;
-  final List<String> requiredTools;
-  final String toolLocation;
   final int recurrenceUnit;
   final int recurrenceInterval;
 
@@ -76,7 +73,6 @@ class MaintenanceEntry {
     required this.assetId,
     required this.brandName,
     required this.productName,
-    required this.purchaseLocation,
     required this.assetCategory,
     required this.costPaid,
     required this.maintenanceDueDate,
@@ -85,8 +81,6 @@ class MaintenanceEntry {
     required this.maintenanceStatus,
     required this.preserveFromPrior,
     required this.isCompleted,
-    required this.requiredTools,
-    required this.toolLocation,
     required this.recurrenceUnit,
     required this.recurrenceInterval,
   });
@@ -100,7 +94,6 @@ class MaintenanceEntry {
       assetId: _asString(json['assetId'] ?? json['asset_id']),
       brandName: _asString(json['brandName']),
       productName: _asString(json['productName']),
-      purchaseLocation: _asString(json['purchaseLocation']),
       assetCategory: _asString(json['assetCategory']),
       costPaid: _asDouble(json['costPaid']),
       maintenanceDueDate: _asDate(dueRaw),
@@ -109,8 +102,6 @@ class MaintenanceEntry {
       maintenanceStatus: _asString(json['maintenanceStatus'] ?? json['status']),
       preserveFromPrior: _asBool(json['preserveFromPrior']),
       isCompleted: _asBool(json['isCompleted'] ?? json['completed']),
-      requiredTools: _asStringList(json['requiredTools']),
-      toolLocation: _asString(json['toolLocation']),
       recurrenceUnit: _asInt(json['recurrenceUnit']),
       recurrenceInterval: _asInt(json['recurrenceInterval']),
     );
@@ -122,7 +113,6 @@ class MaintenanceEntry {
       'assetId': assetId,
       'brandName': brandName,
       'productName': productName,
-      'purchaseLocation': purchaseLocation,
       'assetCategory': assetCategory,
       'costPaid': costPaid,
       'maintenanceDueDate': maintenanceDueDate.toIso8601String(),
@@ -131,8 +121,6 @@ class MaintenanceEntry {
       'maintenanceStatus': maintenanceStatus,
       'preserveFromPrior': preserveFromPrior,
       'isCompleted': isCompleted,
-      'requiredTools': requiredTools,
-      'toolLocation': toolLocation,
       'recurrenceUnit': recurrenceUnit,
       'recurrenceInterval': recurrenceInterval,
     };

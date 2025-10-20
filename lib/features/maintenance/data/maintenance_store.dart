@@ -40,8 +40,6 @@ class MaintenanceStore extends ChangeNotifier {
       'costPaid': entry.costPaid,
       'recurrenceInterval': entry.recurrenceInterval,
       'recurrenceUnit': entry.recurrenceUnit,
-      'requiredTools': entry.requiredTools,
-      'toolLocation': entry.toolLocation,
       'isCompleted': entry.isCompleted,
     };
     await _dataHandler.updateMaintenance(maintenanceId: entry.id, patch: patch);
