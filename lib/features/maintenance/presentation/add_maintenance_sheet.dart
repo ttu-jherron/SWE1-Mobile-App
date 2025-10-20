@@ -123,6 +123,8 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
 
     return SafeArea(
       child: SingleChildScrollView(
+        // ADD this padding to shift content above keyboard
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
           color: AppColors.ebonyClay,
           padding: const EdgeInsets.fromLTRB(Spacing.xl, Spacing.lg, Spacing.xl, Spacing.xl),
