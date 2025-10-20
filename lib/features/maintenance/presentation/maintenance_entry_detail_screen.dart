@@ -266,6 +266,52 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
                       },
                     ),
                     const SizedBox(height: Spacing.lg),
+
+                    // Delete Maintenance Button
+                    Center(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.delete, color: Color(0xFFF5F5F5)), // softer white
+                        label: const Text('Delete Maintenance'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFB71C1C), // dark red
+                          foregroundColor: const Color(0xFFF5F5F5), // softer white
+                          padding: const EdgeInsets.symmetric(horizontal: Spacing.xl, vertical: Spacing.md),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(Radii.md),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete Maintenance'),
+                              content: const Text('Are you sure you want to delete this maintenance entry? This cannot be undone.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: const Text('Delete', style: TextStyle(color: Color(0xFFB71C1C))), // dark red
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            try {
+                              final dh = DataHandler.fromContext(context);
+                              await dh.deleteMaintenance(_currentEntry.id);
+                              Navigator.of(context).pop(true); // Pop and trigger refresh
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to delete: $e')),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),

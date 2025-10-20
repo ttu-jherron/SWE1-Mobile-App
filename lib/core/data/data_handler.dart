@@ -1250,4 +1250,39 @@ class DataHandler {
       await getMaintenance(force: true);
     }
   }
+
+  Future<void> deleteMaintenance(String maintenanceId) async {
+  final clerkId = user?.id;
+  if (clerkId == null) {
+    throw Exception('User not authenticated');
+  }
+
+  final uri = _buildUri('/maintenance/$maintenanceId');
+
+  http.Response res;
+  try {
+    res = await _client.delete(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-User-Id': clerkId,
+      },
+    );
+  } catch (e) {
+    debugPrint('DeleteMaintenance network error: $e');
+    throw Exception('Network error while deleting maintenance: $e');
+  }
+
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    debugPrint('DeleteMaintenance failed: ${res.statusCode} - ${res.body}');
+    throw Exception(
+      'Failed to delete maintenance $maintenanceId: ${res.statusCode} - ${res.body}',
+    );
+  }
+
+  // Remove from local cache
+  _cachedMaintenance?.removeWhere((entry) => entry.id == maintenanceId);
+  _emitMaintenance();
+}
 }
