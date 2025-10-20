@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/assets/data/asset_store.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/routing.dart';
@@ -8,7 +9,7 @@ import 'add_maintenance_sheet.dart';
 import '../data/maintenance_store.dart';
 import '../data/maintenance_entry.dart';
 
-enum FilterType { all, overdue, upcoming, history }
+enum FilterType { all, overdue, upcoming, completed }
 DateTime now = DateTime.now();
 DateTime date = DateTime(now.year, now.month, now.day);
 
@@ -39,7 +40,7 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
         return allEntries.where((entry) => entry.maintenanceStatus == 'Overdue').toList();
       case FilterType.upcoming:
         return allEntries.where((entry) => entry.maintenanceStatus == 'Upcoming').toList();
-      case FilterType.history:
+      case FilterType.completed:
         return allEntries.where((entry) => entry.isCompleted || entry.maintenanceStatus == 'Completed').toList();
       default:
         return allEntries;
@@ -59,6 +60,12 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
       animation: maintenanceStore,
       builder: (context, _) {
         final items = sortedTasksAsc;
+        // Get asset name from assetStore
+        final asset = assetStore.getById(widget.assetId);
+        final assetName = asset != null
+            ? '${asset.brand} ${asset.name}'
+            : 'Unknown Asset';
+
         return AppLayout(
           currentIndex: 2,
           body: Padding(
@@ -84,19 +91,29 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
                         await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          backgroundColor: const Color(0xFF2A323F), // Dark navy background
+                          backgroundColor: const Color(0xFF2A323F), // Dark Navy Background
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                           ),
                           builder: (_) => const AddMaintenanceSheet(),
                         );
-                        // Refresh after closing sheet in case something changed
                         maintenanceStore.refresh(force: true);
                       },
                     ),
                   ],
                 ),
-                const SizedBox(height: Spacing.md),
+                // Smaller asset name below header
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 12),
+                  child: Text(
+                    assetName,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
 
                 // Filter buttons
                 Wrap(
@@ -105,7 +122,7 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
                     _buildFilterButton('All', FilterType.all),
                     _buildFilterButton('Overdue', FilterType.overdue),
                     _buildFilterButton('Upcoming', FilterType.upcoming),
-                    _buildFilterButton('History', FilterType.history),
+                    _buildFilterButton('Completed', FilterType.completed),
                   ],
                 ),
 

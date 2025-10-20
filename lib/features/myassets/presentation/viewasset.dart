@@ -284,23 +284,6 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                         ),
 
                         const SizedBox(height: 30),
-                        const Text(
-                          "Notes",
-                          style: TextStyle(
-                            color: AppColors.ebonyClay,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Text(
-                          _asset.notes,
-                          style: const TextStyle(
-                            color: AppColors.ebonyClay,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 40),
 
                         Center(
                           child: Wrap(
