@@ -3,7 +3,6 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/maintenance/presentation/maintenance_screen.dart';
-import '../features/maintenance/presentation/maintenance_detail_screen.dart';
 import '../features/maintenance/presentation/maintenance_entry_detail_screen.dart';
 import '../features/maintenance/presentation/edit_maintenance.dart';
 import '../features/maintenance/presentation/asset_maintenance_screen.dart';
@@ -40,7 +39,6 @@ class AppRoutes {
   static const profile = '/profile';
 
   static const maintenance = '/maintenance';
-  static const maintenanceDetail = '/maintenance/detail';
   static const maintenanceEntryDetail = '/maintenance/entry/detail';
   static const maintenanceEdit = '/maintenance/edit';
   static const assetMaintenance = '/maintenance/asset';
@@ -67,10 +65,6 @@ class AppRoutes {
     profile: (_) => ProfileScreen(),
     maintenance: (_) => const MaintenanceScreen(),
 
-     maintenanceDetail: (context) {
-      // Screen will read ModalRoute.of(context)!.settings.arguments
-      return const MaintenanceDetailScreen();
-    },
     maintenanceEdit: (context) {
       // Screen will read ModalRoute.of(context)!.settings.arguments
       return const AddMaintenancePage();
