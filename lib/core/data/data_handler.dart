@@ -12,6 +12,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DataHandler {
   // Instance deps
@@ -1194,5 +1195,56 @@ class DataHandler {
     _cachedMaintenance = list;
     _maintenanceFetchedAt = DateTime.now();
     _emitMaintenance();
+  }
+
+  static const String _lastOverdueCheckKey = 'last_overdue_check_date';
+
+  /// Returns true if the check should run today (i.e., it's a new day)
+  static Future<bool> shouldRunOverdueCheck() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastRun = prefs.getString(_lastOverdueCheckKey);
+    final today = DateTime.now();
+    final todayStr = '${today.year}-${today.month}-${today.day}';
+    if (lastRun == todayStr) return false;
+    return true;
+  }
+
+  /// Call this after running the overdue check
+  static Future<void> markOverdueCheckRan() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    final todayStr = '${today.year}-${today.month}-${today.day}';
+    await prefs.setString(_lastOverdueCheckKey, todayStr);
+  }
+
+  /// Update maintenance statuses for overdue tasks
+  Future<void> updateOverdueMaintenanceStatuses() async {
+    final now = DateTime.now();
+    final List<MaintenanceEntry> entries = cachedMaintenance ?? [];
+    bool changed = false;
+
+    for (final entry in entries) {
+      if (!entry.isCompleted && entry.maintenanceDueDate.isBefore(DateTime(now.year, now.month, now.day))) {
+        if (entry.maintenanceStatus != 'Overdue') {
+          await updateMaintenance(
+            maintenanceId: entry.id,
+            patch: {'maintenanceStatus': 'Overdue'},
+          );
+          changed = true;
+        }
+      } else if (!entry.isCompleted && entry.maintenanceDueDate.isAfter(DateTime(now.year, now.month, now.day - 1))) {
+        // Optionally, reset status if not overdue
+        if (entry.maintenanceStatus == 'Overdue') {
+          await updateMaintenance(
+            maintenanceId: entry.id,
+            patch: {'maintenanceStatus': 'Pending'},
+          );
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      await getMaintenance(force: true);
+    }
   }
 }

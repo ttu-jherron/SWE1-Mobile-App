@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/core/data/data_handler.dart';
 import 'package:mobile_app/features/assets/data/asset.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/constants.dart';
@@ -26,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final messenger = ScaffoldMessenger.maybeOf(context);
       messenger?.hideCurrentSnackBar(reason: SnackBarClosedReason.remove);
+      _runOverdueCheckIfNeeded();
     });
   }
 
@@ -36,6 +38,14 @@ class _HomeScreenState extends State<HomeScreen> {
     assetStore.bind(context);
     // Initialize maintenance store
     initializeMaintenanceStore(context);
+  }
+
+  Future<void> _runOverdueCheckIfNeeded() async {
+    if (await DataHandler.shouldRunOverdueCheck()) {
+      final dh = DataHandler.fromContext(context);
+      await dh.updateOverdueMaintenanceStatuses();
+      await DataHandler.markOverdueCheckRan();
+    }
   }
 
   @override
@@ -61,11 +71,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (showAlert && maintenanceItems.any((item) => item?.maintenanceStatus == 'Overdue'))
+                if (showAlert && maintenanceItems.any((item) => item.maintenanceStatus == 'Overdue'))
                   AlertBanner(
                     title: 'Important',
-                    message:
-                        'You have overdue maintenance items.',
+                    message: 'You have overdue maintenance items.',
                     onClose: () => setState(() => showAlert = false),
                   ),
                 const SizedBox(height: Spacing.xl),
