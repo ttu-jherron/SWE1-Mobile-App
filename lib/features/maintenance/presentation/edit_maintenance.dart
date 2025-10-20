@@ -77,8 +77,8 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
     final initial = _dueDate ?? now;
     final picked = await showDatePicker(
       context: context,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 3),
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 100),
       initialDate: initial,
     );
     if (picked != null) {
