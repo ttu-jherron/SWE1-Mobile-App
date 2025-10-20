@@ -35,7 +35,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
           _selectedFilter = args['filter'];
         });
       }
-      if (args['assetId'] != null) {
+      if (args['assetId'] != null && selectedAssetId == null) { // <-- Only set if not already set
         setState(() {
           selectedAssetId = args['assetId'];
         });
@@ -94,6 +94,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     setState(() {
       selectedAssetId = chosen;
     });
+    maintenanceStore.refresh(force: true); // <-- Add this line
   }
 
   @override
