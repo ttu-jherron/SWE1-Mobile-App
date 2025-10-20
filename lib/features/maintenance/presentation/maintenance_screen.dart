@@ -140,7 +140,9 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                           ),
-                          builder: (_) => const AddMaintenanceSheet(),
+                          builder: (_) => AddMaintenanceSheet(
+                            initialAssetId: selectedAssetId, // <-- Pass the asset ID
+                          ),
                         );
                         maintenanceStore.refresh(force: true);
                       },

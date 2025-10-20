@@ -14,7 +14,8 @@ import '../../../core/colors.dart';
 const String _demoUserId = 'user_33UeIDzYloCoZABaaCR1WPmV7MT';
 
 class AddMaintenanceSheet extends StatefulWidget {
-  const AddMaintenanceSheet({super.key});
+  final String? initialAssetId;
+  const AddMaintenanceSheet({Key? key, this.initialAssetId}) : super(key: key);
 
   @override
   State<AddMaintenanceSheet> createState() => _AddMaintenanceSheetState();
@@ -43,6 +44,7 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
   void initState() {
     super.initState();
     _fetchAssets();
+    _assetId = widget.initialAssetId; // <-- Pre-populate asset field
   }
 
   Future<void> _fetchAssets() async {
