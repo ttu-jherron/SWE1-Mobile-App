@@ -140,3 +140,14 @@ class MaintenanceEntry {
     };
   }
 }
+
+extension MaintenanceEntryStatus on MaintenanceEntry {
+  String get localStatus {
+    if (isCompleted) return 'Completed';
+    final today = DateTime.now();
+    final due = DateTime(maintenanceDueDate.year, maintenanceDueDate.month, maintenanceDueDate.day);
+    final nowDate = DateTime(today.year, today.month, today.day);
+    if (due.isBefore(nowDate)) return 'Overdue';
+    return 'Upcoming';
+  }
+}

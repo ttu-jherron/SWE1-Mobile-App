@@ -29,10 +29,17 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is Map && args['filter'] != null) {
-      setState(() {
-        _selectedFilter = args['filter'];
-      });
+    if (args is Map) {
+      if (args['filter'] != null) {
+        setState(() {
+          _selectedFilter = args['filter'];
+        });
+      }
+      if (args['assetId'] != null) {
+        setState(() {
+          selectedAssetId = args['assetId'];
+        });
+      }
     }
     initializeMaintenanceStore(context);
     maintenanceStore.refresh(force: false);
@@ -47,11 +54,11 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     }
     switch (_selectedFilter) {
       case 'Overdue':
-        return allEntries.where((entry) => entry.maintenanceStatus == 'Overdue').toList();
+        return allEntries.where((entry) => entry.localStatus == 'Overdue').toList();
       case 'Upcoming':
-        return allEntries.where((entry) => entry.maintenanceStatus == 'Upcoming').toList();
+        return allEntries.where((entry) => entry.localStatus == 'Upcoming').toList();
       case 'Completed':
-        return allEntries.where((entry) => entry.maintenanceStatus == 'Completed').toList();
+        return allEntries.where((entry) => entry.localStatus == 'Completed').toList();
       default:
         return allEntries;
     }
@@ -197,21 +204,26 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                           separatorBuilder: (_, __) => const SizedBox(height: Spacing.md),
                           itemBuilder: (context, index) {
                             final e = items[index];
-                            final statusColor = e.maintenanceStatus == 'Overdue'
+                            final statusColor = e.localStatus == 'Overdue'
                                 ? Colors.red
-                                : e.maintenanceStatus == 'Completed'
+                                : e.localStatus == 'Completed'
                                     ? Colors.green
-                                    : e.maintenanceStatus == 'Upcoming'
+                                    : e.localStatus == 'Upcoming'
                                         ? AppColors.darkGold
                                         : AppColors.ebonyClay;
 
                             return InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(
+                              onTap: () async {
+                                final result = await Navigator.pushNamed(
                                   context,
                                   AppRoutes.maintenanceEntryDetail,
                                   arguments: e,
                                 );
+                                if (result == true) {
+                                  setState(() {
+                                    maintenanceStore.refresh(force: true);
+                                  });
+                                }
                               },
                               child: Container(
                                 padding: const EdgeInsets.all(Spacing.md),
@@ -238,7 +250,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '${_df.format(e.maintenanceDueDate)} • ${e.maintenanceStatus}',
+                                            '${_df.format(e.maintenanceDueDate)} • ${e.localStatus}',
                                             style: TextStyle(color: statusColor),
                                           ),
                                         ],

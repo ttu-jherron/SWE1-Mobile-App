@@ -114,6 +114,8 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
     }
   }
 
+  String get _computedStatus => _currentEntry.localStatus; // Use extension
+
   @override
   Widget build(BuildContext context) {
     return AppLayout(
@@ -140,7 +142,7 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
                     ),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context).pop(true), // Pass true to indicate update
                     icon: const Icon(
                       Icons.close,
                       color: AppColors.ebonyClay,
@@ -165,23 +167,23 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
                         decoration: BoxDecoration(
-                          color: _currentEntry.maintenanceStatus == 'Overdue'
+                          color: _computedStatus == 'Overdue'
                               ? Colors.red.withOpacity(0.1)
-                              : _currentEntry.maintenanceStatus == 'Completed'
+                              : _computedStatus == 'Completed'
                                   ? Colors.green.withOpacity(0.1)
-                                  : _currentEntry.maintenanceStatus == 'Upcoming'
+                                  : _computedStatus == 'Upcoming'
                                       ? AppColors.darkGold.withOpacity(0.1)
                                       : AppColors.ebonyClay.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          _currentEntry.maintenanceStatus,
+                          _computedStatus,
                           style: TextStyle(
-                            color: _currentEntry.maintenanceStatus == 'Overdue'
+                            color: _computedStatus == 'Overdue'
                                 ? Colors.red
-                                : _currentEntry.maintenanceStatus == 'Completed'
+                                : _computedStatus == 'Completed'
                                     ? Colors.green
-                                    : _currentEntry.maintenanceStatus == 'Upcoming'
+                                    : _computedStatus == 'Upcoming'
                                         ? AppColors.darkGold
                                         : AppColors.ebonyClay,
                             fontWeight: FontWeight.w600,

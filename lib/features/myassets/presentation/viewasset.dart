@@ -235,7 +235,8 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                           animation: maintenanceStore,
                           builder: (context, _) {
                             final List<MaintenanceEntry> entries = [
-                              ...maintenanceStore.allFor(_asset.id),
+                              ...maintenanceStore.allFor(_asset.id)
+                                  .where((e) => e.localStatus == 'Upcoming') // <-- Only upcoming
                             ]..sort((a, b) => a.maintenanceDueDate.compareTo(b.maintenanceDueDate));
                             final MaintenanceEntry? next = entries.isEmpty
                                 ? null
@@ -259,20 +260,23 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                                     child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
                                       itemCount: entries.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(width: 12),
+                                      separatorBuilder: (_, __) => const SizedBox(width: 12),
                                       itemBuilder: (ctx, i) {
                                         final e = entries[i];
                                         return _MaintChip(
                                           dateLabel: _df.format(e.maintenanceDueDate),
                                           title: e.maintenanceTitle,
-                                          status: e.maintenanceStatus,
-                                          onTap: () {
-                                            Navigator.pushNamed(
+                                          status: e.localStatus, // <-- Use localStatus
+                                          onTap: () async {
+                                            final result = await Navigator.pushNamed(
                                               context,
                                               AppRoutes.maintenanceEntryDetail,
                                               arguments: e,
                                             );
+                                            if (result == true) {
+                                              await maintenanceStore.refresh(force: true); // <-- Force refresh
+                                              setState(() {}); // <-- Rebuild to show updated status
+                                            }
                                           },
                                         );
                                       },
@@ -327,8 +331,10 @@ class _ViewAssetPageState extends State<ViewAssetPage> {
                                 onPressed: () {
                                   Navigator.pushNamed(
                                     context,
-                                    AppRoutes.assetMaintenance,
-                                    arguments: _asset.id,
+                                    AppRoutes.maintenance, // Use your maintenance screen route
+                                    arguments: {
+                                      'assetId': _asset.id, // Pass the asset ID as a filter argument
+                                    },
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
