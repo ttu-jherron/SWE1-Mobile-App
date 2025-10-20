@@ -74,17 +74,19 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final initial = _dueDate ?? now;
+    final firstDate = DateTime(now.year, now.month, now.day);
+    DateTime initial = _dueDate ?? firstDate;
+    if (initial.isBefore(firstDate)) {
+      initial = firstDate;
+    }
     final picked = await showDatePicker(
       context: context,
-      firstDate: DateTime(now.year, now.month, now.day),
+      firstDate: firstDate,
       lastDate: DateTime(now.year + 100),
       initialDate: initial,
     );
     if (picked != null) {
-      // Create date at start of day to avoid timezone issues
       final selectedDate = DateTime(picked.year, picked.month, picked.day);
-      // Only update if the date is different to avoid unnecessary rebuilds
       if (_dueDate == null || !_dueDate!.isAtSameMomentAs(selectedDate)) {
         setState(() {
           _dueDate = selectedDate;
@@ -240,29 +242,26 @@ class _EditMaintenancePageState extends State<AddMaintenancePage> {
                   const SizedBox(height: Spacing.md),
       
                   // Due Date
-                  InkWell(
+                  TextFormField(
+                    controller: _dueDateController,
+                    readOnly: true,
                     onTap: _pickDate,
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: 'Maintenance Due Date',
-                        labelStyle: TextStyle(color: AppColors.ebonyClay),
-                        contentPadding: const EdgeInsets.symmetric(
+                    style: const TextStyle(color: AppColors.ebonyClay),
+                    decoration: InputDecoration(
+                      labelText: 'Maintenance Due Date',
+                      labelStyle: TextStyle(color: AppColors.ebonyClay),
+                      contentPadding: const EdgeInsets.symmetric(
                         vertical: Spacing.xs, horizontal: Spacing.sm),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(Radii.sm),
-                          borderSide: const BorderSide(
-                            color: AppColors.ebonyClay,
-                            width: 2.0,
-                            ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(Radii.sm),
-                          borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
-                        ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(
+                          color: AppColors.ebonyClay,
+                          width: 2.0,
+                          ),
                       ),
-                      child: Text(
-                        _dueDateController.text.isEmpty ? 'Select date' : _dueDateController.text,
-                        style: const TextStyle(color: AppColors.ebonyClay),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(Radii.sm),
+                        borderSide: const BorderSide(color: AppColors.ebonyClay, width: 2.0),
                       ),
                     ),
                   ),
