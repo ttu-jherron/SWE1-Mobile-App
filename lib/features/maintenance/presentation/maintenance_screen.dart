@@ -58,7 +58,7 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
       case FilterType.upcoming:
         return allEntries.where((entry) => entry.maintenanceStatus == 'Upcoming').toList();
       case FilterType.completed:
-        return allEntries.where((entry) => entry.isCompleted).toList();
+        return allEntries.where((entry) => entry.maintenanceStatus == 'Completed').toList();
       default:
         return allEntries;
     }
