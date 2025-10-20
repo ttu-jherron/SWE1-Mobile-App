@@ -97,75 +97,25 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
     return AppLayout(
       currentIndex: 2,
       body: Container(
-        color: const Color(0xFFF5F5F5), // Match View Asset background
+        color: const Color(0xFFF5F5F5),
         child: Column(
           children: [
-            // Top bar with contrast
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.fromLTRB(30, 20, 4, 8), // Reduced bottom padding
-              alignment: Alignment.topLeft,
+            // Header row: Maintenance Detail and X button
+            Padding(
+              padding: const EdgeInsets.only(top: 24, left: 30, right: 16, bottom: 0),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    flex: 2,
-                    child: !_editingTitle
-                        ? AutoSizeText(
-                            _titleController.text,
-                            style: const TextStyle(
-                              color: AppColors.ebonyClay,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            minFontSize: 16,
-                            overflow: TextOverflow.ellipsis,
-                          )
-                        : SizedBox(
-                            height: 36,
-                            child: TextField(
-                              controller: _titleController,
-                              autofocus: true,
-                              style: const TextStyle(
-                                color: AppColors.ebonyClay,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-                                border: OutlineInputBorder(),
-                              ),
-                              onSubmitted: (_) {
-                                setState(() {
-                                  _editingTitle = false;
-                                  _saveField('title');
-                                });
-                              },
-                            ),
-                          ),
-                  ),
-                  IconButton(
-                    icon: Icon(_editingTitle ? Icons.check : Icons.edit, color: Colors.black54, size: 22),
-                    tooltip: _editingTitle ? 'Save' : 'Edit',
-                    onPressed: () {
-                      setState(() {
-                        if (_editingTitle) _saveField('title');
-                        _editingTitle = !_editingTitle;
-                      });
-                    },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    child: Text(
+                      'Maintenance Detail',
+                      style: const TextStyle(
+                        color: AppColors.ebonyClay,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
@@ -187,7 +137,6 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Remove extra gap here!
                     // Colored status above asset name
                     Padding(
                       padding: const EdgeInsets.only(bottom: Spacing.lg, top: 0),
@@ -245,6 +194,18 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
                         ],
                       ),
                     ),
+                    // Editable Maintenance Title
+                    _InlineEditableField(
+                      label: 'Maintenance Title',
+                      controller: _titleController,
+                      onSave: () => _saveField('title'),
+                      maxLines: 2,
+                      style: const TextStyle(
+                        color: AppColors.ebonyClay,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: Spacing.lg),
                     // Description (editable)
                     _InlineEditableField(
                       label: 'Description',
@@ -346,7 +307,7 @@ class _InlineEditableFieldState extends State<_InlineEditableField> {
                       child: Text(
                         widget.controller.text,
                         style: widget.style ?? const TextStyle(
-                          color: AppColors.ebonyClay,
+                          color: AppColors.ebonyClay, // Ensure text is visible
                           fontSize: 15,
                         ),
                         maxLines: widget.maxLines,
@@ -377,7 +338,10 @@ class _InlineEditableFieldState extends State<_InlineEditableField> {
           controller: widget.controller,
           keyboardType: widget.keyboardType,
           maxLines: widget.maxLines,
-          style: widget.style, // <-- Add this
+          style: widget.style ?? const TextStyle(
+            color: AppColors.ebonyClay, // Ensure text is visible
+            fontSize: 15,
+          ),
           decoration: InputDecoration(
             prefixText: widget.prefix,
             isDense: true,
