@@ -44,12 +44,27 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Text(
-              _currentEntry.maintenanceTitle,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w800,
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                  tooltip: 'Back',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _currentEntry.maintenanceTitle,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    maxLines: 3, // Allow wrapping up to 3 lines
                   ),
+                ),
+              ],
             ),
             const SizedBox(height: Spacing.md),
 
