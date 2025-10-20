@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/core/colors.dart';
 import 'package:mobile_app/core/data/data_handler.dart';
 import 'package:mobile_app/features/assets/data/asset.dart';
 import '../../../core/layout/app_layout.dart';
@@ -57,10 +58,22 @@ class _HomeScreenState extends State<HomeScreen> {
         final List<Asset> favorites =
             assets.where((a) => a.favorite == true).toList(growable: false);
         final maintenanceEntries = maintenanceStore.getAll();
-        final maintenanceItems = maintenanceEntries.map((entry) => MaintenanceItem.fromMaintenanceEntry(entry)).toList();
+        final maintenanceItems = maintenanceEntries
+            .map((entry) => MaintenanceItem.fromMaintenanceEntry(entry))
+            .toList();
+
+        final upcomingItems = maintenanceItems
+            .where((item) => item.maintenanceStatus == 'Upcoming')
+            .toList();
 
         // Count overdue items
-        final overdueCount = maintenanceItems.where((item) => item.maintenanceStatus == 'Overdue').length;
+        final overdueCount = maintenanceItems
+            .where((item) => item.maintenanceStatus == 'Overdue')
+            .length;
+
+        final maxCards = 10;
+        final showMore = upcomingItems.length > maxCards;
+        final visibleItems = showMore ? upcomingItems.take(maxCards).toList() : upcomingItems;
 
         return AppLayout(
           currentIndex: 0, // Home tab
@@ -86,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: Spacing.md),
                 SizedBox(
                   height: 92,
-                  child: maintenanceItems.isEmpty
+                  child: upcomingItems.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -116,18 +129,64 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: maintenanceItems.length,
+                          itemCount: showMore ? visibleItems.length + 1 : visibleItems.length,
                           separatorBuilder: (_, __) => const SizedBox(width: Spacing.md),
-                          itemBuilder: (ctx, i) => MaintenanceCard(
-                            item: maintenanceItems[i],
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                AppRoutes.maintenance,
-                                arguments: maintenanceItems[i].id,
+                          itemBuilder: (ctx, i) {
+                            if (showMore && i == visibleItems.length) {
+                              // Show More Card
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.maintenance,
+                                    arguments: {'filter': 'Upcoming'},
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  width: 120,
+                                  height: 72, // Match the height of your other cards (48 image + padding)
+                                  padding: const EdgeInsets.all(Spacing.md),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.black12),
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(Icons.arrow_forward, color: AppColors.ebonyClay, size: 28),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'See All',
+                                          style: TextStyle(
+                                            color: AppColors.ebonyClay,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               );
-                            },
-                          ),
+                            }
+                            final item = visibleItems[i];
+                            final asset = assetStore.getById(item.assetId);
+
+                            return MaintenanceCard(
+                              item: item,
+                              asset: asset,
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.maintenanceEntryDetail,
+                                  arguments: maintenanceEntries.firstWhere((e) => e.id == item.id),
+                                );
+                              },
+                            );
+                          },
                         ),
                 ),
 
