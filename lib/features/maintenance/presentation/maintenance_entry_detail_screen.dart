@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/layout/app_layout.dart';
 import '../../../core/routing.dart';
-import 'package:intl/intl.dart';
 import '../data/maintenance_entry.dart';
 
 class MaintenanceEntryDetailScreen extends StatefulWidget {
@@ -18,32 +18,88 @@ class MaintenanceEntryDetailScreen extends StatefulWidget {
 class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScreen> {
   late MaintenanceEntry _currentEntry;
 
+  // Controllers for inline editing
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _costController;
+  late DateTime _dueDate;
+  late bool _isCompleted;
+
+  final _df = DateFormat('MMM dd, yyyy');
+
   @override
   void initState() {
     super.initState();
     _currentEntry = widget.entry;
+    _titleController = TextEditingController(text: _currentEntry.maintenanceTitle);
+    _descriptionController = TextEditingController(text: _currentEntry.maintenanceDescription);
+    _costController = TextEditingController(text: _currentEntry.costPaid.toStringAsFixed(2));
+    _dueDate = _currentEntry.maintenanceDueDate;
+    _isCompleted = _currentEntry.isCompleted;
   }
 
   @override
-  void didUpdateWidget(MaintenanceEntryDetailScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.entry != widget.entry) {
-      _currentEntry = widget.entry;
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _costController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    DateTime initial = _dueDate;
+    if (initial.isBefore(firstDate)) {
+      initial = firstDate;
     }
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: firstDate,
+      lastDate: DateTime(now.year + 100),
+      initialDate: initial,
+    );
+    if (picked != null) {
+      setState(() {
+        _dueDate = picked;
+      });
+    }
+  }
+
+  void _saveField(String field) {
+    setState(() {
+      switch (field) {
+        case 'title':
+          _currentEntry = _currentEntry.copyWith(maintenanceTitle: _titleController.text);
+          break;
+        case 'description':
+          _currentEntry = _currentEntry.copyWith(maintenanceDescription: _descriptionController.text);
+          break;
+        case 'cost':
+          final cost = double.tryParse(_costController.text) ?? _currentEntry.costPaid;
+          _currentEntry = _currentEntry.copyWith(costPaid: cost);
+          break;
+        case 'dueDate':
+          _currentEntry = _currentEntry.copyWith(maintenanceDueDate: _dueDate);
+          break;
+        case 'completed':
+          _currentEntry = _currentEntry.copyWith(isCompleted: _isCompleted);
+          break;
+      }
+    });
+    // Optionally, persist changes here
   }
 
   @override
   Widget build(BuildContext context) {
-    final _df = DateFormat('MMM dd, yyyy');
-
     return AppLayout(
       currentIndex: 2,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(Spacing.xl),
+        padding: const EdgeInsets.symmetric(horizontal: Spacing.xl, vertical: Spacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Header with editable title and asset subtext
             Row(
               children: [
                 IconButton(
@@ -55,99 +111,318 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    _currentEntry.maintenanceTitle,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    maxLines: 3, // Allow wrapping up to 3 lines
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Editable Title (big text)
+                      _InlineEditableField(
+                        label: '',
+                        controller: _titleController,
+                        onSave: () => _saveField('title'),
+                        maxLines: 2,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_currentEntry.brandName} ${_currentEntry.productName}',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: Spacing.md),
+            const SizedBox(height: Spacing.xl),
 
-            // Status
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
-              decoration: BoxDecoration(
-                color: _currentEntry.maintenanceStatus == 'Overdue'
-                    ? Colors.red.withOpacity(0.1)
-                    : _currentEntry.maintenanceStatus == 'Completed'
-                        ? Colors.green.withOpacity(0.1)
-                        : _currentEntry.maintenanceStatus == 'Upcoming'
-                            ? AppColors.darkGold.withOpacity(0.1)
-                            : AppColors.ebonyClay.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                _currentEntry.maintenanceStatus,
-                style: TextStyle(
-                  color: _currentEntry.maintenanceStatus == 'Overdue'
-                      ? Colors.red
-                      : _currentEntry.maintenanceStatus == 'Completed'
-                          ? Colors.green
-                          : _currentEntry.maintenanceStatus == 'Upcoming'
-                              ? AppColors.darkGold
-                              : AppColors.ebonyClay,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            // Editable Description
+            _InlineEditableField(
+              label: 'Description',
+              controller: _descriptionController,
+              onSave: () => _saveField('description'),
+              maxLines: 3,
             ),
             const SizedBox(height: Spacing.lg),
 
-            // Due Date
-            _buildDetailRow('Due Date', _df.format(_currentEntry.maintenanceDueDate)),
-            const SizedBox(height: Spacing.md),
-
-            // Description
-            _buildDetailRow('Description', _currentEntry.maintenanceDescription),
-            const SizedBox(height: Spacing.md),
-
-            // Asset Info
-            _buildDetailRow('Asset', '${_currentEntry.brandName} ${_currentEntry.productName}'),
-            const SizedBox(height: Spacing.md),
-
-            // Category
-            _buildDetailRow('Category', _currentEntry.assetCategory),
-            const SizedBox(height: Spacing.md),
-
-            // Cost
-            _buildDetailRow('Cost Paid', '\$${_currentEntry.costPaid.toStringAsFixed(2)}'),
-            const SizedBox(height: Spacing.md),
-
-            // Completed
-            _buildDetailRow('Completed', _currentEntry.isCompleted ? 'Yes' : 'No'),
-            const SizedBox(height: Spacing.xl),
-
-            // Edit Button
-            ElevatedButton(
-              onPressed: () async {
-                final result = await Navigator.pushNamed(context, AppRoutes.maintenanceEdit, arguments: _currentEntry);
-                if (result is MaintenanceEntry) {
-                  setState(() {
-                    _currentEntry = result;
-                  });
-                }
+            // Editable Due Date
+            _InlineEditableDateField(
+              label: 'Due Date',
+              date: _dueDate,
+              onPick: () async {
+                await _pickDate();
+                _saveField('dueDate');
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.ebonyClay,
-                foregroundColor: AppColors.sandyYellow,
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.xl, vertical: Spacing.md),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Radii.md),
-                ),
-              ),
-              child: const Text('Edit Maintenance'),
             ),
+            const SizedBox(height: Spacing.lg),
+
+            // Editable Cost
+            _InlineEditableField(
+              label: 'Cost Paid',
+              controller: _costController,
+              onSave: () => _saveField('cost'),
+              keyboardType: TextInputType.number,
+              prefix: '\$',
+            ),
+            const SizedBox(height: Spacing.lg),
+
+            // Editable Completed Checkbox
+            _InlineEditableCheckbox(
+              label: 'Completed',
+              value: _isCompleted,
+              onChanged: (val) {
+                setState(() {
+                  _isCompleted = val ?? false;
+                  _saveField('completed');
+                });
+              },
+            ),
+            const SizedBox(height: Spacing.lg),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildDetailRow(String label, String value) {
+// Inline editable text field
+class _InlineEditableField extends StatefulWidget {
+  final String label;
+  final TextEditingController controller;
+  final VoidCallback onSave;
+  final int maxLines;
+  final TextInputType keyboardType;
+  final String? prefix;
+  final TextStyle? style; // <-- Add this
+
+  const _InlineEditableField({
+    required this.label,
+    required this.controller,
+    required this.onSave,
+    this.maxLines = 1,
+    this.keyboardType = TextInputType.text,
+    this.prefix,
+    this.style, // <-- Add this
+  });
+
+  @override
+  State<_InlineEditableField> createState() => _InlineEditableFieldState();
+}
+
+class _InlineEditableFieldState extends State<_InlineEditableField> {
+  bool _editing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = const TextStyle(
+      fontWeight: FontWeight.w800,
+      color: Colors.black87,
+      fontSize: 16,
+    );
+
+    if (!_editing) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.label.isNotEmpty)
+                  Text(widget.label, style: labelStyle),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (widget.prefix != null)
+                      Text(widget.prefix!, style: const TextStyle(color: Colors.black54)),
+                    Expanded(
+                      child: Text(
+                        widget.controller.text,
+                        style: widget.style ?? const TextStyle(
+                          color: AppColors.ebonyClay,
+                          fontSize: 15,
+                        ),
+                        maxLines: widget.maxLines,
+                        softWrap: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.black54, size: 20),
+            tooltip: 'Edit',
+            onPressed: () => setState(() => _editing = true),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.label.isNotEmpty)
+          Text(widget.label, style: labelStyle),
+        const SizedBox(height: 4),
+        TextField(
+          controller: widget.controller,
+          keyboardType: widget.keyboardType,
+          maxLines: widget.maxLines,
+          style: widget.style, // <-- Add this
+          decoration: InputDecoration(
+            prefixText: widget.prefix,
+            isDense: true,
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.black26, width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.black26, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.sandyYellow, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            TextButton.icon(
+              onPressed: () {
+                setState(() => _editing = false);
+                widget.onSave();
+              },
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Save'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: () => setState(() => _editing = false),
+              icon: const Icon(Icons.close, size: 18),
+              label: const Text('Cancel'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.ebonyClay),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Inline editable date field
+class _InlineEditableDateField extends StatelessWidget {
+  final String label;
+  final DateTime date;
+  final VoidCallback onPick;
+
+  const _InlineEditableDateField({
+    required this.label,
+    required this.date,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = const TextStyle(
+      fontWeight: FontWeight.w800,
+      color: Colors.black87,
+      fontSize: 16,
+    );
+    final _df = DateFormat('MMM dd, yyyy');
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: labelStyle),
+              const SizedBox(height: 4),
+              Text(
+                _df.format(date),
+                style: const TextStyle(
+                  color: AppColors.ebonyClay,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.edit_calendar, color: Colors.black54, size: 20),
+          tooltip: 'Edit Date',
+          onPressed: onPick,
+        ),
+      ],
+    );
+  }
+}
+
+// Inline editable checkbox field
+class _InlineEditableCheckbox extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool?> onChanged;
+
+  const _InlineEditableCheckbox({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = const TextStyle(
+      fontWeight: FontWeight.w800,
+      color: Colors.black87,
+      fontSize: 16,
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: labelStyle),
+              const SizedBox(height: 4),
+              Checkbox(
+                value: value,
+                onChanged: onChanged,
+                activeColor: AppColors.sandyYellow,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Non-editable detail row
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

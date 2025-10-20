@@ -93,6 +93,36 @@ class MaintenanceEntry {
     );
   }
 
+  MaintenanceEntry copyWith({
+    String? id,
+    String? assetId,
+    String? brandName,
+    String? productName,
+    String? assetCategory,
+    double? costPaid,
+    DateTime? maintenanceDueDate,
+    String? maintenanceTitle,
+    String? maintenanceDescription,
+    String? maintenanceStatus,
+    bool? preserveFromPrior,
+    bool? isCompleted,
+  }) {
+    return MaintenanceEntry(
+      id: id ?? this.id,
+      assetId: assetId ?? this.assetId,
+      brandName: brandName ?? this.brandName,
+      productName: productName ?? this.productName,
+      assetCategory: assetCategory ?? this.assetCategory,
+      costPaid: costPaid ?? this.costPaid,
+      maintenanceDueDate: maintenanceDueDate ?? this.maintenanceDueDate,
+      maintenanceTitle: maintenanceTitle ?? this.maintenanceTitle,
+      maintenanceDescription: maintenanceDescription ?? this.maintenanceDescription,
+      maintenanceStatus: maintenanceStatus ?? this.maintenanceStatus,
+      preserveFromPrior: preserveFromPrior ?? this.preserveFromPrior,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
