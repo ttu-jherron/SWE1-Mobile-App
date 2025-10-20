@@ -59,6 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final maintenanceEntries = maintenanceStore.getAll();
         final maintenanceItems = maintenanceEntries.map((entry) => MaintenanceItem.fromMaintenanceEntry(entry)).toList();
 
+        // Count overdue items
+        final overdueCount = maintenanceItems.where((item) => item.maintenanceStatus == 'Overdue').length;
+
         return AppLayout(
           currentIndex: 0, // Home tab
           body: SingleChildScrollView(
@@ -71,10 +74,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (showAlert && maintenanceItems.any((item) => item.maintenanceStatus == 'Overdue'))
+                if (showAlert && overdueCount > 0)
                   AlertBanner(
                     title: 'Important',
-                    message: 'You have overdue maintenance items.',
+                    message: 'You have $overdueCount overdue maintenance item${overdueCount == 1 ? '' : 's'}.',
                     onClose: () => setState(() => showAlert = false),
                   ),
                 const SizedBox(height: Spacing.xl),
