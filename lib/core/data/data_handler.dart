@@ -49,8 +49,10 @@ class DataHandler {
 
   DataHandler({required this.auth, String? baseUrl, http.Client? client})
     : baseUrl = _normalizeBase(
-        baseUrl ??
-            (_globalBaseUrl.isNotEmpty ? _globalBaseUrl : _defaultBaseUrl),
+        // Always use dev URL if _useProd is false
+        _useProd
+            ? (baseUrl ?? (_globalBaseUrl.isNotEmpty ? _globalBaseUrl : _globalProdUrl))
+            : _globalDevUrl,
       ),
       _client = client ?? http.Client() {
     // Keep global in sync & normalized
@@ -532,6 +534,7 @@ class DataHandler {
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
       debugPrint('clerkUpdateProfileMerge failed: ${res.statusCode} - ${res.body}');
+      debugPrint(uri.toString());
       throw Exception('Profile update failed: ${res.statusCode}');
     }
 
