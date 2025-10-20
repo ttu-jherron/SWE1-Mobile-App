@@ -1,6 +1,8 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile_app/core/data/data_handler.dart';
+import 'package:mobile_app/features/assets/data/asset_store.dart';
 import '../../../core/constants.dart';
 import '../../../core/colors.dart';
 import '../../../core/layout/app_layout.dart';
@@ -68,28 +70,48 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
     }
   }
 
-  void _saveField(String field) {
+  void _saveField(String field) async {
+    final dh = DataHandler.fromContext(context);
+    final maintenanceId = _currentEntry.id;
+    Map<String, dynamic> patch = {};
+
     setState(() {
       switch (field) {
         case 'title':
           _currentEntry = _currentEntry.copyWith(maintenanceTitle: _titleController.text);
+          patch = {'maintenanceTitle': _titleController.text};
           break;
         case 'description':
           _currentEntry = _currentEntry.copyWith(maintenanceDescription: _descriptionController.text);
+          patch = {'maintenanceDescription': _descriptionController.text};
           break;
         case 'cost':
           final cost = double.tryParse(_costController.text) ?? _currentEntry.costPaid;
           _currentEntry = _currentEntry.copyWith(costPaid: cost);
+          patch = {'costPaid': cost};
           break;
         case 'dueDate':
           _currentEntry = _currentEntry.copyWith(maintenanceDueDate: _dueDate);
+          patch = {'maintenanceDueDate': _dueDate.toIso8601String()};
           break;
         case 'completed':
           _currentEntry = _currentEntry.copyWith(isCompleted: _isCompleted);
+          patch = {'isCompleted': _isCompleted};
+          if (_isCompleted) {
+            patch.addAll({'status': 'Completed'});
+          }
           break;
       }
     });
-    // Optionally, persist changes here
+
+    if (patch.isNotEmpty) {
+      try {
+        await dh.updateMaintenance(maintenanceId: maintenanceId, patch: patch);
+      } catch (e) {
+        // Optionally show error to user
+        debugPrint('Failed to update maintenance: $e');
+      }
+    }
   }
 
   @override

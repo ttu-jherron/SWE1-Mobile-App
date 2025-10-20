@@ -86,7 +86,7 @@ class _AddMaintenanceSheetState extends State<AddMaintenanceSheet> {
     Asset asset = assetStore.getById(_assetId!);
     final id = 'm_${DateTime.now().millisecondsSinceEpoch}';
     final entry = MaintenanceEntry(
-      id: id,
+      id: '', // Let backend assign the ID
       assetId: _assetId!,
       brandName: asset.brand,
       productName: asset.name,
