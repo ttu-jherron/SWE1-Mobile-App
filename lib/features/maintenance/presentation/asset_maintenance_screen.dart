@@ -62,9 +62,7 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
         final items = sortedTasksAsc;
         // Get asset name from assetStore
         final asset = assetStore.getById(widget.assetId);
-        final assetName = asset != null
-            ? '${asset.brand} ${asset.name}'
-            : 'Unknown Asset';
+        final assetName = '${asset.brand} ${asset.name}';
 
         return AppLayout(
           currentIndex: 2,
@@ -76,8 +74,18 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
                 // Header row
                 Row(
                   children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      tooltip: 'Back',
+                      padding: EdgeInsets.zero, // Remove extra padding
+                      constraints: const BoxConstraints(), // Remove extra constraints
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      "Asset Maintenance",
+                      "Maintenance",
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             color: Colors.black87,
                             fontWeight: FontWeight.w800,
@@ -91,7 +99,7 @@ class _AssetMaintenanceScreenState extends State<AssetMaintenanceScreen> {
                         await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          backgroundColor: const Color(0xFF2A323F), // Dark Navy Background
+                          backgroundColor: const Color(0xFF2A323F),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                           ),
