@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants.dart';
@@ -24,6 +25,7 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
   late TextEditingController _costController;
   late DateTime _dueDate;
   late bool _isCompleted;
+  bool _editingTitle = false; // <-- Add this state variable
 
   final _df = DateFormat('MMM dd, yyyy');
 
@@ -94,99 +96,156 @@ class _MaintenanceEntryDetailScreenState extends State<MaintenanceEntryDetailScr
   Widget build(BuildContext context) {
     return AppLayout(
       currentIndex: 2,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: Spacing.xl, vertical: Spacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with editable title and asset subtext
-            Row(
+      body: Column(
+        children: [
+          // Top bar styled like myassets.dart
+          Container(
+            height: MediaQuery.of(context).size.height * 0.13,
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(30, 30, 4, 10),
+            alignment: Alignment.topLeft,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Editable Title (auto-size)
+                Expanded(
+                  flex: 2,
+                  child: !_editingTitle
+                      ? AutoSizeText(
+                          _titleController.text,
+                          style: const TextStyle(
+                            color: AppColors.ebonyClay,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          minFontSize: 16,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : SizedBox(
+                          height: 36,
+                          child: TextField(
+                            controller: _titleController,
+                            autofocus: true,
+                            style: const TextStyle(
+                              color: AppColors.ebonyClay,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+                              border: OutlineInputBorder(),
+                            ),
+                            onSubmitted: (_) {
+                              setState(() {
+                                _editingTitle = false;
+                                _saveField('title');
+                              });
+                            },
+                          ),
+                        ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                  tooltip: 'Back',
+                  icon: Icon(_editingTitle ? Icons.check : Icons.edit, color: Colors.black54, size: 22),
+                  tooltip: _editingTitle ? 'Save' : 'Edit',
+                  onPressed: () {
+                    setState(() {
+                      if (_editingTitle) _saveField('title');
+                      _editingTitle = !_editingTitle;
+                    });
+                  },
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  onPressed: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Editable Title (big text)
-                      _InlineEditableField(
-                        label: '',
-                        controller: _titleController,
-                        onSave: () => _saveField('title'),
-                        maxLines: 2,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_currentEntry.brandName} ${_currentEntry.productName}',
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(
+                    Icons.close,
+                    color: AppColors.ebonyClay,
+                    size: 32,
                   ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
-            const SizedBox(height: Spacing.xl),
-
-            // Editable Description
-            _InlineEditableField(
-              label: 'Description',
-              controller: _descriptionController,
-              onSave: () => _saveField('description'),
-              maxLines: 3,
+          ),
+          // Main content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: Spacing.xl, vertical: Spacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Asset Name as plain text
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: Spacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Asset Name',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black87,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_currentEntry.brandName} ${_currentEntry.productName}',
+                          style: const TextStyle(
+                            color: AppColors.ebonyClay, // matches editable field value
+                            fontSize: 15,                // matches editable field value
+                          ),
+                          maxLines: 2,
+                          softWrap: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Description (editable)
+                  _InlineEditableField(
+                    label: 'Description',
+                    controller: _descriptionController,
+                    onSave: () => _saveField('description'),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                  _InlineEditableDateField(
+                    label: 'Due Date',
+                    date: _dueDate,
+                    onPick: () async {
+                      await _pickDate();
+                      _saveField('dueDate');
+                    },
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                  _InlineEditableField(
+                    label: 'Cost Paid',
+                    controller: _costController,
+                    onSave: () => _saveField('cost'),
+                    keyboardType: TextInputType.number,
+                    prefix: '\$',
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                  _InlineEditableCheckbox(
+                    label: 'Completed',
+                    value: _isCompleted,
+                    onChanged: (val) {
+                      setState(() {
+                        _isCompleted = val ?? false;
+                        _saveField('completed');
+                      });
+                    },
+                  ),
+                  const SizedBox(height: Spacing.lg),
+                ],
+              ),
             ),
-            const SizedBox(height: Spacing.lg),
-
-            // Editable Due Date
-            _InlineEditableDateField(
-              label: 'Due Date',
-              date: _dueDate,
-              onPick: () async {
-                await _pickDate();
-                _saveField('dueDate');
-              },
-            ),
-            const SizedBox(height: Spacing.lg),
-
-            // Editable Cost
-            _InlineEditableField(
-              label: 'Cost Paid',
-              controller: _costController,
-              onSave: () => _saveField('cost'),
-              keyboardType: TextInputType.number,
-              prefix: '\$',
-            ),
-            const SizedBox(height: Spacing.lg),
-
-            // Editable Completed Checkbox
-            _InlineEditableCheckbox(
-              label: 'Completed',
-              value: _isCompleted,
-              onChanged: (val) {
-                setState(() {
-                  _isCompleted = val ?? false;
-                  _saveField('completed');
-                });
-              },
-            ),
-            const SizedBox(height: Spacing.lg),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -395,18 +454,18 @@ class _InlineEditableCheckbox extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: labelStyle),
-              const SizedBox(height: 4),
-              Checkbox(
-                value: value,
-                onChanged: onChanged,
-                activeColor: AppColors.sandyYellow,
-              ),
-            ],
+        Text(label, style: labelStyle),
+        const SizedBox(width: 12),
+        Checkbox(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppColors.sandyYellow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          side: const BorderSide(
+            color: AppColors.ebonyClay,
+            width: 2,
           ),
         ),
       ],
