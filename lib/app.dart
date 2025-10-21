@@ -13,7 +13,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClerkAuth(
       config: ClerkAuthConfig(
-        publishableKey: 'pk_test_aW4taHVza3ktMjMuY2xlcmsuYWNjb3VudHMuZGV2JA',
+        publishableKey: 'pk_live_Y2xlcmsudGhlaGlwcG9leGNoYW5nZS5jb20k',
       ),
       child: LifeCycleRefresher(
         child: MaterialApp(
